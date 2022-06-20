@@ -6,12 +6,21 @@ terraform {
     }
 }
 
+module "mail" {
+  source = "../../module/mail_smtp"
+  aws_region = "us-east-1"
+  mail_instance = "catalog-prod"
+}
+
 module "catalog_a" {
   source = "../../module/catalog"
   server_name = "catalog-a"
   aws_region = "us-east-1"
   aws_availability_zone = "a"
   aws_ami = "ami-052efd3df9dad4825"
+  smtp_host = module.mail.smtp_host
+  smtp_user = module.mail.smtp_username
+  smtp_password = module.mail.smtp_password
   aws_instance_type = "t3a.large"
   aws_root_block_size = 16
   net_allow_inbound_ssh = [
@@ -31,6 +40,9 @@ module "catalog_b" {
   aws_region = "us-east-1"
   aws_availability_zone = "b"
   aws_ami = "ami-052efd3df9dad4825"
+  smtp_host = module.mail.smtp_host
+  smtp_user = module.mail.smtp_username
+  smtp_password = module.mail.smtp_password
   aws_instance_type = "t3a.large"
   aws_root_block_size = 16
   net_allow_inbound_ssh = [
@@ -50,6 +62,9 @@ module "catalog_c" {
   aws_region = "us-east-1"
   aws_availability_zone = "c"
   aws_ami = "ami-052efd3df9dad4825"
+  smtp_host = module.mail.smtp_host
+  smtp_user = module.mail.smtp_username
+  smtp_password = module.mail.smtp_password
   aws_instance_type = "t3a.large"
   aws_root_block_size = 16
   net_allow_inbound_ssh = [

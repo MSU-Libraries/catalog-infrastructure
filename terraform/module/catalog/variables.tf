@@ -42,3 +42,18 @@ variable "net_allow_inbound_web" {
   description = "Allow inbound to web ports these CIDRs"
   type = list(string)
 }
+
+variable "smtp_host" {
+  description = "SMTP hostname"
+  type = string
+}
+
+variable "smtp_user" {
+  description = "SMTP username"
+  type = string
+}
+
+variable "smtp_password" {
+  description = "SMTP password"
+  type = string
+}
