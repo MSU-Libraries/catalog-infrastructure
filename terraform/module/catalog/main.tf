@@ -166,7 +166,14 @@ resource "aws_instance" "catalog_instance" {
   }
 
   # Script to run upon provisioning
-  user_data = templatefile("${path.module}/user_data.sh", {})
+  user_data = templatefile("${path.module}/user_data.sh", 
+    {
+      smtp_host = var.smtp_host,
+      smtp_user = var.smtp_user,
+      smtp_password = var.smtp_password
+
+    }
+  )
 
   lifecycle {
     ignore_changes = [

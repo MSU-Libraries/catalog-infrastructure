@@ -6,12 +6,21 @@ terraform {
     }
 }
 
+module "mail" {
+  source = "../../module/mail_smtp"
+  aws_region = "us-east-1"
+  mail_instance = "catalog-test"
+}
+
 module "catalog_test" {
   source = "../../module/catalog"
   server_name = "catalog-test"
   aws_region = "us-east-1"
   aws_availability_zone = "a"
   aws_ami = "ami-052efd3df9dad4825"
+  smtp_host = module.mail.smtp_host
+  smtp_user = module.mail.smtp_username
+  smtp_password = module.mail.smtp_password
   aws_instance_type = "t3a.large"
   aws_root_block_size = 16
   net_allow_inbound_ssh = [
