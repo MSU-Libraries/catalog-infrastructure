@@ -8,7 +8,7 @@ Provision:
   image: ubuntu:22.04
   script:
     - apt update
-    - apt install software-properties-common
+    - apt install software-properties-common -y
     - add-apt-repository --yes --update ppa:ansible/ansible
     - apt install more-utils gettext-base ansible -y
     - ansible-galaxy collection install community.general ansible.posix
