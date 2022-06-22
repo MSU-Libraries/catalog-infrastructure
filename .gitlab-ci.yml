@@ -10,15 +10,21 @@ Provision:
     TZ: America/Detroit
   before_script:
     - apt update
-    - apt install software-properties-common -y
+    - apt install software-properties-common curl gnupg -y
     - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
     - echo $TZ > /etc/timezone
   script:
+    # Install Ansible
     - add-apt-repository --yes --update ppa:ansible/ansible
     - apt install moreutils gettext-base ansible pip -y
     # Installing specific version of resolvelib to fix:
     # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
     - pip install -Iv 'resolvelib<0.6.0'
     - ansible-galaxy collection install community.general ansible.posix
+    # Install Terraform
+    - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+    - add-apt-repository --yes --update "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" 
+    - apt-get install terraform
+    # Run the playbook
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
