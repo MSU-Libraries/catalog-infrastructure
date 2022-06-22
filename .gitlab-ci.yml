@@ -15,7 +15,10 @@ Provision:
     - echo $TZ > /etc/timezone
   script:
     - add-apt-repository --yes --update ppa:ansible/ansible
-    - apt install moreutils gettext-base ansible -y
+    - apt install moreutils gettext-base ansible pip -y
+    # Installing specific version of resolvelib to fix:
+    # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
+    - pip install -Iv 'resolvelib<0.6.0'
     - ansible-galaxy collection install community.general ansible.posix
     - envsubst provision-playbook/variables.yml | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
