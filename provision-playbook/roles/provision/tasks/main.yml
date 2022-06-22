@@ -17,3 +17,14 @@
     # focing init because state file exists in s3 and need provider
     # installed locally before we can detect it
     force_init: yes 
+  register: tf
+
+- name: Save outputs to host file
+  copy:
+    dest: "../configure-playbook/hosts"
+    content: |
+      {{ catalog_a_public_ip }}
+      {{ catalog_b_public_ip }}
+      {{ catalog_c_public_ip }}
+
+- name: Call configure playbook
