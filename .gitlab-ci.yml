@@ -20,5 +20,5 @@ Provision:
     # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
     - pip install -Iv 'resolvelib<0.6.0'
     - ansible-galaxy collection install community.general ansible.posix
-    - envsubst provision-playbook/variables.yml | sponge provision-playbook/variables.yml
+    - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
