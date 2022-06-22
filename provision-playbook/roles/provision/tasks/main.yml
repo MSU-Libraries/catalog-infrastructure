@@ -1,4 +1,9 @@
 ---
+- name: Create AWS config directory
+  file:
+    path: "/root/.aws"
+    state: directory
+
 - name: Create AWS credential file
   copy:
     dest: "/root/.aws/credentials"
