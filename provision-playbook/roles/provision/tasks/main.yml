@@ -1,0 +1,11 @@
+---
+- name: Create AWS credential file
+  copy:
+    dest: "/root/.aws/credentials"
+    content: "{{ aws_credential_template }}"
+
+- name: Provision catalog server cluster
+  community.general.terraform:
+    project_path: "../terraform/env/prod/"
+    state: present
+    provider_upgrade: yes
