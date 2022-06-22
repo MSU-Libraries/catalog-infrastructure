@@ -1,0 +1,16 @@
+stages:
+  - provision
+
+Provision:
+  stage: provision
+  tags:
+    - msul-docker
+  image: ubuntu:22.04
+  script:
+    - apt update
+    - apt install software-properties-common
+    - add-apt-repository --yes --update ppa:ansible/ansible
+    - apt install more-utils gettext-base ansible -y
+    - ansible-galaxy collection install community.general ansible.posix
+    - envsubst provision-playbook/variables.yml | sponge provision-playbook/variables.yml
+    - ansible-playbook provision-playbook/provision.yml

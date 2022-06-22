@@ -1,0 +1,23 @@
+---
+
+- name: Provision catalog servers
+  hosts: localhost
+  gather_facts: false
+  become: true
+  become_user: root
+  
+  vars_files:
+    - variables.yml
+
+  roles:
+    - provision
+    - install-dependencies
+
+  tasks:
+    - name: Create users
+      include_role:
+        name: setup-user
+      loop: "{{ create_users }}"
+      loop_control:
+        loop_var: user_dict
+        label: "{{ user_dict.comment }}"

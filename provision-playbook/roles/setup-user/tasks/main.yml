@@ -1,0 +1,30 @@
+---
+
+- name: Create user
+  user:
+    name: "{{ user_dict.name }}"
+    comment: "{{ user_dict.comment }}"
+    state: present
+    shell: /bin/bash
+    update_password: on_create
+    groups: "{{ user_dict.groups }}"
+    append: yes
+  register: created_user
+  when:
+    - user_dict.name is defined
+    - user_dict.comment is defined
+
+- name: force change password
+  command: "chage -d 0 {{ user_dict.name }}"
+  when: created_user.changed
+
+- name: Add authorized keys
+  ansible.posix.authorized_key:
+    user: "{{ user_dict.name }}"
+    state: present
+    key: "{{ item }}"
+  loop: "{{ user_dict.public_keys }}"
+  when:
+    - user_dict.name is defined
+    - user_dict.comment is defined
+    - user_dict.public_keys is defined
