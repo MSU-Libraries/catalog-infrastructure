@@ -7,8 +7,8 @@ Provision:
     - msul-docker
   image: ubuntu:22.04
   variables:
-    - TZ: America/Detroit
-  pre_script:
+    TZ: America/Detroit
+  before_script:
     - apt update
     - apt install software-properties-common -y
     - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
