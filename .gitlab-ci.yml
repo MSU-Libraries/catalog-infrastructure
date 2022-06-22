@@ -6,9 +6,14 @@ Provision:
   tags:
     - msul-docker
   image: ubuntu:22.04
-  script:
+  variables:
+    - TZ: America/Detroit
+  pre_script:
     - apt update
     - apt install software-properties-common -y
+    - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+    - echo $TZ > /etc/timezone
+  script:
     - add-apt-repository --yes --update ppa:ansible/ansible
     - apt install moreutils gettext-base ansible -y
     - ansible-galaxy collection install community.general ansible.posix
