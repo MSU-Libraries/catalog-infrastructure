@@ -10,7 +10,7 @@ Provision:
     TZ: America/Detroit
   before_script:
     - apt update
-    - apt install software-properties-common curl gnupg -y
+    - apt install software-properties-common curl gnupg openssh-client -y
     - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
     - echo $TZ > /etc/timezone
     # Setting up ssh key
