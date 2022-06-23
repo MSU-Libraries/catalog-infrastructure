@@ -2,32 +2,6 @@
 
 ansible_python_interpreter: "/usr/bin/env python3"
 
-# Create users config
-create_users:
- - name: colli372
-   comment: 'Nathan Collins'
-   groups: sudo,adm,docker
-#   public_keys:
-#     - 
-
- - name: nepeta
-   comment: 'Renee McConahy'
-   groups: sudo,adm,docker
-#   public_keys:
-#     - 
-
- - name: schanzme
-   comment: 'Megan Schanz'
-   groups: sudo,adm,docker
-#   public_keys:
-#     - 
-
- - name: higgi135
-   comment: 'Devin Higgins'
-   groups: sudo,adm,docker
-#   public_keys:
-#     - 
-
 aws_credential_template: |
   [default]
   aws_access_key_id=$AWS_KEY

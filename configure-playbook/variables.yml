@@ -19,16 +19,11 @@ create_users:
  - name: schanzme
    comment: 'Megan Schanz'
    groups: sudo,adm,docker
-#   public_keys:
-#     - 
+   public_keys:
+     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsF77c1J8qixXUadOWV9v94XBxfvkirSHk7gxRL29I0 schanzme@ddas.devel
 
  - name: higgi135
    comment: 'Devin Higgins'
    groups: sudo,adm,docker
 #   public_keys:
 #     - 
-
-aws_credential_template: |
-  [default]
-  aws_access_key_id=$AWS_KEY
-  aws_secret_access_key=$AWS_SECRET

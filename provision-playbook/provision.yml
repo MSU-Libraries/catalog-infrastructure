@@ -11,13 +11,3 @@
 
   roles:
     - provision
-    - install-dependencies
-
-  tasks:
-    - name: Create users
-      include_role:
-        name: setup-user
-      loop: "{{ create_users }}"
-      loop_control:
-        loop_var: user_dict
-        label: "{{ user_dict.comment }}"
