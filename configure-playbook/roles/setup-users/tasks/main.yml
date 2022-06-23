@@ -14,7 +14,11 @@
     - user_dict.name is defined
     - user_dict.comment is defined
 
-- name: force change password
+- name: Remove the blank password for the user
+  command: "passwd -d {{ user_dict.name }}"
+  when: created_user.changed
+
+- name: Force change password
   command: "chage -d 0 {{ user_dict.name }}"
   when: created_user.changed
 
