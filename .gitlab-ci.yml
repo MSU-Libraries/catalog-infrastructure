@@ -20,6 +20,8 @@ Provision:
   tags:
     - msul-docker
   image: $CI_REGISTRY_IMAGE/ansible:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
   variables:
     TZ: America/Detroit
   before_script:
