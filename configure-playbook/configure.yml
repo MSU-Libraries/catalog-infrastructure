@@ -5,6 +5,7 @@
   gather_facts: false
   become: true
   become_user: root
+  remote_user: ansible
   
   vars_files:
     - variables.yml
