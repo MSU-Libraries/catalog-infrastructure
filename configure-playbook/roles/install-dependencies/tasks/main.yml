@@ -4,4 +4,4 @@
   apt:
     name: docker.io
     state: present
-    lock_timeout: -1
+    lock_timeout: 999999

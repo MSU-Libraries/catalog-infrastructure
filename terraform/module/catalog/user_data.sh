@@ -7,8 +7,8 @@ sudo -Hsu ansible -- <<-ANSIBLE
 	cd
 	umask 077
 	mkdir .ssh
-	echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChaBRQuzsZVT4S2/yYiahfam7IDAVx42YJOoOpc2fYy ansible@ansible.lib.msu.edu" > .ssh/authorized_keys
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/zR2A5bIaQPc3mBsj3ZqRxQ6OwH+GlNIF68UzIH9gu ansible@gitlab-runner.lib.msu.edu" > .ssh/authorized_keys
+	echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChaBRQuzsZVT4S2/yYiahfam7IDAVx42YJOoOpc2fYy ansible@ansible.lib.msu.edu" >> .ssh/authorized_keys
+    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/zR2A5bIaQPc3mBsj3ZqRxQ6OwH+GlNIF68UzIH9gu ansible@gitlab-runner.lib.msu.edu" >> .ssh/authorized_keys
 ANSIBLE
 
 ### Install packages required for mail configuration 
