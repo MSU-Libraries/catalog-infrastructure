@@ -27,6 +27,10 @@
       {{ tf.outputs.catalog_b_public_ip.value }}
       {{ tf.outputs.catalog_c_public_ip.value }}
 
+- name: Pause for 20 seconds to start servers
+  ansible.builtin.pause:
+    seconds: 20
+
 - name: Add to known hosts file
   ansible.builtin.shell: >
       ssh-keyscan {{ tf.outputs.catalog_a_public_ip.value }} >> ~/.ssh/known_hosts && 
