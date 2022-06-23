@@ -1,35 +1,34 @@
 stages:
+  - build
   - provision
+
+Build Base Image:
+  stage: build:
+  tags:
+    - msul-docker
+  rules:
+    - if: '$CI_PIPELINE_SOURCE' == "schedule"
+  image: docker:19.03
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build  -t $CI_REGISTRY_IMAGE/ansible:latest --cache-from $CI_REGISTRY_IMAGE/ansible:latest .
+    - docker push $CI_REGISTRY_IMAGE/ansible:latest
 
 Provision:
   stage: provision
   tags:
     - msul-docker
-  image: ubuntu:22.04
+  image: $CI_REGISTRY_IMAGE/ansible:latest
   variables:
     TZ: America/Detroit
   before_script:
-    - apt update
-    - apt install software-properties-common curl gnupg openssh-client -y
-    - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
-    - echo $TZ > /etc/timezone
     # Setting up ssh key
     - eval $( ssh-agent -s )
     - echo "$ANSIBLE_PRIVATE_KEY" | base64 -d | ssh-add -
     - install -d -m 700 ~/.ssh/
     - ( umask 022; touch ~/.ssh/known_hosts )
   script:
-    # Install Ansible
-    - add-apt-repository --yes --update ppa:ansible/ansible
-    - apt install moreutils gettext-base ansible pip -y
-    # Installing specific version of resolvelib to fix:
-    # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
-    - pip install -Iv 'resolvelib<0.6.0'
-    - ansible-galaxy collection install community.general ansible.posix
-    # Install Terraform
-    - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
-    - add-apt-repository --yes --update "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" 
-    - apt-get install terraform
     # Run the playbooks to provision and configure
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
