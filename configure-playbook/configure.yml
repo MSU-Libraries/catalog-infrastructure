@@ -16,7 +16,7 @@
   tasks:
     - name: Create users
       include_role:
-        name: setup-user
+        name: setup-users
       loop: "{{ create_users }}"
       loop_control:
         loop_var: user_dict
