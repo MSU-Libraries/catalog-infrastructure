@@ -1,7 +1,7 @@
 ---
 
-- name: Provision catalog servers
-  hosts: localhost
+- name: Configure catalog servers
+  hosts: all
   gather_facts: false
   become: true
   become_user: root
@@ -10,7 +10,6 @@
     - variables.yml
 
   roles:
-    - provision
     - install-dependencies
 
   tasks:

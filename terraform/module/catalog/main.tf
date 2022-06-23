@@ -179,5 +179,6 @@ resource "aws_instance" "catalog_instance" {
     ignore_changes = [
       user_data,
     ]
+    prevent_destroy = true
   }
 }

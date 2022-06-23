@@ -13,6 +13,11 @@ Provision:
     - apt install software-properties-common curl gnupg -y
     - ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
     - echo $TZ > /etc/timezone
+    # Setting up ssh key
+    - eval $( ssh-agent -s )
+    - echo "$ANSIBLE_PRIVATE_KEY" | base64 -d | ssh-add -
+    - install -d -m 700 ~/.ssh/
+    - ( umask 022; touch ~/.ssh/known_hosts )
   script:
     # Install Ansible
     - add-apt-repository --yes --update ppa:ansible/ansible
@@ -25,6 +30,7 @@ Provision:
     - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
     - add-apt-repository --yes --update "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" 
     - apt-get install terraform
-    # Run the playbook
+    # Run the playbooks to provision and configure
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
+    - ansible-playbook configure-playbook/configure.yml
