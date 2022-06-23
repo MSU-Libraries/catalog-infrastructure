@@ -3,11 +3,11 @@ stages:
   - provision
 
 Build Base Image:
-  stage: build:
+  stage: build
   tags:
     - msul-docker
   rules:
-    - if: '$CI_PIPELINE_SOURCE' == "schedule"
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
   image: docker:19.03
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
