@@ -179,6 +179,6 @@ resource "aws_instance" "catalog_instance" {
     ignore_changes = [
       user_data,
     ]
-    prevent_destroy = true
+   #prevent_destroy = true # We'll add this back in once we're keeping servers up consistently
   }
 }
