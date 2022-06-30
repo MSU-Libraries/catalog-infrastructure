@@ -31,6 +31,7 @@ Provision:
     - install -d -m 700 ~/.ssh/
     - ( umask 022; touch ~/.ssh/known_hosts )
   script:
+    - apt install python3-netaddr -y
     # Clone the setup playbook
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup configure-playbook/playbook-ubuntu-setup/
     # Run the playbooks to provision and configure
