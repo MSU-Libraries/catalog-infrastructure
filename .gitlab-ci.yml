@@ -33,6 +33,8 @@ Provision:
   script:
     # Clone the setup playbook
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup playbook-ubuntu-setup/
+    - ls playbook-ubuntu-setup/
+    - pwd
     # Run the playbooks to provision and configure
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
