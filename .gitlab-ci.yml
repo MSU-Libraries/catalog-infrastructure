@@ -32,7 +32,6 @@ Provision:
     - ( umask 022; touch ~/.ssh/known_hosts )
   script:
     # Clone the setup playbook
-    - apt install git -y # TODO remove, it's in docker file
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup playbook-ubuntu-setup/
     # Run the playbooks to provision and configure
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml

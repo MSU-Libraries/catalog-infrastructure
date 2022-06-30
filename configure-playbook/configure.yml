@@ -12,7 +12,6 @@
 
   roles:
     - install-dependencies
-    - configure
 
   tasks:
     - name: Create users
@@ -22,3 +21,6 @@
       loop_control:
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
+
+- name: Call setup playbook
+  ansible.builtin.import_playbook: playbook-ubuntu-setup/runsetup.yml
