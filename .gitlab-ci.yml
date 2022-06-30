@@ -31,12 +31,12 @@ Provision:
     - install -d -m 700 ~/.ssh/
     - ( umask 022; touch ~/.ssh/known_hosts )
   script:
-    - ssh ansible@174.129.10.11 echo "hi from server" -vvv
     # Clone the setup playbook
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup configure-playbook/playbook-ubuntu-setup/
     # Run the playbooks to provision and configure
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
+    - ssh ansible@174.129.10.11 echo "hi from server" -vvv
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
     - echo "Success! Servers are now accessible with the following IPs"
     - cat configure-playbook/hosts
