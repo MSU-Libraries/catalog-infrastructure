@@ -12,6 +12,7 @@
 
   roles:
     - install-dependencies
+    - configure
 
   tasks:
     - name: Create users
