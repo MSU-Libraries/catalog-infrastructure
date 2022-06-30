@@ -23,4 +23,5 @@
         label: "{{ user_dict.comment }}"
 
 - name: Call setup playbook
+  remote_user: ansible
   ansible.builtin.import_playbook: playbook-ubuntu-setup/runsetup.yml
