@@ -1,15 +1,22 @@
 #!/bin/bash
 
+### Setup root user
+sudo -Hsu root -- <<-ROOT
+    install -d -m 0700 /root/.ssh
+    echo "***REMOVED***" >> /root/.ssh/authorized_keys
+    chmod 0600 /root/.ssh/authorized_keys
+ROOT
+
 ### Create ansible user
-sudo useradd -m -u 4444 -s /bin/bash ansible
-sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-sudo -Hsu ansible -- <<-ANSIBLE
-	cd
-	umask 077
-	mkdir .ssh
-	echo "***REMOVED***" >> .ssh/authorized_keys
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/zR2A5bIaQPc3mBsj3ZqRxQ6OwH+GlNIF68UzIH9gu ansible@gitlab-runner.lib.msu.edu" >> .ssh/authorized_keys
-ANSIBLE
+#sudo useradd -m -u 4444 -s /bin/bash ansible
+#sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+#sudo -Hsu ansible -- <<-ANSIBLE
+#	cd
+#	umask 077
+#	mkdir .ssh
+#	echo "***REMOVED***" >> .ssh/authorized_keys
+#    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/zR2A5bIaQPc3mBsj3ZqRxQ6OwH+GlNIF68UzIH9gu ansible@gitlab-runner.lib.msu.edu" >> .ssh/authorized_keys
+#ANSIBLE
 
 ### Install packages required for mail configuration 
 sudo -Hs -- <<-POSTSETUP
