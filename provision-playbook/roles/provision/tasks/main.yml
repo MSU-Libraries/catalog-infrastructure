@@ -23,8 +23,6 @@
   copy:
     dest: "../configure-playbook/hosts"
     content: |
-      [all:vars]
-      ansible_user=ansible
       [all]
       {{ tf.outputs.catalog_a_public_ip.value }}
       {{ tf.outputs.catalog_b_public_ip.value }}
