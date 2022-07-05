@@ -1,7 +1,9 @@
 ---
 
-- name: Install docker
+- name: Install apt packages
   apt:
-    name: docker.io
+    pkg: 
+      - docker.io
+      - python3-docker
     state: present
     lock_timeout: 999999
