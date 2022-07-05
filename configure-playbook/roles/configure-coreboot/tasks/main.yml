@@ -1,7 +1,4 @@
 ---
-- debug:
-    msg: "{{ ansible_play_hosts_all.index(inventory_hostname) }}"
-
 - name: Copy coreboot config
   ansible.builtin.template:
     src: roles/configure/templates/coreboot.j2

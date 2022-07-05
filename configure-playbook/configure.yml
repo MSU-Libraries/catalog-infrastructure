@@ -9,7 +9,7 @@
 
   roles:
     - install-dependencies
-    - configure
+    - configure-coreboot
 
   tasks:
     - name: Create users
