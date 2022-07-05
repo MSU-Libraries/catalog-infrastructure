@@ -82,6 +82,10 @@ output "catalog_a_instance_id" {
   value = module.catalog_a.instance_id
 }
 
+output "catalog_a_fqdn" {
+  value = module.catalog_a.fqdn
+}
+
 output "catalog_a_public_ip" {
   value = module.catalog_a.public_ip
 }
@@ -90,12 +94,20 @@ output "catalog_b_instance_id" {
   value = module.catalog_b.instance_id
 }
 
+output "catalog_b_fqdn" {
+  value = module.catalog_b.fqdn
+}
+
 output "catalog_b_public_ip" {
   value = module.catalog_b.public_ip
 }
 
 output "catalog_c_instance_id" {
   value = module.catalog_c.instance_id
+}
+
+output "catalog_c_fqdn" {
+  value = module.catalog_c.fqdn
 }
 
 output "catalog_c_public_ip" {

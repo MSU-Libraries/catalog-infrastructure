@@ -146,6 +146,16 @@ resource "aws_eip" "catalog_eip" {
   }
 }
 
+# Create a hostname for the public IP for this catalog machine
+resource "aws_route53_record" "catalog_dnsrec" {
+  # Zone: aws.lib.msu.edu
+  zone_id = "Z0159018169CCNUQINNQG"
+  name    = "${var.server_name}.aws.lib.msu.edu"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_eip.catalog_eip.public_ip]
+}
+
 # Create an EC2 virtual machine instance containing the network device
 resource "aws_instance" "catalog_instance" {
   ami = var.aws_ami
