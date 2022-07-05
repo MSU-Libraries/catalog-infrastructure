@@ -4,6 +4,12 @@ output "instance_id" {
   value       = aws_instance.catalog_instance.id
 }
 
+# Domain name of machine created during provisioning
+output "fqdn" {
+  description = "AWS Instance Hostname"
+  value       = aws_route53_record.catalog_dnsrec.fqdn
+}
+
 # The public IP assigned during provisioning
 output "public_ip" {
   description = "AWS Instance Public IP"
