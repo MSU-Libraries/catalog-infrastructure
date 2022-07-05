@@ -12,11 +12,13 @@
 - debug:
     msg: "{{ ansible_default_ipv4.address }}"
 
+- debug:
+    msg: "{{ lookup(inventory_hostname[0]) }}"
 
-- name: Join swarm
-  community.docker.docker_swarm:
-    state: join
-    advertise_addr: ""
-    join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
-    remote_addrs: [ '' ]
-  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
+#- name: Join swarm
+#  community.docker.docker_swarm:
+#    state: join
+#    advertise_addr: "{{ lookup(inventory_hostname[0]) }}"
+#    join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
+#    remote_addrs: [ '' ]
+#  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
