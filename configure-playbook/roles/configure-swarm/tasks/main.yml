@@ -1,0 +1,22 @@
+---
+
+- name: Initialize swarm
+  delegate_to: "{{ ansible_play_hosts_all[0] }}"
+  community.docker.docker_swarm:
+    state: present
+  register: swarm_data
+
+- debug:
+    msg: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
+
+- debug:
+    msg: "{{ ansible_default_ipv4.address }}"
+
+
+- name: Join swarm
+  community.docker.docker_swarm:
+    state: join
+    advertise_addr: ""
+    join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
+    remote_addrs: [ '' ]
+  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
