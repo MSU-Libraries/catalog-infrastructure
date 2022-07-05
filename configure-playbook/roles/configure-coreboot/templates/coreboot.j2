@@ -3,7 +3,7 @@
 # Multiple ranges can be specified using a comma delimited list
 # Default: never
 #REBOOT_TIMES=never
-REBOOT_TIMES={{ ansible_play_hosts_all.index(inventory_hostname)* 2 + 1 }}pm-{{ ansible_play_hosts_all.index(inventory_hostname)* 2 + 2 }}pm
+REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 1 }}pm-{{ (ansible_play_hosts_all.index(inventory_hostname)+ 1) * 2 + 2 }}pm
 
 # Prevent a reboot if any of the following processes are detected running (comma delimited list)
 # Can be just the command name (rsync) or a specific command invocation (mysqldump -u root --all-databases)
