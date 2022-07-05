@@ -17,7 +17,7 @@ RUN add-apt-repository --yes --update ppa:ansible/ansible && \
     # Installing specific version of resolvelib to fix:
     # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
     pip install -Iv 'resolvelib<0.6.0' && \
-    ansible-galaxy collection install community.general ansible.posix && \
+    ansible-galaxy collection install community.general ansible.posix community.docker && \
     # Install Terraform
     curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
     add-apt-repository --yes --update "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"  && \
