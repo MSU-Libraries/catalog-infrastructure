@@ -5,14 +5,14 @@
   community.docker.docker_swarm:
     state: present
   register: swarm_data
-  when: {{ ansible_play_hosts_all.index(inventory_hostname) == 0 }}
+  when: ansible_play_hosts_all.index(inventory_hostname) == 0
 
 - name: Set Join token
   ansible.builtin.set_fact:
     join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
   delegate_to: localhost
   delegate_facts: true
-  when: {{ ansible_play_hosts_all.index(inventory_hostname) == 0 }}
+  when: ansible_play_hosts_all.index(inventory_hostname) == 0
 
 - debug:
     msg: "{{ join_token }}"
