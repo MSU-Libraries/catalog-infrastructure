@@ -21,11 +21,3 @@
       loop_control:
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
-
-#- name: Call setup playbook
-#  ansible.builtin.import_playbook: playbook-ubuntu-setup/runsetup.yml
-
-# TODO normally the ubuntu-setup playbook would add known_hosts entries on the
-#   ansible server itself.
-#       - How can we still do this?
-#       - Is it trying to do that on the git-runner docker image?

@@ -32,14 +32,14 @@ Provision:
     - ( umask 022; touch ~/.ssh/known_hosts )
     - ssh-keyscan ansible.lib.msu.edu >> ~/.ssh/known_hosts
   script:
-    # Clone the setup playbook
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup configure-playbook/playbook-ubuntu-setup/
-    # Run the playbooks to provision and configure
+    # Run the playbook to provision
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
+    # Run the Ubuntu setup playbook
     - scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts
     - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts"
     - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml"
+    # Run the configure playbook
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
     - echo "Success! Servers are now accessible with the following IPs"
     - cat configure-playbook/hosts

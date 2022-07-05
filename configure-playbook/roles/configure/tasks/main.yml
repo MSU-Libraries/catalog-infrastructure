@@ -1,4 +1,0 @@
----
-
-- name: Call setup playbook
-  ansible.builtin.import_playbook: playbook-ubuntu-setup/runsetup.yml

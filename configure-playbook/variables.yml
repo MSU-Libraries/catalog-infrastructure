@@ -27,3 +27,9 @@ create_users:
    groups: sudo,adm,docker
 #   public_keys:
 #     - 
+
+ - name: deploy
+   comment: 'Deploy'
+   groups: docker
+   public_keys:
+     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMx3hungOFLbay9EXucJLbI031/NTQla3f68knxyYi/o deploy@catalog
