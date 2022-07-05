@@ -3,15 +3,13 @@
 - name: Configure catalog servers
   hosts: all
   gather_facts: false
-  #become: true
-  #become_user: root
-  #remote_user: root
   
   vars_files:
     - variables.yml
 
   roles:
     - install-dependencies
+    - configure
 
   tasks:
     - name: Create users
