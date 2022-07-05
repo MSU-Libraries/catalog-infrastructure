@@ -1,7 +1,7 @@
 ---
 - name: Copy coreboot config
   ansible.builtin.template:
-    src: roles/configure/templates/coreboot.j2
+    src: coreboot.j2
     dest: /etc/coreboot.cfg
     owner: root
     group: root
