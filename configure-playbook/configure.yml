@@ -10,6 +10,7 @@
   roles:
     - install-dependencies
     - configure-coreboot
+    - configure-swarm
 
   tasks:
     - name: Create users
