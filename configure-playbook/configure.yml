@@ -19,3 +19,6 @@
       loop_control:
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
+
+- name: Call coreboot playbook
+  ansible.builtin.import_playbook: playbook-conditional-reboot/playbook-setup-only.yml

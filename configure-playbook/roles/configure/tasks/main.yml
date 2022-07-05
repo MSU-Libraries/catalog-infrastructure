@@ -1,8 +1,4 @@
 ---
-
-- name: Call coreboot playbook
-  ansible.builtin.import_playbook: playbook-conditional-reboot/playbook-setup-only.yml
-
 - debug:
     msg: "{{ ansible_play_hosts_all.index(inventory_hostname) }}"
 
