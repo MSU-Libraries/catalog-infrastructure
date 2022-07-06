@@ -19,7 +19,6 @@
       join_token: "{{ join_token }}"
   delegate_to: "{{ item }}"
   delegate_facts: true
-  when: ansible_play_hosts_all.index(inventory_hostname) != 0
   loop: "{{ ansible_play_hosts_all }} "
 
 - debug:
