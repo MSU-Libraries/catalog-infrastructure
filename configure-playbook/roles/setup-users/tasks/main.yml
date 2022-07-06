@@ -5,6 +5,8 @@
     database: passwd
     key: "{{ user_dict.name }}"
     fail_key: no
+  when:
+  - user_dict.name is defined
 
 - name: Create user
   user:
@@ -16,17 +18,20 @@
     append: yes
   register: created_user
   when:
-    - getent_passwd[user_dict.name] != None
-    - user_dict.name is defined
-    - user_dict.comment is defined
+  - user_dict.name is defined
+  - user_dict.comment is defined
 
 - name: Remove the blank password for the user
   command: "passwd -d {{ user_dict.name }}"
-  when: created_user.changed
+  when:
+  - getent_passwd[user_dict.name] == None
+  - created_user.changed
 
 - name: Force change password
   command: "chage -d 0 {{ user_dict.name }}"
-  when: created_user.changed
+  when:
+  - getent_passwd[user_dict.name] == None
+  - created_user.changed
 
 - name: Add authorized keys
   ansible.posix.authorized_key:
@@ -35,6 +40,6 @@
     key: "{{ item }}"
   loop: "{{ user_dict.public_keys }}"
   when:
-    - user_dict.name is defined
-    - user_dict.comment is defined
-    - user_dict.public_keys is defined
+  - user_dict.name is defined
+  - user_dict.comment is defined
+  - user_dict.public_keys is defined
