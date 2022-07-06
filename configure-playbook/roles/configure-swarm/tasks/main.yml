@@ -28,5 +28,5 @@
   community.docker.docker_swarm:
     state: join
     join_token: "{{ join_token }}"
-    remote_addrs: [ "{{ remote_addr }}:2337" ]
+    remote_addrs: [ "{{ remote_addr }}:2377" ]
   when: ansible_play_hosts_all.index(inventory_hostname) != 0
