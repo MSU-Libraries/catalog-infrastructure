@@ -28,4 +28,4 @@
     advertise_addr: "{{ lookup('community.general.dig', inventory_hostname) }}"
     join_token: "{{ join_token }}"
     remote_addrs: [ "{{ lookup('community.general.dig', ansible_play_hosts_all[0]) }}" ]
-  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
+  when: ansible_play_hosts_all.index(inventory_hostname) != 0
