@@ -5,7 +5,7 @@ ENV TZ=America/Detroit
 
 # Perform updates
 RUN apt update && \
-    apt install software-properties-common curl gnupg openssh-client git python3-netaddr -y
+    apt install software-properties-common curl gnupg openssh-client git python3-netaddr python-dnspython -y
 
 # Setup Timezone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
