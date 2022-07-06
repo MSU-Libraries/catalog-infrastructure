@@ -37,10 +37,10 @@ Provision:
     # Run the playbook to provision
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
-    # Run the Ubuntu setup playbook # TODO temporarily commenting out to speed up pipeline
-    #- scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts
-    #- ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts"
-    #- ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml"
+    # Run the Ubuntu setup playbook
+    - scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts
+    - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts"
+    - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml"
     # Run the configure playbook
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
     - echo "Success! Servers are now accessible with the following IPs"

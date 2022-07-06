@@ -12,17 +12,13 @@ module "mail" {
   mail_instance = "catalog-prod"
 }
 
-module "catalog_a" {
+module "catalog" {
   source = "../../module/catalog"
-  server_name = "catalog-a"
+  cluster_name = "catalog"
   aws_region = "us-east-1"
-  aws_availability_zone = "a"
-  aws_ami = "ami-052efd3df9dad4825"
   smtp_host = module.mail.smtp_host
   smtp_user = module.mail.smtp_username
   smtp_password = module.mail.smtp_password
-  aws_instance_type = "t3a.large"
-  aws_root_block_size = 16
   net_allow_inbound_ssh = [
     "35.8.220.0/22",
   ]
@@ -32,84 +28,69 @@ module "catalog_a" {
   net_allow_inbound_web = [
     "0.0.0.0/0",
   ]
-}
-
-module "catalog_b" {
-  source = "../../module/catalog"
-  server_name = "catalog-b"
-  aws_region = "us-east-1"
-  aws_availability_zone = "b"
-  aws_ami = "ami-052efd3df9dad4825"
-  smtp_host = module.mail.smtp_host
-  smtp_user = module.mail.smtp_username
-  smtp_password = module.mail.smtp_password
-  aws_instance_type = "t3a.large"
-  aws_root_block_size = 16
-  net_allow_inbound_ssh = [
-    "35.8.220.0/22",
-  ]
-  net_allow_inbound_ncpa = [
-    "35.8.220.0/22",
-  ]
-  net_allow_inbound_web = [
-    "0.0.0.0/0",
-  ]
-}
-
-module "catalog_c" {
-  source = "../../module/catalog"
-  server_name = "catalog-c"
-  aws_region = "us-east-1"
-  aws_availability_zone = "c"
-  aws_ami = "ami-052efd3df9dad4825"
-  smtp_host = module.mail.smtp_host
-  smtp_user = module.mail.smtp_username
-  smtp_password = module.mail.smtp_password
-  aws_instance_type = "t3a.large"
-  aws_root_block_size = 16
-  net_allow_inbound_ssh = [
-    "35.8.220.0/22",
-  ]
-  net_allow_inbound_ncpa = [
-    "35.8.220.0/22",
-  ]
-  net_allow_inbound_web = [
-    "0.0.0.0/0",
-  ]
+  nodes = {
+    "a" = {
+      server_name = "catalog-a"
+      aws_availability_zone = "a"
+      aws_ami = "ami-052efd3df9dad4825"
+      aws_instance_type = "t3a.large"
+      aws_root_block_size = 16
+      private_ip = "10.0.0.10"
+      subnet_cidr = "10.0.0.0/24"
+    }
+    "b" = {
+      server_name = "catalog-b"
+      aws_availability_zone = "b"
+      aws_ami = "ami-052efd3df9dad4825"
+      aws_instance_type = "t3a.large"
+      aws_root_block_size = 16
+      private_ip = "10.0.1.10"
+      subnet_cidr = "10.0.1.0/24"
+    }
+    "c" = {
+      server_name = "catalog-c"
+      aws_availability_zone = "c"
+      aws_ami = "ami-052efd3df9dad4825"
+      aws_instance_type = "t3a.large"
+      aws_root_block_size = 16
+      private_ip = "10.0.2.10"
+      subnet_cidr = "10.0.2.0/24"
+    }
+  }
 }
 
 output "catalog_a_instance_id" {
-  value = module.catalog_a.instance_id
+  value = module.catalog.instance_ids[0]
 }
 
 output "catalog_a_fqdn" {
-  value = module.catalog_a.fqdn
+  value = module.catalog.fqdns[0]
 }
 
 output "catalog_a_public_ip" {
-  value = module.catalog_a.public_ip
+  value = module.catalog.public_ips[0]
 }
 
 output "catalog_b_instance_id" {
-  value = module.catalog_b.instance_id
+  value = module.catalog.instance_ids[1]
 }
 
 output "catalog_b_fqdn" {
-  value = module.catalog_b.fqdn
+  value = module.catalog.fqdns[1]
 }
 
 output "catalog_b_public_ip" {
-  value = module.catalog_b.public_ip
+  value = module.catalog.public_ips[1]
 }
 
 output "catalog_c_instance_id" {
-  value = module.catalog_c.instance_id
+  value = module.catalog.instance_ids[2]
 }
 
 output "catalog_c_fqdn" {
-  value = module.catalog_c.fqdn
+  value = module.catalog.fqdns[2]
 }
 
 output "catalog_c_public_ip" {
-  value = module.catalog_c.public_ip
+  value = module.catalog.public_ips[2]
 }
