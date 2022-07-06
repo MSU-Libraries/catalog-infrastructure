@@ -2,7 +2,7 @@
 
 - name: Configure catalog servers
   hosts: all
-  gather_facts: false
+  gather_facts: true
   
   vars_files:
     - variables.yml
