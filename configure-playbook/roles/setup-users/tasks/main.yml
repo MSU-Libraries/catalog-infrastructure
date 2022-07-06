@@ -1,16 +1,22 @@
 ---
 
+- name: Check if user exists
+  getent:
+    database: passwd
+    key: "{{ user_dict.name }}"
+    fail_key: no
+
 - name: Create user
   user:
     name: "{{ user_dict.name }}"
     comment: "{{ user_dict.comment }}"
     state: present
     shell: /bin/bash
-    update_password: on_create
     groups: "{{ user_dict.groups }}"
     append: yes
   register: created_user
   when:
+    - getent_passwd[user_dict.name] != None
     - user_dict.name is defined
     - user_dict.comment is defined
 
