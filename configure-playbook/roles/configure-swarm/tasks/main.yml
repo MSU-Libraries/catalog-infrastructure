@@ -1,5 +1,25 @@
 ---
 
+- name: Allow swarm communication through UFW (2377/tcp)
+  ufw:
+    rule: allow
+    from: 10.0.0.0/16
+    proto: tcp
+    port: '2377'
+
+- name: Allow swarm communication through UFW (7946/any)
+  ufw:
+    rule: allow
+    from: 10.0.0.0/16
+    port: '7946'
+
+- name: Allow swarm communication through UFW (4789/udp)
+  ufw:
+    rule: allow
+    from: 10.0.0.0/16
+    proto: udp
+    port: '4789'
+
 - name: Initialize swarm
   delegate_to: "{{ ansible_play_hosts_all[0] }}"
   community.docker.docker_swarm:
