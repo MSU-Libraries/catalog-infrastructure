@@ -8,7 +8,7 @@
   when: ansible_play_hosts_all.index(inventory_hostname) == 0
 
 - debug:
-    msg: "{{ lookup(inventory_hostname[0]) }}"
+    msg: "{{ lookup(inventory_hostname) }}"
     
 - name: Set join token
   ansible.builtin.set_fact:
