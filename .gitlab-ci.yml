@@ -42,7 +42,6 @@ Provision:
     #- ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts"
     #- ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml"
     # Run the configure playbook
-    - apt install python3-dnspython -y
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
     - echo "Success! Servers are now accessible with the following IPs"
     - cat configure-playbook/hosts

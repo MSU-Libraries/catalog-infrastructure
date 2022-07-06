@@ -6,9 +6,6 @@
     state: present
   register: swarm_data
   when: ansible_play_hosts_all.index(inventory_hostname) == 0
-
-- debug:
-    msg: "{{ lookup('community.general.dig', inventory_hostname) }}"
     
 - name: Set join token
   ansible.builtin.set_fact:
@@ -18,21 +15,17 @@
   loop: "{{ ansible_play_hosts_all }} "
   when: ansible_play_hosts_all.index(inventory_hostname) == 0
 
-#- name: Propogate join token
-#  ansible.builtin.set_fact:
-#      join_token: "{{ join_token }}"
-#  delegate_to: "{{ item }}"
-#  delegate_facts: true
-#  loop: "{{ ansible_play_hosts_all }} "
-#  when: ansible_play_hosts_all.index(inventory_hostname) == 0
-
 - debug:
     msg: "{{ join_token }}"
+- debug:
+    msg: "{{ lookup('community.general.dig', inventory_hostname) }}"
+- debug:
+    msg: "{{ lookup('community.general.dig', ansible_play_hosts_all[0]) }}"
 
-#- name: Join swarm
-#  community.docker.docker_swarm:
-#    state: join
-#    advertise_addr: "{{ lookup(inventory_hostname[0]) }}"
-#    join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
-#    remote_addrs: [ '' ]
-#  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
+- name: Join swarm
+  community.docker.docker_swarm:
+    state: join
+    advertise_addr: "{{ lookup('community.general.dig', inventory_hostname) }}"
+    join_token: "{{ join_token }}"
+    remote_addrs: [ "{{ lookup('community.general.dig', ansible_play_hosts_all[0]) }}" ]
+  when: {{ ansible_play_hosts_all.index(inventory_hostname) != 0 }}
