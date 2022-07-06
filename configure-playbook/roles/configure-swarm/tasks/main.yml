@@ -6,26 +6,27 @@
     state: present
   register: swarm_data
   when: ansible_play_hosts_all.index(inventory_hostname) == 0
-    
-- name: Set join token
+
+- name: Get internal IP for swarm nodes to join to
+  set_fact:
+    swarm_join_ip: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when:
+  - ansible_play_hosts_all.index(inventory_hostname) == 0
+  - item.startswith('10.0.')
+
+- name: Set variables needed for joining swarm
   ansible.builtin.set_fact:
     join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
+    remote_addr: "{{ swarm_join_ip }}"
   delegate_to: "{{ item }}"
   delegate_facts: true
   loop: "{{ ansible_play_hosts_all }} "
   when: ansible_play_hosts_all.index(inventory_hostname) == 0
 
-- debug:
-    msg: "{{ join_token }}"
-- debug:
-    msg: "{{ lookup('community.general.dig', inventory_hostname) }}"
-- debug:
-    msg: "{{ lookup('community.general.dig', ansible_play_hosts_all[0]) }}"
-
 - name: Join swarm
   community.docker.docker_swarm:
     state: join
-    advertise_addr: "{{ lookup('community.general.dig', inventory_hostname) }}"
     join_token: "{{ join_token }}"
-    remote_addrs: [ "{{ lookup('community.general.dig', ansible_play_hosts_all[0]) }}:2337" ]
+    remote_addrs: [ "{{ remote_addr }}:2337" ]
   when: ansible_play_hosts_all.index(inventory_hostname) != 0
