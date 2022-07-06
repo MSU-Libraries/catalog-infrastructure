@@ -8,7 +8,7 @@
   when:
   - user_dict.name is defined
 
-- name: Create user
+- name: Create/update user
   user:
     name: "{{ user_dict.name }}"
     comment: "{{ user_dict.comment }}"
