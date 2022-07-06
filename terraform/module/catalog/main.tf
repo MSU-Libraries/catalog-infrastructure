@@ -1,4 +1,4 @@
-# Provider library needed to run (AWS for AWS EC2 in this case)
+# Provider library needed to run
 # To install: terraform init
 terraform {
   required_version = "~> 1.2.3"
@@ -19,7 +19,7 @@ provider "aws" {
 resource "aws_vpc" "catalog_vpc" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "${var.server_name}-vpc"
+    Name = "${var.cluster_name}-vpc"
   }
 }
 
@@ -28,7 +28,7 @@ resource "aws_internet_gateway" "catalog_gateway" {
   vpc_id = aws_vpc.catalog_vpc.id
 
   tags = {
-    Name = "${var.server_name}-gateway"
+    Name = "${var.cluster_name}-gateway"
   }
 }
 
@@ -46,31 +46,14 @@ resource "aws_route_table" "catalog_route_table" {
   }
 
   tags = {
-    Name = "${var.server_name}-route-table"
+    Name = "${var.cluster_name}-route-table"
   }
-}
-
-# Define a subnet within the VPN
-resource "aws_subnet" "catalog_subnet" {
-  vpc_id     = aws_vpc.catalog_vpc.id
-  cidr_block = "10.0.0.0/24"
-  availability_zone = "${var.aws_region}${var.aws_availability_zone}"
-
-  tags = {
-    Name = "${var.server_name}-subnet"
-  }
-}
-
-# Assign the subnet with the route table
-resource "aws_route_table_association" "catalog_rta_1" {
-  subnet_id      = aws_subnet.catalog_subnet.id
-  route_table_id = aws_route_table.catalog_route_table.id
 }
 
 # Set security rules to allow for inbound traffic (and allow outbound)
-resource "aws_security_group" "catalog_sg_allow_net" {
-  name        = "${var.server_name}-allow-net"
-  description = "Allow inbound net traffic"
+resource "aws_security_group" "security_group_public_net" {
+  name        = "${var.cluster_name}-public-net"
+  description = "Allow inbound traffic from public network"
   vpc_id      = aws_vpc.catalog_vpc.id
 
   ingress {
@@ -115,80 +98,73 @@ resource "aws_security_group" "catalog_sg_allow_net" {
   }
 
   tags = {
-    Name = "${var.server_name}-sg-allow-net"
+    Name = "${var.cluster_name}-sg-public-net"
   }
 }
 
-# Add a network device with IP to subnet and security group
-resource "aws_network_interface" "catalog_nic" {
-  subnet_id       = aws_subnet.catalog_subnet.id
-  private_ips     = ["10.0.0.10"]
-  security_groups = [aws_security_group.catalog_sg_allow_net.id]
+# Set security rules to allow for internal traffic to the VPC
+resource "aws_security_group" "security_group_private_net" {
+  name        = "${var.cluster_name}-private-net"
+  description = "Allow inbound traffic from private network"
+  vpc_id      = aws_vpc.catalog_vpc.id
+
+  ingress {
+    description      = "Docker Swarm Cluster Management"
+    from_port        = 2377
+    to_port          = 2377
+    protocol         = "tcp"
+    cidr_blocks      = ["10.0.0.0/16"]
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "Docker Swarm Node Communication (TCP)"
+    from_port        = 7946
+    to_port          = 7946
+    protocol         = "tcp"
+    cidr_blocks      = ["10.0.0.0/16"]
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "Docker Swarm Node Communication (UDP)"
+    from_port        = 7946
+    to_port          = 7946
+    protocol         = "udp"
+    cidr_blocks      = ["10.0.0.0/16"]
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "Docker Swarm Overlay Network Traffic"
+    from_port        = 4789
+    to_port          = 4789
+    protocol         = "udp"
+    cidr_blocks      = ["10.0.0.0/16"]
+    ipv6_cidr_blocks = []
+  }
 
   tags = {
-    Name = "${var.server_name}-nic"
+    Name = "${var.cluster_name}-sg-private-net"
   }
 }
 
-# Request a public IP (i.e. elastic IP) be assigned to the network device
-resource "aws_eip" "catalog_eip" {
-  vpc                       = true
-  network_interface         = aws_network_interface.catalog_nic.id
-  associate_with_private_ip = "10.0.0.10"
-  # Special case: Recommends explicitly indicating EIP dependencies for gateway and instance
-  depends_on = [
-    aws_internet_gateway.catalog_gateway,
-    aws_instance.catalog_instance
+module "nodes" {
+  for_each = var.nodes
+  source   = "../node"
+  security_group_ids = [
+    aws_security_group.security_group_public_net.id,
+    aws_security_group.security_group_private_net.id
   ]
-
-  tags = {
-    Name = "${var.server_name}-eip"
-  }
-}
-
-# Create a hostname for the public IP for this catalog machine
-resource "aws_route53_record" "catalog_dnsrec" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "${var.server_name}.aws.lib.msu.edu"
-  type    = "A"
-  ttl     = "300"
-  records = [aws_eip.catalog_eip.public_ip]
-}
-
-# Create an EC2 virtual machine instance containing the network device
-resource "aws_instance" "catalog_instance" {
-  ami = var.aws_ami
-  instance_type     = var.aws_instance_type
-  availability_zone = "${var.aws_region}${var.aws_availability_zone}"
-
-  tags = {
-    Name = "${var.server_name}-instance"
-  }
-
-  root_block_device {
-    volume_size = var.aws_root_block_size
-  }
-
-  network_interface {
-    device_index         = 0
-    network_interface_id = aws_network_interface.catalog_nic.id
-  }
-
-  # Script to run upon provisioning
-  user_data = templatefile("${path.module}/user_data.sh", 
-    {
-      smtp_host = var.smtp_host,
-      smtp_user = var.smtp_user,
-      smtp_password = var.smtp_password
-
-    }
-  )
-
-  lifecycle {
-    ignore_changes = [
-      user_data,
-    ]
-   #prevent_destroy = true # We'll add this back in once we're keeping servers up consistently
-  }
+  server_name = each.value.server_name
+  aws_instance_type = each.value.aws_instance_type
+  aws_root_block_size = each.value.aws_root_block_size
+  aws_region = var.aws_region
+  aws_availability_zone = each.value.aws_availability_zone
+  aws_ami = each.value.aws_ami
+  private_ip = each.value.private_ip
+  subnet_cidr = each.value.subnet_cidr
+  smtp_host = var.smtp_host
+  smtp_user = var.smtp_user
+  smtp_password = var.smtp_password
+  catalog_gateway = aws_internet_gateway.catalog_gateway
+  catalog_route_table_id = aws_route_table.catalog_route_table.id
+  vpc_id = aws_vpc.catalog_vpc.id
 }

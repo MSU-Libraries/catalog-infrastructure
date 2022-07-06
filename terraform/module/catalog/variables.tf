@@ -1,30 +1,10 @@
-variable "server_name" {
-  description = "Name of server used in vars"
-  type = string
-}
-
-variable "aws_instance_type" {
-  description = "AWS instance type"
-  type = string
-}
-
-variable "aws_root_block_size" {
-  description = "Size in GB of the root volume"
-  type = number
-}
-
 variable "aws_region" {
   description = "AWS region"
   type = string
 }
 
-variable "aws_availability_zone" {
-  description = "AWS availability zone"
-  type = string
-}
-
-variable "aws_ami" {
-  description = "AWS ami"
+variable "cluster_name" {
+  description = "Name of cluster to be used in vars"
   type = string
 }
 
@@ -56,4 +36,17 @@ variable "smtp_user" {
 variable "smtp_password" {
   description = "SMTP password"
   type = string
+}
+
+variable "nodes" {
+  description = "The list of variables used to create catalog nodes"
+  type = map(object({
+    server_name = string
+    aws_availability_zone = string
+    aws_ami = string
+    aws_instance_type = string
+    aws_root_block_size = number
+    private_ip = string
+    subnet_cidr = string
+  }))
 }
