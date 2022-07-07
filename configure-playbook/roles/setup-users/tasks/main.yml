@@ -40,7 +40,8 @@
     name: "{{ user_dict.name }}"
     password_lock: yes
   when:
-  - user_dict.pw_lock is defined && user_dict.pw_lock == true
+  - user_dict.pw_lock is defined
+  - user_dict.pw_lock == true
 
 - name: Add authorized keys
   ansible.posix.authorized_key:
