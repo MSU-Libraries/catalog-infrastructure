@@ -38,7 +38,7 @@
 - name: Lock password
   user:
     name: "{{ user_dict.name }}"
-    password_lock: true
+    password_lock: yes
   when:
   - user_dict.pw_lock is defined && user_dict.pw_lock == true
 
