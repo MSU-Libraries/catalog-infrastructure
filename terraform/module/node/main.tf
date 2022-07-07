@@ -93,11 +93,10 @@ resource "aws_instance" "node_instance" {
     }
   )
 
-  # TODO Commenting out to try and run user data on node replacement
-  #lifecycle {
-  #  ignore_changes = [
-  #    user_data,
-  #  ]
+  lifecycle {
+    ignore_changes = [
+      user_data,
+    ]
    #prevent_destroy = true # TODO We'll add this back in once we're keeping servers up consistently
-  #}
+  }
 }
