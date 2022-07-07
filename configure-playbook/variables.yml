@@ -33,3 +33,4 @@ create_users:
    groups: docker
    public_keys:
      - ***REMOVED***
+   pw_lock: true
