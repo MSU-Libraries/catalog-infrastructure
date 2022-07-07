@@ -26,14 +26,14 @@
   when:
   - getent_passwd[user_dict.name] == None
   - created_user.changed
-  - user_dict.pw_lock is not defined || user_dict.pw_lock == false
+  - user_dict.pw_lock is not defined or user_dict.pw_lock == false
 
 - name: Force change password
   command: "chage -d 0 {{ user_dict.name }}"
   when:
   - getent_passwd[user_dict.name] == None
   - created_user.changed
-  - user_dict.pw_lock is not defined || user_dict.pw_lock == false
+  - user_dict.pw_lock is not defined or user_dict.pw_lock == false
 
 - name: Lock password
   user:
