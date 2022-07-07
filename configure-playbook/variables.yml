@@ -33,3 +33,4 @@ create_users:
    groups: docker
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMx3hungOFLbay9EXucJLbI031/NTQla3f68knxyYi/o deploy@catalog
+   pw_lock: true
