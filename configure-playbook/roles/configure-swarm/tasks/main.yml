@@ -50,3 +50,9 @@
     join_token: "{{ join_token }}"
     remote_addrs: [ "{{ remote_addr }}:2377" ]
   when: ansible_play_hosts_all.index(inventory_hostname) != 0
+
+- name: Add node labels
+  community.docker.docker_node:
+    hostname: {{ inventory_hostname }}
+    labels:
+      nodeid: {{ ansible_play_hosts_all.index(inventory_hostname) }}
