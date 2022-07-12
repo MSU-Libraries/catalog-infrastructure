@@ -55,4 +55,4 @@
   community.docker.docker_node:
     hostname: "{{ inventory_hostname }}"
     labels:
-      nodeid: "{{ ansible_play_hosts_all.index(inventory_hostname) }}"
+      nodeid: "{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }}"
