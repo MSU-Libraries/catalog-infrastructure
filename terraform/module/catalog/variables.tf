@@ -3,6 +3,11 @@ variable "aws_region" {
   type = string
 }
 
+variable "vpc_cidr" {
+  description = "CIDR rangeto be used for AWS VPC"
+  type = string
+}
+
 variable "cluster_name" {
   description = "Name of cluster to be used in vars"
   type = string

@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "msulib-catalog-terraform-states"
+        bucket = "msulib-terraform-states"
         key    = "catalog/catalog-prod.tfstate"
         region = "us-east-2"
     }
@@ -16,6 +16,7 @@ module "catalog" {
   source = "../../module/catalog"
   cluster_name = "catalog"
   aws_region = "us-east-1"
+  vpc_cidr = "10.1.0.0/16"
   smtp_host = module.mail.smtp_host
   smtp_user = module.mail.smtp_username
   smtp_password = module.mail.smtp_password
@@ -35,8 +36,8 @@ module "catalog" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.large"
       aws_root_block_size = 16
-      private_ip = "10.0.0.10"
-      subnet_cidr = "10.0.0.0/24"
+      private_ip = "10.1.1.10"
+      subnet_cidr = "10.1.1.0/24"
     }
     "b" = {
       server_name = "catalog-b"
@@ -44,8 +45,8 @@ module "catalog" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.large"
       aws_root_block_size = 16
-      private_ip = "10.0.1.10"
-      subnet_cidr = "10.0.1.0/24"
+      private_ip = "10.1.2.10"
+      subnet_cidr = "10.1.2.0/24"
     }
     "c" = {
       server_name = "catalog-c"
@@ -53,8 +54,8 @@ module "catalog" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.large"
       aws_root_block_size = 16
-      private_ip = "10.0.2.10"
-      subnet_cidr = "10.0.2.0/24"
+      private_ip = "10.1.3.10"
+      subnet_cidr = "10.1.3.0/24"
     }
   }
 }
