@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "msulib-terraform-states"
+        bucket = "msulib-catalog-terraform-states"
         key    = "catalog/catalog-prod.tfstate"
         region = "us-east-2"
     }
