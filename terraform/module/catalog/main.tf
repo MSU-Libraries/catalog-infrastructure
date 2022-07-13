@@ -113,7 +113,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 2377
     to_port          = 2377
     protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.catalog_vpc.id]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -121,7 +121,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.catalog_vpc.id]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -129,7 +129,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "udp"
-    cidr_blocks      = [aws_vpc.catalog_vpc.id]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -137,7 +137,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 4789
     to_port          = 4789
     protocol         = "udp"
-    cidr_blocks      = [aws_vpc.catalog_vpc.id]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
 
