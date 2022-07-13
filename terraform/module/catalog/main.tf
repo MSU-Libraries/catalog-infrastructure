@@ -17,7 +17,7 @@ provider "aws" {
 
 # Define a virtual private cloud (VPC, essentially a private network)
 resource "aws_vpc" "catalog_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
   tags = {
     Name = "${var.cluster_name}-vpc"
   }
