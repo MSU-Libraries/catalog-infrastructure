@@ -3,20 +3,20 @@
 - name: Allow swarm communication through UFW (2377/tcp)
   ufw:
     rule: allow
-    from: 10.0.0.0/16
+    from: 10.1.0.0/16
     proto: tcp
     port: '2377'
 
 - name: Allow swarm communication through UFW (7946/any)
   ufw:
     rule: allow
-    from: 10.0.0.0/16
+    from: 10.1.0.0/16
     port: '7946'
 
 - name: Allow swarm communication through UFW (4789/udp)
   ufw:
     rule: allow
-    from: 10.0.0.0/16
+    from: 10.1.0.0/16
     proto: udp
     port: '4789'
 
@@ -33,7 +33,7 @@
   with_items: "{{ ansible_all_ipv4_addresses }}"
   when:
   - ansible_play_hosts_all.index(inventory_hostname) == 0
-  - item.startswith('10.0.')
+  - item.startswith('10.1.')
 
 - name: Set variables needed for joining swarm
   ansible.builtin.set_fact:
