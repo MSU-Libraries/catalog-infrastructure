@@ -4,9 +4,16 @@ ansible_python_interpreter: "/usr/bin/env python3"
 
 # Create users config
 create_users:
+ - name: deploy
+   comment: 'Deploy'
+   groups: docker
+   public_keys:
+     - ***REMOVED***
+   pw_lock: true
+
  - name: colli372
    comment: 'Nathan Collins'
-   groups: sudo,adm,docker
+   groups: sudo,adm,docker,deploy
 #   public_keys:
 #     - 
 
@@ -18,19 +25,12 @@ create_users:
 
  - name: schanzme
    comment: 'Megan Schanz'
-   groups: sudo,adm,docker
+   groups: sudo,adm,docker,deploy
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsF77c1J8qixXUadOWV9v94XBxfvkirSHk7gxRL29I0 schanzme@ddas.devel
 
  - name: higgi135
    comment: 'Devin Higgins'
-   groups: sudo,adm,docker
+   groups: sudo,adm,docker,deploy
 #   public_keys:
 #     - 
-
- - name: deploy
-   comment: 'Deploy'
-   groups: docker
-   public_keys:
-     - ***REMOVED***
-   pw_lock: true
