@@ -19,7 +19,7 @@ PREVENT_ACTIVE_USER_MINUTES=120
 # Note that this command should be able to be executed quickly, and repeatedly, as coreboot will
 # continually run this every minute while waiting for a reboot to become safe to do.
 # Default: (nothing)
-PREVENT_IF_SCRIPT_FAILS="[[ -d /tmp ]]"
+PREVENT_IF_SCRIPT_FAILS=
 
 # The TIME argument to pass to the shutdown command (see `man shutdown`)
 # Default of +1 (one minute delay until shutdown commences)

@@ -27,9 +27,9 @@
       {{ tf.outputs.catalog_b_fqdn.value }}
       {{ tf.outputs.catalog_c_fqdn.value }}
 
-- name: Pause for 20 seconds to start servers
+- name: Pause for 30 seconds for servers to start and DNS propagate
   ansible.builtin.pause:
-    seconds: 20
+    seconds: 30
 
 - name: Add to known hosts file
   ansible.builtin.shell: >
