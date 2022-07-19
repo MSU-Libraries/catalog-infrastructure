@@ -162,6 +162,7 @@ data "aws_iam_policy_document" "catalog_policy_perms" {
       "${aws_s3_bucket.catalog_bucket.arn}/*",
     ]
   }
+}
 
 # Define the IAM policy
 resource "aws_iam_policy" "catalog_bucket_policy" {
