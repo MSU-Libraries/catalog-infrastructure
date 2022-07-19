@@ -88,8 +88,9 @@ resource "aws_instance" "node_instance" {
     {
       smtp_host = var.smtp_host,
       smtp_user = var.smtp_user,
-      smtp_password = var.smtp_password
-
+      smtp_password = var.smtp_password,
+      bucket_user = var.bucket_user,
+      bucket_key = var.bucket_key
     }
   )
 
