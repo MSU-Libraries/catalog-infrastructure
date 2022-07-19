@@ -152,9 +152,13 @@ resource "aws_s3_bucket" "catalog_bucket" {
   
 }
 
-resource "aws_s3_bucket_acl" "catalog_bucket_acl" {
+resource "aws_s3_bucket_public_access_block" "catalog_bucket_public_block" {
   bucket = aws_s3_bucket.catalog_bucket.id
-  acl    = "private"
+
+  block_public_acls   = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 
 # Create permissions for policy
