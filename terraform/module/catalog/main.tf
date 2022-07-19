@@ -149,6 +149,12 @@ resource "aws_security_group" "security_group_private_net" {
 # Create shared storage bucket
 resource "aws_s3_bucket" "catalog_bucket" {
   bucket = "msulib-catalog-shared"
+  
+}
+
+resource "aws_s3_bucket_acl" "catalog_bucket_acl" {
+  bucket = aws_s3_bucket.catalog_bucket.id
+  acl    = "private"
 }
 
 # Create permissions for policy
