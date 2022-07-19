@@ -45,5 +45,5 @@ POSTSETUP
 ### Create the AWS credential file with provided user and key
 sudo -Hsu root -- <<-ROOT
     mkdir /root/.aws
-    echo -e "[default]\naws_access_key_id = ${bucket_key}\naws_secret_access_key = ${bucket_key}\n" > /root/.aws/credentials
+    echo -e "[default]\naws_access_key_id = ${bucket_user}\naws_secret_access_key = ${bucket_key}\n" > /root/.aws/credentials
 ROOT
