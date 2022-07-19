@@ -6,6 +6,12 @@
     dest: /usr/local/bin/goofys
     mode: '0711'
 
+- name: Make directory for mounting
+   ansible.builtin.file:
+    path: /mnt/shared
+    state: directory
+    mode: '0755'
+
 - name: Create /etc/fstab entry
   ansible.posix.mount:
     path: /mnt/shared
