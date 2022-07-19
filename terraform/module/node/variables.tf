@@ -74,3 +74,13 @@ variable "vpc_id" {
   description = "AWS VPC to assign subnet to"
   type = string
 }
+
+variable "bucket_user" {
+  description = "AWS IAM user for the S3 bucket"
+  type = string
+}
+
+variable "bucket_key" {
+  description = "Key for the AWS IAM user to be used for the S3 bucket"
+  type = string
+}

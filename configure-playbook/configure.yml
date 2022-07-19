@@ -10,6 +10,7 @@
   roles:
     - install-dependencies
     - configure-coreboot
+    - mount-shared-storage
     - configure-swarm
 
   tasks:
