@@ -1,0 +1,63 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "iam:ListPolicies",
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetPolicyVersion",
+                "iam:DeletePolicyVersion",
+                "iam:CreatePolicyVersion",
+                "iam:DeleteAccessKey",
+                "route53:GetChange",
+                "route53:GetHostedZone",
+                "iam:DeletePolicy",
+                "iam:CreateUser",
+                "iam:CreateAccessKey",
+                "route53:ListResourceRecordSets",
+                "iam:ListAttachedUserPolicies",
+                "iam:ListPolicyTags",
+                "iam:DetachUserPolicy",
+                "iam:ListAccessKeys",
+                "iam:GetPolicy",
+                "route53:ChangeResourceRecordSets",
+                "iam:AttachUserPolicy",
+                "iam:DeleteUserPolicy",
+                "iam:DeleteUser",
+                "iam:TagPolicy",
+                "iam:TagUser",
+                "iam:CreatePolicy",
+                "iam:UntagUser",
+                "iam:ListPolicyVersions",
+                "iam:GetUserPolicy",
+                "iam:ListGroupsForUser",
+                "iam:UntagPolicy",
+                "iam:GetUser"
+            ],
+            "Resource": [
+                "arn:aws:route53:::hostedzone/Z0159018169CCNUQINNQG",
+                "arn:aws:route53:::change/*",
+                "arn:aws:iam::810208858748:user/*",
+                "arn:aws:iam::810208858748:policy/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::msulib-terraform-states/*",
+                "arn:aws:s3:::msulib-catalog-terraform-states/*",
+                "arn:aws:s3:::msulib-catalog-shared"
+            ]
+        }
+    ]
+}
