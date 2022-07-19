@@ -168,14 +168,23 @@ data "aws_iam_policy_document" "catalog_policy_perms" {
 resource "aws_iam_policy" "catalog_bucket_policy" {
   name        = "${var.cluster_name}-catalog"
   description = "Allow catalog nodes to have access to shared S3 bucket"
-  policy      = data.aws_iam_policy_document.catalog_polcy_perms.json
+  policy      = data.aws_iam_policy_document.catalog_policy_perms.json
 
   tags = {
     Name = "${var.cluster_name}-catalog-policy"
   }
 }
 
-# Create a IAM user
+# Create IAM user
+resource "aws_iam_user" "catalog_bucket_user" {
+  name = "${var.cluster_name}-bucket"
+
+  tags = {
+    Name = "${var.cluster_name}-bucket-user"
+  }
+}
+
+# Create a IAM user key
 resource "aws_iam_access_key" "catalog_bucket_key" {
   user = aws_iam_user.catalog_bucket_user.name
 }
