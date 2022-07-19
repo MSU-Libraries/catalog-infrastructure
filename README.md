@@ -7,9 +7,12 @@ a server cluster on AWS.
 
 ### AWS User Setup
 An AWS user is required and will need to have multiple access roles granted to it in IAM
-to perform the tasks required in Terraform. Below outline the permissions required:
+to perform the tasks required in Terraform. Below outline the permissions required on the group
+the AWS user is attached to:
 
-TODO
+Policy: `AmazonEC2FullAccess`
+[Custom Policy](user-policy.json)
+
 
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
