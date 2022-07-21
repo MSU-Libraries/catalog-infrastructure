@@ -8,7 +8,7 @@ REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 1 
 # Prevent a reboot if any of the following processes are detected running (comma delimited list)
 # Can be just the command name (rsync) or a specific command invocation (mysqldump -u root --all-databases)
 # Default: (nothing)
-PREVENT_PROCESSES=
+PREVENT_PROCESSES=harvest-and-import.sh
 
 # How long a user must be idle (in minutes) before they are considered no longer active
 # Set to 0 to reboot while users are active
