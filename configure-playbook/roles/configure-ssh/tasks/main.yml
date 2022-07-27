@@ -1,0 +1,9 @@
+---
+
+- name: Increase SSH session timeout
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    line: "ClientAliveInterval 60"
+  notify: restart sshd
+  

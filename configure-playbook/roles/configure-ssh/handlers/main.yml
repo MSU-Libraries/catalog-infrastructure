@@ -1,0 +1,7 @@
+---
+
+handlers:
+  - name: restart sshd
+    ansible.builtin.service:
+      name: sshd
+      state: restarted
