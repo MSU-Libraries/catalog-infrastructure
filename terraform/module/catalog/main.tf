@@ -233,12 +233,12 @@ module "nodes" {
   bucket_key = aws_iam_access_key.catalog_bucket_key.secret
 }
 
-# Create a CNAME record
-resource "aws_route53_record" "cname_dnsrec" {
+# Create a round robin hostname records
+resource "aws_route53_record" "roundrobin_dnsrec" {
   # Zone: aws.lib.msu.edu
   zone_id = "Z0159018169CCNUQINNQG"
   name    = "catalog.aws.lib.msu.edu"
-  type    = "CNAME"
+  type    = "A"
   ttl     = "300"
-  records = [for node in var.nodes:"${node.server_name}.aws.lib.msu.edu"]
+  records = [for node in module.nodes:"${node.public_ip}"]
 }
