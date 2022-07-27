@@ -232,3 +232,13 @@ module "nodes" {
   bucket_user = aws_iam_access_key.catalog_bucket_key.id
   bucket_key = aws_iam_access_key.catalog_bucket_key.secret
 }
+
+# Create a CNAME record
+resource "aws_route53_record" "cname_dnsrec" {
+  # Zone: aws.lib.msu.edu
+  zone_id = "Z0159018169CCNUQINNQG"
+  name    = "catalog.aws.lib.msu.edu"
+  type    = "CNAME"
+  ttl     = "300"
+  records = [for node in var.nodes:"${node.server_name}.aws.lib.msu.edu"]
+}
