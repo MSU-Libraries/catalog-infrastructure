@@ -64,16 +64,6 @@ resource "aws_route53_record" "node_dnsrec" {
   records = [aws_eip.node_eip.public_ip]
 }
 
-# Create a CNAME record
-resource "aws_route53_record" "cname_dnsrec" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "catalog.aws.lib.msu.edu"
-  type    = "CNAME"
-  ttl     = "300"
-  records = ["${var.server_name}.aws.lib.msu.edu"]
-}
-
 # Create an EC2 virtual machine instance containing the network device
 resource "aws_instance" "node_instance" {
   ami = var.aws_ami
