@@ -6,4 +6,11 @@
     state: present
     line: "ClientAliveInterval 60"
   notify: restart sshd
+
+- name: Allow SSH communication through UFW (22/tcp)
+  ufw:
+    rule: allow
+    from: 0.0.0.0/0
+    proto: tcp
+    port: '22'
   
