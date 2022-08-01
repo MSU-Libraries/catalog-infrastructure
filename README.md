@@ -13,6 +13,10 @@ the AWS user is attached to:
 Policy: `AmazonEC2FullAccess`
 [Custom Policy](user-policy.json)
 
+### GitLab Setup
+The user running the pipeline needs to have access to read from the following repositories:  
+* [playbook-ubuntu-setup](https://gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup)
+* [playbook-conditional-reboot](https://gitlab.msu.edu/msu-libraries/systems/playbook-conditional-reboot)
 
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
