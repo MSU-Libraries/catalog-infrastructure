@@ -21,7 +21,7 @@ module "catalog" {
   smtp_user = module.mail.smtp_username
   smtp_password = module.mail.smtp_password
   net_allow_inbound_ssh = [
-    "35.8.220.0/22",
+    "0.0.0.0/0",
   ]
   net_allow_inbound_ncpa = [
     "35.8.220.0/22",
