@@ -206,7 +206,56 @@ resource "aws_iam_user_policy_attachment" "catalog_bucket_policy_attach" {
   policy_arn = aws_iam_policy.catalog_bucket_policy.arn
 }
 
+# Create EFS resource for shared storage
+resource "aws_efs_file_system" "catalog_efs" {
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+    # transition_to_primary_storage_class = "AFTER_1_ACCESS"
+  }
 
+  tags = {
+    Name = "${var.cluster_name}-shared-storage"
+  }
+}
+
+# Creating access point for EFS
+resource "aws_efs_access_point" "catalog_efs_ap" {
+  file_system_id = aws_efs_file_system.catalog_efs.id
+}
+
+# Creating the EFS system policy to handle file transitions
+resource "aws_efs_file_system_policy" "catalog_efs_policy" {
+  file_system_id = aws_efs_file_system.catalog_efs.id
+
+  # bypass_policy_lockout_safety_check = true
+
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Id": "Policy01",
+    "Statement": [
+        {
+            "Sid": "Statement",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "*"
+            },
+            "Resource": "${aws_efs_file_system.catalog_efs.arn}",
+            "Action": [
+                "elasticfilesystem:ClientMount",
+                "elasticfilesystem:ClientRootAccess",
+                "elasticfilesystem:ClientWrite"
+            ],
+            "Condition": {
+                "Bool": {
+                    "aws:SecureTransport": "true"
+                }
+            }
+        }
+    ]
+}
+POLICY
+}
 
 module "nodes" {
   for_each = var.nodes
@@ -231,6 +280,7 @@ module "nodes" {
   vpc_id = aws_vpc.catalog_vpc.id
   bucket_user = aws_iam_access_key.catalog_bucket_key.id
   bucket_key = aws_iam_access_key.catalog_bucket_key.secret
+  efs_id = aws_efs_file_system.catalog_efs.id
 }
 
 # Create a round robin hostname records

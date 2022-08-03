@@ -4,7 +4,11 @@
         {
             "Sid": "VisualEditor0",
             "Effect": "Allow",
-            "Action": "iam:ListPolicies",
+            "Action": [
+                "iam:ListPolicies",
+                "elasticfilesystem:ModifyMountTargetSecurityGroups",
+                "elasticfilesystem:CreateFileSystem"
+            ],
             "Resource": "*"
         },
         {
@@ -12,35 +16,55 @@
             "Effect": "Allow",
             "Action": [
                 "iam:GetPolicyVersion",
-                "iam:DeletePolicyVersion",
-                "iam:CreatePolicyVersion",
                 "iam:DeleteAccessKey",
+                "elasticfilesystem:DeleteAccessPoint",
+                "elasticfilesystem:UntagResource",
                 "route53:GetChange",
+                "elasticfilesystem:ListTagsForResource",
                 "route53:GetHostedZone",
                 "iam:DeletePolicy",
                 "iam:CreateUser",
+                "elasticfilesystem:DeleteTags",
                 "iam:CreateAccessKey",
+                "elasticfilesystem:DescribeLifecycleConfiguration",
+                "elasticfilesystem:DescribeFileSystemPolicy",
                 "route53:ListResourceRecordSets",
                 "iam:ListAttachedUserPolicies",
+                "elasticfilesystem:PutLifecycleConfiguration",
                 "iam:ListPolicyTags",
+                "elasticfilesystem:DescribeFileSystems",
+                "elasticfilesystem:DeleteMountTarget",
+                "iam:CreatePolicyVersion",
                 "iam:DetachUserPolicy",
+                "elasticfilesystem:CreateAccessPoint",
+                "elasticfilesystem:PutFileSystemPolicy",
+                "elasticfilesystem:DeleteFileSystemPolicy",
                 "iam:ListAccessKeys",
                 "iam:GetPolicy",
                 "route53:ChangeResourceRecordSets",
                 "iam:AttachUserPolicy",
                 "iam:DeleteUserPolicy",
+                "elasticfilesystem:DescribeAccessPoints",
                 "iam:DeleteUser",
                 "iam:TagPolicy",
                 "iam:TagUser",
+                "elasticfilesystem:TagResource",
+                "elasticfilesystem:CreateTags",
                 "iam:CreatePolicy",
                 "iam:UntagUser",
+                "elasticfilesystem:CreateMountTarget",
                 "iam:ListPolicyVersions",
                 "iam:GetUserPolicy",
                 "iam:ListGroupsForUser",
                 "iam:UntagPolicy",
-                "iam:GetUser"
+                "iam:GetUser",
+                "elasticfilesystem:DeleteFileSystem",
+                "iam:DeletePolicyVersion",
+                "elasticfilesystem:UpdateFileSystem"
             ],
             "Resource": [
+                "arn:aws:elasticfilesystem:*:810208858748:file-system/*",
+                "arn:aws:elasticfilesystem:*:810208858748:access-point/*",
                 "arn:aws:route53:::hostedzone/Z0159018169CCNUQINNQG",
                 "arn:aws:route53:::change/*",
                 "arn:aws:iam::810208858748:user/*",
@@ -50,14 +74,12 @@
         {
             "Sid": "VisualEditor2",
             "Effect": "Allow",
-            "Action": [
-                "s3:*"
-            ],
+            "Action": "s3:*",
             "Resource": [
-                "arn:aws:s3:::msulib-terraform-states/*",
-                "arn:aws:s3:::msulib-catalog-terraform-states/*",
                 "arn:aws:s3:::msulib-catalog-terraform-states",
-                "arn:aws:s3:::msulib-catalog-shared"
+                "arn:aws:s3:::msulib-catalog-shared",
+                "arn:aws:s3:::msulib-terraform-states/*",
+                "arn:aws:s3:::msulib-catalog-terraform-states/*"
             ]
         }
     ]

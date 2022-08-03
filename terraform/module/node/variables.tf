@@ -84,3 +84,8 @@ variable "bucket_key" {
   description = "Key for the AWS IAM user to be used for the S3 bucket"
   type = string
 }
+
+variable "efs_id" {
+  description = "The EFS id used for shared storage"
+  type = string
+}
