@@ -15,3 +15,9 @@ output "public_ip" {
   description = "AWS Instance Public IP"
   value       = aws_eip.node_eip.public_ip
 }
+
+# The shared EFS mount hostname
+output "efs_hostname" {
+  description = "AWS EFS Mount Target Hostname"
+  value       = aws_efs_mount_target.catalog_efs_mt.mount_target_dns_name
+}

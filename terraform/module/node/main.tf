@@ -27,6 +27,13 @@ resource "aws_route_table_association" "catalog_rta" {
   route_table_id = var.catalog_route_table_id
 }
 
+# Create the EFS mount target in our subnet
+resource "aws_efs_mount_target" "catalog_efs_mt" {
+  file_system_id = var.efs_id
+  subnet_id      = aws_subnet.node_subnet.id
+}
+
+
 # Add a network device with IP to subnet and security group
 resource "aws_network_interface" "node_nic" {
   subnet_id       = aws_subnet.node_subnet.id
