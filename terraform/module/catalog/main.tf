@@ -141,6 +141,22 @@ resource "aws_security_group" "security_group_private_net" {
     cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
+  ingress {
+    description      = "NFS allow inbound for EFS mount (tcp)"
+    from_port        = 2049
+    to_port          = 2049
+    protocol         = "tcp"
+    cidr_blocks      = [var.vpc_cidr]
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "NFS allow inbound for EFS mount (udp)"
+    from_port        = 2049
+    to_port          = 2049
+    protocol         = "udp"
+    cidr_blocks      = [var.vpc_cidr]
+    ipv6_cidr_blocks = []
+  }
 
   tags = {
     Name = "${var.cluster_name}-sg-private-net"
@@ -249,7 +265,7 @@ resource "aws_efs_file_system_policy" "catalog_efs_policy" {
             ],
             "Condition": {
                 "Bool": {
-                    "aws:SecureTransport": "true"
+                    "aws:SecureTransport": "false"
                 }
             }
         }
@@ -263,7 +279,7 @@ module "nodes" {
   source   = "../node"
   security_group_ids = [
     aws_security_group.security_group_public_net.id,
-    aws_security_group.security_group_private_net.id
+    aws_security_group.security_group_private_net.id    # If private moves from index 1, then need to update EFS mount target
   ]
   server_name = each.value.server_name
   aws_instance_type = each.value.aws_instance_type
