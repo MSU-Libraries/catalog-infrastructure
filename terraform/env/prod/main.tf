@@ -72,6 +72,10 @@ output "catalog_a_public_ip" {
   value = module.catalog.public_ips[0]
 }
 
+output "catalog_a_efs_hostname" {
+  value = module.catalog.efs_hostnames[0]
+}
+
 output "catalog_b_instance_id" {
   value = module.catalog.instance_ids[1]
 }
@@ -82,6 +86,10 @@ output "catalog_b_fqdn" {
 
 output "catalog_b_public_ip" {
   value = module.catalog.public_ips[1]
+}
+
+output "catalog_b_efs_hostname" {
+  value = module.catalog.efs_hostnames[1]
 }
 
 output "catalog_c_instance_id" {
@@ -95,3 +103,8 @@ output "catalog_c_fqdn" {
 output "catalog_c_public_ip" {
   value = module.catalog.public_ips[2]
 }
+
+output "catalog_c_efs_hostname" {
+  value = module.catalog.efs_hostnames[2]
+}
+
