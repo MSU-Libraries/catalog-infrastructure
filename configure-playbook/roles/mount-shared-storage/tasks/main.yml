@@ -1,35 +1,14 @@
 ---
 
-# TODO goofys can be removed if EFS works out
-- name: Download Goofys binary
-  ansible.builtin.get_url:
-    url: https://github.com/kahing/goofys/releases/latest/download/goofys
-    dest: /usr/local/bin/goofys
-    mode: '0711'
-
-- name: Make directory for mounting
-  ansible.builtin.file:
-    path: /mnt/shared
-    state: directory
-    mode: '0755'
-
-- name: Create /etc/fstab entry
-  ansible.posix.mount:
-    path: /mnt/shared
-    src: goofys#msulib-catalog-shared
-    state: mounted
-    fstype: fuse
-    opts: _netdev,allow_other,--file-mode=0664,--dir-mode=0775
-
 - name: Make directory for EFS mount
   ansible.builtin.file:
-    path: /mnt/efs_catalog
+    path: /mnt/shared
     state: directory
     mode: '0755'
 
 - name: Mount for EFS storage in /etc/fstab
   ansible.posix.mount:
-    path: /mnt/efs_catalog
+    path: /mnt/shared
     src: "{{ efs_hostname }}:/"
     state: mounted
     fstype: nfs4
