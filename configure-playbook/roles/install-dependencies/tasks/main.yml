@@ -5,7 +5,6 @@
     pkg: 
       - docker.io
       - python3-docker
-      - fuse3       # TODO only needed for goofys
       - nfs-common
     state: present
     lock_timeout: 999999
