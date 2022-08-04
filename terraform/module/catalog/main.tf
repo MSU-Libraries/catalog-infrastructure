@@ -163,66 +163,6 @@ resource "aws_security_group" "security_group_private_net" {
   }
 }
 
-# Create shared storage bucket
-resource "aws_s3_bucket" "catalog_bucket" {
-  bucket = "msulib-catalog-shared"
-  
-}
-
-resource "aws_s3_bucket_public_access_block" "catalog_bucket_public_block" {
-  bucket = aws_s3_bucket.catalog_bucket.id
-
-  block_public_acls   = true
-  block_public_policy = true
-  ignore_public_acls = true
-  restrict_public_buckets = true
-}
-
-# Create permissions for policy
-data "aws_iam_policy_document" "catalog_policy_perms" {
-  statement {
-    actions = [
-      "s3:*"
-    ]
-
-    resources = [
-      "${aws_s3_bucket.catalog_bucket.arn}",
-      "${aws_s3_bucket.catalog_bucket.arn}/*",
-    ]
-  }
-}
-
-# Define the IAM policy
-resource "aws_iam_policy" "catalog_bucket_policy" {
-  name        = "${var.cluster_name}-catalog"
-  description = "Allow catalog nodes to have access to shared S3 bucket"
-  policy      = data.aws_iam_policy_document.catalog_policy_perms.json
-
-  tags = {
-    Name = "${var.cluster_name}-catalog-policy"
-  }
-}
-
-# Create IAM user
-resource "aws_iam_user" "catalog_bucket_user" {
-  name = "${var.cluster_name}-bucket"
-
-  tags = {
-    Name = "${var.cluster_name}-bucket-user"
-  }
-}
-
-# Create a IAM user key
-resource "aws_iam_access_key" "catalog_bucket_key" {
-  user = aws_iam_user.catalog_bucket_user.name
-}
-
-# Attach the policy to the user
-resource "aws_iam_user_policy_attachment" "catalog_bucket_policy_attach" {
-  user       = aws_iam_user.catalog_bucket_user.name
-  policy_arn = aws_iam_policy.catalog_bucket_policy.arn
-}
-
 # Create EFS resource for shared storage
 resource "aws_efs_file_system" "catalog_efs" {
   lifecycle_policy {
@@ -295,8 +235,6 @@ module "nodes" {
   catalog_gateway = aws_internet_gateway.catalog_gateway
   catalog_route_table_id = aws_route_table.catalog_route_table.id
   vpc_id = aws_vpc.catalog_vpc.id
-  bucket_user = aws_iam_access_key.catalog_bucket_key.id
-  bucket_key = aws_iam_access_key.catalog_bucket_key.secret
   efs_id = aws_efs_file_system.catalog_efs.id
 }
 
