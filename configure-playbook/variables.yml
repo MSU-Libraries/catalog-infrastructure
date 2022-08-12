@@ -32,8 +32,8 @@ create_users:
  - name: higgi135
    comment: 'Devin Higgins'
    groups: sudo,adm,docker,deploy
-#   public_keys:
-#     - 
+   public_keys:
+     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIP+CsBroeySiNujldVs63AJkGVSiK6of1OpKf69QN2G higgi135@ddas.devel
 
  - name: damieng
    comment: 'Damien Guillaume'
