@@ -32,8 +32,8 @@ create_users:
  - name: higgi135
    comment: 'Devin Higgins'
    groups: sudo,adm,docker,deploy
-#   public_keys:
-#     - 
+   public_keys:
+     - ***REMOVED***
 
  - name: damieng
    comment: 'Damien Guillaume'
