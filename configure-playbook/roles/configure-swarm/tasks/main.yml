@@ -20,6 +20,15 @@
     proto: udp
     port: '4789'
 
+- name: Configure Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 0640
+  notify: restart docker
+
 - name: Initialize swarm
   delegate_to: "{{ ansible_play_hosts_all[0] }}"
   community.docker.docker_swarm:
