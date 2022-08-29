@@ -51,8 +51,7 @@ be done relatively quickly and without requiring a reboot.
 2. Commit and push to `main` branch. This will trigger `terraform` to perform the disk expansion via the CI pipeline.
     - You could also manually run `terraform apply` on `terraform/env/prod/`; just be sure to commit and push afterwards.
 3. On each node:
-    - |
-      Expand the partition table. This can be done via:
+    - Expand the partition table. This can be done via:
       ```
       parted --list
       # When prompted to Fix/Ignore, choose fix
@@ -61,8 +60,7 @@ be done relatively quickly and without requiring a reboot.
       with the current setting?
       Fix/Ignore? fix
       ```
-    - |
-      Expand the root partition (typically partition 1; see output of previous command):
+    - Expand the root partition (typically partition 1; see output of previous command):
       ```
       parted /dev/nvme0n1
       # Will take you to parted prompt
@@ -73,8 +71,7 @@ be done relatively quickly and without requiring a reboot.
       End?  [68.7GB]? 100%
       (parted) quit
       ```
-    - |
-      Expand the ext4 file-system to use 100% of the partition (default action for `resize2fs`):
+    - Expand the ext4 file-system to use 100% of the partition (default action for `resize2fs`):
       ```
       resize2fs /dev/nvme0n1p1
       ```
