@@ -13,6 +13,7 @@
     - configure-ssh
     - mount-shared-storage
     - configure-swarm
+    - configure-email
 
   tasks:
     - name: Create users
