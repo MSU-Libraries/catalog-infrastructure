@@ -15,3 +15,11 @@
     regexp: '^inet_interfaces ='
     line: "inet_interfaces = all"
   notify: restart postfix
+
+- name: Allow email communication from Docker through UFW (25/tcp)
+  ufw:
+    rule: allow
+    from: 172.16.0.0/12
+    proto: tcp
+    port: '25'
+  
