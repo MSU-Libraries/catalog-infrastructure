@@ -1,0 +1,17 @@
+---
+
+- name: Allow email relay from docker container network
+  ansible.builtin.lineinfile:
+    path: /etc/postfix/main.cf
+    state: present
+    regexp: '^mynetworks ='
+    line: "mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 172.16.0.0/12"
+  notify: restart postfix
+
+- name: Allow email relay from docker container interfaces
+  ansible.builtin.lineinfile:
+    path: /etc/postfix/main.cf
+    state: present
+    regexp: '^inet_interfaces ='
+    line: "inet_interfaces = all"
+  notify: restart postfix
