@@ -31,7 +31,7 @@ module "catalog" {
   ]
   nodes = {
     "a" = {
-      server_name = "catalog-a"
+      server_name = "catalog-1"
       aws_availability_zone = "a"
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
@@ -40,7 +40,7 @@ module "catalog" {
       subnet_cidr = "10.1.1.0/24"
     }
     "b" = {
-      server_name = "catalog-b"
+      server_name = "catalog-2"
       aws_availability_zone = "b"
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
@@ -49,7 +49,7 @@ module "catalog" {
       subnet_cidr = "10.1.2.0/24"
     }
     "c" = {
-      server_name = "catalog-c"
+      server_name = "catalog-3"
       aws_availability_zone = "c"
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
