@@ -1,0 +1,29 @@
+---
+
+- name: Ensure Samba is running and set to start on boot.
+  ansible.builtin.service:
+    name: smbd
+    state: started
+    enabled: true
+
+- name: Copy the Customized smb.conf file
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    backup: yes
+  notify:
+    - Restart Samba
+
+- name: Create Samba user group
+  ansible.builtin.group:
+    name: "{{ samba_group_user }}"
+    state: present
+
+- name: Create Samba users and add to Samba group
+  ansible.builtin.user:
+    name: "{{ samba_group_user }}"
+    groups: "{{ samba_group_user }}"
+    append: yes
+
+- name: Create Samba Password for User(s)
+  ansible.builtin.shell: "(echo {{ samba_pass }}; echo {{ samba_pass }}) | smbpasswd -s -a {{ samba_group_user }}"

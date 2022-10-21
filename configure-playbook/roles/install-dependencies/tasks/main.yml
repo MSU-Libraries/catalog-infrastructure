@@ -6,5 +6,6 @@
       - docker.io
       - python3-docker
       - nfs-common
+      - samba
     state: present
     lock_timeout: 999999

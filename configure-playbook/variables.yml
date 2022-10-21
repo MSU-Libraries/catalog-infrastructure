@@ -2,6 +2,9 @@
 
 ansible_python_interpreter: "/usr/bin/env python3"
 
+samba_group_user: "msuldevs"
+samba_pass: "$SAMBA_PASS"
+
 # Create users config
 create_users:
  - name: deploy
