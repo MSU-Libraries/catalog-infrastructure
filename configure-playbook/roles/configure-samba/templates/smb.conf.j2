@@ -1,0 +1,16 @@
+[global]
+ workgroup = PUBCAT
+ server string = Samba Server %v
+ netbios name = ubuntu
+ security = user
+ map to guest = bad user
+ dns proxy = no
+
+[catalog]
+ path = /mnt/shared/local
+ valid users = @"{{ samba_group_user }}"
+ guest ok = no
+ writable = yes
+ broswable = yes
+ create mask = 775
+ directory mask = 775
