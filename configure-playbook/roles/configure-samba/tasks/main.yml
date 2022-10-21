@@ -27,3 +27,17 @@
 
 - name: Create Samba Password for User(s)
   ansible.builtin.shell: "(echo {{ samba_pass }}; echo {{ samba_pass }}) | smbpasswd -s -a {{ samba_group_user }}"
+
+- name: Allow Samba communication through UFW (137,138,139 tcp)
+  community.general.ufw:
+    rule: allow
+    from: 0.0.0.0/0
+    proto: tcp
+    port: 137:139
+
+- name: Allow Samba communication through UFW (137,138,139 udp)
+  community.general.ufw:
+    rule: allow
+    from: 0.0.0.0/0
+    proto: udp
+    port: 137:139
