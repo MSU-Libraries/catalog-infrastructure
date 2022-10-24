@@ -74,7 +74,7 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba port (TCP)"
+    description      = "Samba port"
     from_port        = 445
     to_port          = 445
     protocol         = "tcp"
@@ -82,26 +82,18 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba port (UDP)"
-    from_port        = 445
-    to_port          = 445
-    protocol         = "udp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    description      = "Samba client ports (TCP)"
-    from_port        = 49152
-    to_port          = 65535
+    description      = "Samba alternate port"
+    from_port        = 455
+    to_port          = 455
     protocol         = "tcp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba client ports (UDP)"
+    description      = "Samba client ports"
     from_port        = 49152
     to_port          = 65535
-    protocol         = "udp"
+    protocol         = "tcp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
   }
