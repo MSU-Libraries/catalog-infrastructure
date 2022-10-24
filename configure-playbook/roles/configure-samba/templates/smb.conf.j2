@@ -17,6 +17,8 @@
  restrict anonymous = 1
  interfaces = ens5
  server min protocol = SMB3
+ server signing = mandatory
+ server smb encrypt = required
  log level = 1 auth_json_audit:3@/var/log/samba/auth_json_audit.log
 
 [catalog]
@@ -24,6 +26,6 @@
  valid users = @"{{ samba_group_user }}"
  guest ok = no
  writable = yes
- browsable = yes
+ browsable = no
  create mask = 775
  directory mask = 775
