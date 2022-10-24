@@ -39,17 +39,35 @@ both locations will need to be updated.
 
 ### Mounting the Shared Storage
 To mount the shared storage (`/mnt/shared/local` on the nodes) on your local machine, use
-the credentials for the same user as used by Solr and the Traefik Dashboard).
+the credentials for the same user as used by Solr and the Traefik Dashboard). Some ISP block
+mounting of SMB shares on the default port of 445. To work around this limitation, Samba is
+configured here to also serve shares on port 455. To use this alternate port, you must specfify
+it when mounting (see below).
 
 For more information on this share see the
 [technical documentation](https://msu-libraries.github.io/catalog/first-time-setup/#for-local-development).
 
-Here is an example of an `/etc/fstab` entry for mounting it:
+Before attempting to mount, you will need `cifs` mount support. To install:
 ```bash
-//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt  0     0
+$ sudo apt install cifs-utils
+```
+
+When mounting, you may pass a specific user id and group id (`1000` in the examples below); this is who will own the files/folders once mounted. If you omit the user_ids, the owner will be `root` (user `0`).
+
+Here is an example of mounting the share (to and example `/mnt/point/` directory) for a single time (not auto-remounted):
+```bash
+sudo mount -t cifs -o user=msuldevs,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,vers=3.1.1 //catalog-1.aws.lib.msu.edu/catalog /mnt/point/
 
 # If your ISP blocks port 445
-//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,port=455  0     0
+sudo mount -t cifs -o port=455,user=msuldevs,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,vers=3.1.1 //catalog-1.aws.lib.msu.edu/catalog /mnt/point/
+```
+
+Here is an example of an `/etc/fstab` entry for mounting it:
+```bash
+//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,vers=3.1.1  0     0
+
+# If your ISP blocks port 445
+//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,vers=3.1.1,port=455  0     0
 ```
 
 Sample credential file:
@@ -60,7 +78,6 @@ password=[PASSWORD]
 
 To mount:
 ```
-$ sudo apt install cifs-utils
 $ sudo mkdir -p /mnt/catalog
 $ sudo mount /mnt/catalog
 ```
