@@ -16,7 +16,8 @@
  smb ports = 445 455
  restrict anonymous = 1
  interfaces = ens5
- server min protocal = SMB3
+ server min protocol = SMB3
+ log level = 1 auth_json_audit:3@/var/log/samba/auth_json_audit.log
 
 [catalog]
  path = /mnt/shared/local
