@@ -2,6 +2,12 @@
 Public catalog infrastructure files using Terraform to build
 a server cluster on AWS.
 
+**Contents**
+* [AWS User Setup](#aws-user-setup)
+* [GitLab Setup](#gitlab-setup)
+* [Deploy User Setup](#deploy-user-setup)
+* [Mounting the Shared Storage](#mounting-the-shared-storage)
+* [Troubleshooting](#troubleshooting)
 
 ## First time setup
 
@@ -30,6 +36,34 @@ a corresponding private key in the CI/CD variables of the
 [catalog project's repository](https://gitlab.msu.edu/msu-libraries/devops/catalog). Should that key ever need to change,
 both locations will need to be updated.
 
+
+### Mounting the Shared Storage
+To mount the shared storage (`/mnt/shared/local` on the nodes) on your local machine, use
+the credentials for the same user as used by Solr and the Traefik Dashboard).
+
+For more information on this share see the
+[technical documentation](https://msu-libraries.github.io/catalog/first-time-setup/#for-local-development).
+
+Here is an example of an `/etc/fstab` entry for mounting it:
+```bash
+//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt  0     0
+
+# If your ISP blocks port 445
+//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,port=455  0     0
+```
+
+Sample credential file:
+```bash
+username=[USER]
+password=[PASSWORD]
+```
+
+To mount:
+```
+$ sudo apt install cifs-utils
+$ sudo mkdir -p /mnt/catalog
+$ sudo mount /mnt/catalog
+```
 
 ## Troubleshooting
 Manual steps:
