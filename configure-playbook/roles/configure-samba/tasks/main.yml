@@ -14,6 +14,18 @@
   notify:
     - Restart Samba
 
+- name: Copy the samba fail2ban config
+  ansible.builtin.template:
+    src: samba_filter.j2
+    dest: /etc/fail2ban/filter.d/samba.conf
+
+- name: Enable the samba fail2ban jail
+  ansible.builtin.template:
+    src: samba_jail.j2
+    dest: /etc/fail2ban/jail.d/samba.conf
+  notify:
+    - Restart fail2ban
+
 - name: Create Samba user group
   ansible.builtin.group:
     name: "{{ samba_group_user }}"
