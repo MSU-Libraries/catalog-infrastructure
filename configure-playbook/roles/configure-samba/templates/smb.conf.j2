@@ -1,10 +1,22 @@
 [global]
  workgroup = PUBCAT
- server string = Samba Server %v
- netbios name = ubuntu
+ server string = Samba Server
  security = user
- map to guest = bad user
  dns proxy = no
+ load printers = no
+ wins support = no
+ dns proxy = no
+ domain master = no
+ local master = no
+ unix password sync = no
+ pam password change = no
+ usershare allow guests = no
+ map to guest = never
+ disable netbios = yes
+ smb ports = 445
+ restrict anonymous = 1
+ interfaces = ens5
+
 
 [catalog]
  path = /mnt/shared/local

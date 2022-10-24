@@ -74,49 +74,33 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba NETBIOS Name Service (TCP)"
-    from_port        = 137
-    to_port          = 137
+    description      = "Samba port (TCP)"
+    from_port        = 445
+    to_port          = 445
     protocol         = "tcp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba NETBIOS Name Service (UDP)"
-    from_port        = 137
-    to_port          = 137
+    description      = "Samba port (UDP)"
+    from_port        = 445
+    to_port          = 445
     protocol         = "udp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba NETBIOS Datagram Service (TCP)"
-    from_port        = 138
-    to_port          = 138
+    description      = "Samba client ports (TCP)"
+    from_port        = 49152
+    to_port          = 65535
     protocol         = "tcp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba NETBIOS Datagram Service (UDP)"
-    from_port        = 138
-    to_port          = 138
-    protocol         = "udp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    description      = "Samba NETBIOS Session Service (TCP)"
-    from_port        = 139
-    to_port          = 139
-    protocol         = "tcp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    description      = "Samba NETBIOS Session Service (UDP)"
-    from_port        = 139
-    to_port          = 139
+    description      = "Samba client ports (UDP)"
+    from_port        = 49152
+    to_port          = 65535
     protocol         = "udp"
     cidr_blocks      = var.net_allow_inbound_smbd
     ipv6_cidr_blocks = []
