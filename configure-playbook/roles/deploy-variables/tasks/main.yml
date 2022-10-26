@@ -17,4 +17,4 @@
     dest: /etc/catalog/.env
     owner: deploy
     group: deploy
-    mode: '0750'
+    mode: '0640'
