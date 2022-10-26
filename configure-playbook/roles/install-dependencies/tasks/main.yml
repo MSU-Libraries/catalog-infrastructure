@@ -9,3 +9,9 @@
       - samba
     state: present
     lock_timeout: 999999
+
+- name: Install yq
+  ansible.builtin.get_url:
+    url: https://github.com/mikefarah/yq/releases/download/v4.28.2/yq_linux_amd64
+    dest: /usr/local/bin/yq
+    mode: '0755'
