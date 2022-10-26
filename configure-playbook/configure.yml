@@ -15,6 +15,7 @@
     - configure-samba
     - configure-swarm
     - configure-email
+    - deploy-variables
 
   tasks:
     - name: Create users

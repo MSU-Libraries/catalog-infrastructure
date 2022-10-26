@@ -1,0 +1,20 @@
+---
+
+- name: Make directory for private deploy variables
+  ansible.builtin.file:
+    path: /etc/catalog/
+    state: directory
+    owner: deploy
+    group: deploy
+    mode: '0750'
+
+- name: Create .env file for deploy variables
+  ansible.builtin.copy:
+    content: |
+      AWS_REGION="{{ aws_region }}"
+      DNSCHALLENGE_KEY_ID="{{ dnschallenge_key_id }}"
+      DNSCHALLENGE_KEY_SECRET="{{ dnschallenge_key_secret }}"
+    dest: /etc/catalog/.env
+    owner: deploy
+    group: deploy
+    mode: '0750'

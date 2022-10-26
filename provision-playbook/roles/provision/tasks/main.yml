@@ -24,6 +24,10 @@
     dest: "../configure-playbook/hosts"
     content: |
       catalog_nodes:
+        vars:
+          aws_region: {{ tf.outputs.aws_region.value }}
+          dnschallenge_key_id: {{ tf.outputs.dnschallenge_key_id.value }}
+          dnschallenge_key_secret: {{ tf.outputs.dnschallenge_key_secret.value }}
         hosts:
           {{ tf.outputs.catalog_a_fqdn.value }}:
             efs_hostname: {{ tf.outputs.catalog_a_efs_hostname.value }}
