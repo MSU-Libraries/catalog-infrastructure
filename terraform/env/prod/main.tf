@@ -63,6 +63,20 @@ module "catalog" {
   }
 }
 
+output "aws_region" {
+    description = "AWS region being used"
+    value       = module.catalog.aws_region
+}
+
+output "dnschallenge_key_id" {
+    value       = module.catalog.dnschallenge_key_id
+}
+
+output "dnschallenge_key_secret" {
+    value       = module.catalog.dnschallenge_key_secret
+    sensitive   = true
+}
+
 output "catalog_a_instance_id" {
   value = module.catalog.instance_ids[0]
 }

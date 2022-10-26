@@ -1,3 +1,20 @@
+output "aws_region" {
+    description = "The AWS region used"
+    value       = "${var.aws_region}"
+}
+
+# Traefik DNS challenge user keys
+output "dnschallenge_key_id" {
+    description = "The AWS access key id for the dnschallenge user"
+    value       = "${aws_iam_access_key.dnschallenge_key.id}"
+}
+
+output "dnschallenge_key_secret" {
+    description = "The AWS secret access key for the dnschallenge user"
+    value       = "${aws_iam_access_key.dnschallenge_key.secret}"
+    sensitive   = true
+}
+
 # Created instance id after provisioning
 output "instance_ids" {
   description = "AWS Instance IDs"

@@ -238,6 +238,51 @@ resource "aws_efs_file_system_policy" "catalog_efs_policy" {
 POLICY
 }
 
+# Create user with permissions to verify Let's Encrypt DNS challenge
+resource "aws_iam_user" "dnschallenge_user" {
+  name = "${var.cluster_name}-dnschallenge"
+
+  tags = {
+    Name = "${var.cluster_name}-dnschallenge"
+  }
+}
+
+resource "aws_iam_access_key" "dnschallenge_key" {
+  user = aws_iam_user.dnschallenge_user.name
+}
+
+resource "aws_iam_user_policy" "dnschallenge_policy" {
+  name = "${var.cluster_name}-dnschallenge-user-policy"
+  user = aws_iam_user.dnschallenge_user.name
+
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:GetChange",
+                "route53:ListHostedZonesByName"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ChangeResourceRecordSets"
+            ],
+            "Resource": [
+                "arn:aws:route53:::hostedzone/Z0159018169CCNUQINNQG"
+            ]
+        }
+    ]
+}
+POLICY
+}
+
 module "nodes" {
   for_each = var.nodes
   source   = "../node"
