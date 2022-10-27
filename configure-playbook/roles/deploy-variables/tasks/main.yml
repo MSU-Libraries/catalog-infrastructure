@@ -5,8 +5,8 @@
     content: |
       ---
       AWS_REGION: "{{ aws_region }}"
-      DNSCHALLENGE_KEY_ID: "{{ dnschallenge_key_id }}"
-      DNSCHALLENGE_KEY_SECRET: "{{ dnschallenge_key_secret }}"
+      AWS_ACCESS_KEY_ID: "{{ dnschallenge_key_id }}"
+      AWS_SECRET_ACCESS_KEY: "{{ dnschallenge_key_secret }}"
     dest: /home/deploy/traefik-env.yml
     owner: deploy
     group: deploy
