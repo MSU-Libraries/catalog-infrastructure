@@ -1,0 +1,9 @@
+---
+
+- name: Restrict default ubuntu user
+  user:
+    name: "ubuntu"
+    comment: "Ubuntu"
+    state: present
+    shell: /usr/sbin/nologin
+    groups: ""
