@@ -60,3 +60,10 @@
     from: 0.0.0.0/0
     proto: tcp
     port: 49152:65535
+
+- name: Allow NetBIOS requests through UFW
+  community.general.ufw:
+    rule: allow
+    from: 0.0.0.0/0
+    proto: udp
+    port: 137:138
