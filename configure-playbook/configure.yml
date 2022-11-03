@@ -16,6 +16,7 @@
     - configure-swarm
     - configure-email
     - deploy-variables
+    - restrict-ubuntu-user
 
   tasks:
     - name: Create users
