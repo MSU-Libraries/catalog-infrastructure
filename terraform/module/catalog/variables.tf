@@ -18,11 +18,6 @@ variable "net_allow_inbound_ssh" {
   type = list(string)
 }
 
-variable "net_allow_inbound_smbd" {
-  description = "Allow inbound to Samba port these CIDRs"
-  type = list(string)
-}
-
 variable "net_allow_inbound_ncpa" {
   description = "Allow inbound to Nagios NCPA port these CIDRs"
   type = list(string)
