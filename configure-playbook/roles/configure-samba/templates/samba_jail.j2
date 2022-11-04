@@ -1,8 +1,0 @@
-[samba]
-filter = samba
-enabled = true
-action = iptables-multiport[name=samba, port="88,135,389,445,455,464,636,3328,3329", protocol=tcp]
-logpath = /var/log/samba/auth_json_audit.log
-maxretry = 6
-findtime = 300
-bantime = 1200

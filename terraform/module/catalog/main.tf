@@ -74,39 +74,6 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Samba port"
-    from_port        = 445
-    to_port          = 445
-    protocol         = "tcp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    description      = "Samba alternate port"
-    from_port        = 455
-    to_port          = 455
-    protocol         = "tcp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    description      = "Samba client ports"
-    from_port        = 49152
-    to_port          = 65535
-    protocol         = "tcp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
-    # NetBIOS is diabled, but Mac clients still attempt to connect here, otherwise they timeout
-    description      = "Samba NetBIOS ports"
-    from_port        = 137
-    to_port          = 138
-    protocol         = "udp"
-    cidr_blocks      = var.net_allow_inbound_smbd
-    ipv6_cidr_blocks = []
-  }
-  ingress {
     description      = "HTTP"
     from_port        = 80
     to_port          = 80

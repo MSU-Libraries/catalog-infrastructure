@@ -12,7 +12,6 @@
     - configure-coreboot
     - configure-ssh
     - mount-shared-storage
-    - configure-samba
     - configure-swarm
     - configure-email
     - deploy-variables

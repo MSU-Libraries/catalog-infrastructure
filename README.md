@@ -28,7 +28,6 @@ The following CI/CD variables must also be created:
 * `AWS_KEY`
 * `AWS_SECRET`
 * `ROOT_PRIVATE_KEY`
-* `SAMBA_PASS`
 
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
@@ -39,47 +38,32 @@ both locations will need to be updated.
 
 ### Mounting the Shared Storage
 To mount the shared storage (`/mnt/shared/local` on the nodes) on your local machine, use
-the credentials for the same user as used by Solr and the Traefik Dashboard). Some ISP block
-mounting of SMB shares on the default port of 445. To work around this limitation, Samba is
-configured here to also serve shares on port 455. To use this alternate port, you must specfify
-it when mounting (see below).
+the credentials for the same user as used by Solr and the Traefik Dashboard). To mount,
+we will be making use of the `sshfs` tool.
 
 For more information on this share see the
 [technical documentation](https://msu-libraries.github.io/catalog/first-time-setup/#for-local-development).
 
-Before attempting to mount, you will need `cifs` mount support. To install:
+Before attempting to mount, you will need `sshfs`. To install:
 ```bash
-$ sudo apt install cifs-utils
+$ sudo apt install sshfs
 ```
-
-When mounting, you may pass a specific user id and group id (`1000` in the examples below); this is who will own the files/folders once mounted. If you omit the user_ids, the owner will be `root` (user `0`).
 
 Here is an example of mounting the share (to and example `/mnt/point/` directory) for a single time (not auto-remounted):
 ```bash
-sudo mount -t cifs -o user=msuldevs,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,vers=3.1.1 //catalog-1.aws.lib.msu.edu/catalog /mnt/point/
-
-# If your ISP blocks port 445
-sudo mount -t cifs -o port=455,user=msuldevs,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,vers=3.1.1 //catalog-1.aws.lib.msu.edu/catalog /mnt/point/
+sudo sshfs -o allow_other,default_permissions [netid]@catalog-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point
 ```
 
 Here is an example of an `/etc/fstab` entry for mounting it:
 ```bash
-//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,vers=3.1.1  0     0
-
-# If your ISP blocks port 445
-//catalog-1.aws.lib.msu.edu/catalog /mnt/catalog  cifs  rw,uid=1000,gid=1000,forceuid,forcegid,iocharset=utf8,cred=/path/to/cred_msuldevs.txt,vers=3.1.1,port=455  0     0
-```
-
-Sample credential file:
-```bash
-username=[USER]
-password=[PASSWORD]
+[netid]@catalog-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point fuse.sshfs noauto,x-systemd.automount,_netdev,reconnect,identityfile=/home/[netid]/.ssh/id_ed25519,allow_other,default_permissions 0 0
 ```
 
 To mount:
-```
+```bash
 $ sudo mkdir -p /mnt/catalog
 $ sudo mount /mnt/catalog
+$ sudo umount /mnt/catalog
 ```
 
 ## Troubleshooting
