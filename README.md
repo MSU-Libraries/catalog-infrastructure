@@ -44,6 +44,9 @@ we will be making use of the `sshfs` tool.
 For more information on this share see the
 [technical documentation](https://msu-libraries.github.io/catalog/first-time-setup/#for-local-development).
 
+Mac users will require macFUSE to be installed separately before continuing.
+The latest release is available on the [osxfuse GitHub site](https://osxfuse.github.io/).
+
 Before attempting to mount, you will need `sshfs`. To install:
 ```bash
 $ sudo apt install sshfs
