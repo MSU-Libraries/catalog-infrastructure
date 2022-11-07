@@ -31,10 +31,10 @@ create_users:
 
  - name: higgi135
    comment: 'Devin Higgins'
-   groups: sudo,adm,docker,deploy
+   groups: sudo,adm,docker,deploy,ubuntu
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIP+CsBroeySiNujldVs63AJkGVSiK6of1OpKf69QN2G higgi135@ddas.devel
-     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCZ26SQp1YcZuG5+VhfhdUqiVyZzO90Rj4DV2K2Y10h higgi135@msu.edu 
+     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCZ26SQp1YcZuG5+VhfhdUqiVyZzO90Rj4DV2K2Y10h higgi135@msu.edu
 
  - name: damieng
    comment: 'Damien Guillaume'
