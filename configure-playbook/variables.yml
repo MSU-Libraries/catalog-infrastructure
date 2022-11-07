@@ -31,10 +31,10 @@ create_users:
 
  - name: higgi135
    comment: 'Devin Higgins'
-   groups: sudo,adm,docker,deploy
+   groups: sudo,adm,docker,deploy,ubuntu
    public_keys:
      - ***REMOVED***
-     - ***REMOVED*** 
+     - ***REMOVED***
 
  - name: damieng
    comment: 'Damien Guillaume'
