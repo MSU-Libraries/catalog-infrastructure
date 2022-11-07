@@ -44,9 +44,48 @@ we will be making use of the `sshfs` tool.
 For more information on this share see the
 [technical documentation](https://msu-libraries.github.io/catalog/first-time-setup/#for-local-development).
 
-Mac users will require macFUSE to be installed separately before continuing.
+**Permissions on Server**  
+The shared storage on the server will need to be writable by the connecting user. For example, if the
+storage us group writable by the `ubuntu` user, the user on the server will needt o be in the `ubuntu`
+group. This can be done by adding the group to the user in `configure-playbook/variables.yml` and then
+triggering the CI process.
+```
+ - name: myuser
+   comment: 'Myu Ser'
+   groups: ubuntu
+   public_keys:
+```
+
+#### MacOS
+Mac users will require macFUSE and sshfs to be installed separately before continuing.
 The latest release is available on the [osxfuse GitHub site](https://osxfuse.github.io/).
 
+Locally on the Mac mounting the share, you'll have to make it think it also has permissions to write.
+For example, if the server has the `ubunbu` group as writable with gid of `1000`, you'll need to
+configure you Mac to also have a group with gid `1000` that your user
+
+To create the new group and add your user `myuser`:
+```sh
+# Create group ubuntu with gid 1000
+sudo dscl . -create /groups/ubuntu gid 1000
+# Add user myuser to ubuntu group
+sudo dscl . -append /Groups/ubuntu GroupMembership myuser
+```
+
+From there you should be able to create a directory to mount from and mount as your normal user (no `sudo`):
+```sh
+# Only need to create the directory the first time
+mkdir ~/my-sshfs
+
+sshfs -o allow_other,default_permissions myuser@catalog-1.aws.lib.msu.edu:/mnt/shared/local ~/my-sshfs
+```
+
+To unmount:
+```sh
+umount ~/my-sshfs 
+```
+
+#### Linux
 Before attempting to mount, you will need `sshfs`. To install:
 ```bash
 $ sudo apt install sshfs
