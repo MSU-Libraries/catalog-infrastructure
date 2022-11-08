@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# TODO check docker cluster state
+# TODO check docker cluster state (appropriate node count, all nodes are managers, one is leader)
 
-# TODO check appropriate stacks are deployed
+# TODO check appropriate stacks are deployed (both shared containers and prod containers)
 
 # TODO check appropriate replicas are running
 
