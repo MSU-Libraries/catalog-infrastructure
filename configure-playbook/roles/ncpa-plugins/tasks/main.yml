@@ -1,0 +1,9 @@
+---
+
+- name: Copy Catalog NCPA plugins
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/"
+    dest: /usr/local/ncpa/plugins/
+    owner: root
+    group: root
+    mode: '0755'
