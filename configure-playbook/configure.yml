@@ -16,6 +16,7 @@
     - configure-email
     - deploy-variables
     - restrict-ubuntu-user
+    - ncpa-plugins
 
   tasks:
     - name: Create users
