@@ -90,7 +90,15 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
-    description      = "Allow ping"
+    description      = "ICMP TIMESTAMP (Nagios only)"
+    from_port        = 13
+    to_port          = 0
+    protocol         = "icmp"
+    cidr_blocks      = var.net_allow_inbound_ncpa
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "ICMP ping"
     # Port fields are used to describe type of icmp; here 8,0 is "echo request"
     from_port        = 8        # icmp type 8
     to_port          = 0        # icmp code 0
