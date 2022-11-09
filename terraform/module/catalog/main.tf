@@ -89,6 +89,15 @@ resource "aws_security_group" "security_group_public_net" {
     cidr_blocks      = var.net_allow_inbound_web
     ipv6_cidr_blocks = []
   }
+  ingress {
+    description      = "Allow ping"
+    # Port fields are used to describe type of icmp; here 8,0 is "echo request"
+    from_port        = 8        # icmp type 8
+    to_port          = 0        # icmp code 0
+    protocol         = "icmp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = []
+  }
 
   egress {
     from_port        = 0
