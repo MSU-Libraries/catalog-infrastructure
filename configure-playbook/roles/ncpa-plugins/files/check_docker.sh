@@ -35,7 +35,7 @@ array_contains() {
     local HAYSTACK=( ${!ARRNAME} )
     local NEEDLE="$2"
     for VAL in "${HAYSTACK[@]}"; do
-        if [[ $NEEDLE == $VAL ]]; then
+        if [[ "$NEEDLE" == "$VAL" ]]; then
             return 0
         fi
     done
@@ -110,6 +110,7 @@ elif [[ "${#STACK_NAMES}" -lt "$FOUND_STACKS" ]]; then
 fi
 
 # Check appropriate service replicas are running
+# TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
 SERVICES=(
     "catalog-beta-catalog_catalog 3/3 (max 1 per node)"
     "catalog-beta-catalog_cron 1/1"
@@ -123,11 +124,11 @@ SERVICES=(
 )
 declare -a FOUND_SERVICES
 while read -r LINE; do
-    FOUND_SERVICES+=( "$LINE" )
+    FOUND_SERVICES+=( "${LINE// /~}" )  # hacky fix to avoid spaces
 done < <( docker service ls --format "{{ .Name }} {{ .Replicas }}" )
 
-# TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
 for SERVICE in "${SERVICES[@]}"; do
+    SERVICE="${SERVICE// /~}"           # hacky fix to avoid spaces
     if ! array_contains FOUND_SERVICES "$SERVICE"; then
         SSPLIT=( $SERVICE )
         echo "WARNING: Docker service ${SSPLIT[0]} not at expected replica count."
@@ -164,7 +165,7 @@ done
 UNIX_NOW=$( date +%s )
 UNIX_M35=$(( UNIX_NOW - 35 ))
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
-    STARTED=$( docker container inspect catalog-beta-catalog_catalog.3.n5jwhnm1ahgner9u7ilu3oo4r | jq -r .[0].State.StartedAt )
+    STARTED=$( docker container inspect "$RUNNING" | jq -r .[0].State.StartedAt )
     UNIX_STARTED=$( date -d "$STARTED" +%s )
     if [[ -z "$STARTED" ]]; then
         echo "UNKNOWN: Docker container missing StartedAt value ($RUNNING)."
