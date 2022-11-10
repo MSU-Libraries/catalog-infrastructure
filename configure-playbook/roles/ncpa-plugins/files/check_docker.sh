@@ -85,9 +85,15 @@ verify_nodes 4 "Leader" "has a leader" 1
 verify_nodes 2 "Ready" "status"
 verify_nodes 3 "Active" "availability"
 
-
 # Check appropriate stacks are deployed (both shared containers and prod containers)
-STACK_NAMES=( catalog-beta-catalog catalog-beta-internal catalog-beta-mariadb catalog-beta-solr swarm-cron traefik )
+STACK_NAMES=(
+    catalog-beta-catalog
+    catalog-beta-internal
+    catalog-beta-mariadb
+    catalog-beta-solr
+    swarm-cron
+    traefik
+)
 FOUND_STACKS=0
 while read -r LINE; do
     if array_contains STACK_NAMES "$LINE"; then
@@ -95,11 +101,11 @@ while read -r LINE; do
     fi
 done < <( docker stack ls --format "{{ .Name }}" )
 
-if [[ "${#STACK_NAMES}" -gt "$FOUND_STACKS" ]]; then
-    echo "CRITICAL: Missing one or more production Docker stacks."
+if [[ "${#STACK_NAMES[@]}" -gt "$FOUND_STACKS" ]]; then
+    echo "CRITICAL: Missing one or more production Docker stacks (${FOUND_STACKS}/${#STACK_NAMES[@]})."
     exit 2
 elif [[ "${#STACK_NAMES}" -lt "$FOUND_STACKS" ]]; then
-    echo "UNKNOWN: Excess production Docker stacks found! How?"
+    echo "UNKNOWN: Excess production Docker stacks found! (${FOUND_STACKS}/${#STACK_NAMES[@]}) How?"
     exit 3
 fi
 
