@@ -130,7 +130,7 @@ done < <( docker service ls --format "{{ .Name }} {{ .Replicas }}" )
 for SERVICE in "${SERVICES[@]}"; do
     SERVICE="${SERVICE// /~}"           # hacky fix to avoid spaces
     if ! array_contains FOUND_SERVICES "$SERVICE"; then
-        SSPLIT=( $SERVICE )
+        SSPLIT=( ${SERVICE//~/ } )
         echo "WARNING: Docker service ${SSPLIT[0]} not at expected replica count."
         exit 1
     fi
