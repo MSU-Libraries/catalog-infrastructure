@@ -15,3 +15,11 @@
     owner: root
     group: root
     mode: '0440'
+
+- name: Allow specific sudo docker commands
+  apt:
+    pkg:
+      - jq
+    state: present
+    lock_timeout: 999999
+
