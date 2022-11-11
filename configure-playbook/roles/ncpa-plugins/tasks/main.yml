@@ -2,8 +2,16 @@
 
 - name: Copy Catalog NCPA plugins
   ansible.builtin.copy:
-    src: "{{ role_path }}/files/"
+    src: "{{ role_path }}/files/*.sh"
     dest: /usr/local/ncpa/plugins/
     owner: root
     group: root
     mode: '0755'
+
+- name: Allow specific sudo docker commands
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/90-nagios-ncpa.sudoers"
+    dest: /etc/sudoers.d/90-nagios-ncpa
+    owner: root
+    group: root
+    mode: '0440'
