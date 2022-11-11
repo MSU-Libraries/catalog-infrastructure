@@ -11,7 +11,7 @@ while read -r LINE; do
     #    declare -g NODE_OUT_SELF="${!NODE_VARNAME}"
     #fi
     (( NODE_NUM += 1 ))
-done < <( docker node ls --format '{{ .Self }} {{ .Hostname }} {{ .Status }} {{ .Availability }} {{ .ManagerStatus }} {{ .EngineVersion }}' )
+done < <( sudo docker node ls --format '{{ .Self }} {{ .Hostname }} {{ .Status }} {{ .Availability }} {{ .ManagerStatus }} {{ .EngineVersion }}' )
 
 # Node info by index
 #   0 = is_self
@@ -99,7 +99,7 @@ while read -r LINE; do
     if array_contains STACK_NAMES "$LINE"; then
         (( FOUND_STACKS += 1 ))
     fi
-done < <( docker stack ls --format "{{ .Name }}" )
+done < <( sudo docker stack ls --format "{{ .Name }}" )
 
 if [[ "${#STACK_NAMES[@]}" -gt "$FOUND_STACKS" ]]; then
     echo "CRITICAL: Missing one or more production Docker stacks (${FOUND_STACKS}/${#STACK_NAMES[@]})."
@@ -125,7 +125,7 @@ SERVICES=(
 declare -a FOUND_SERVICES
 while read -r LINE; do
     FOUND_SERVICES+=( "${LINE// /~}" )  # hacky fix to avoid spaces
-done < <( docker service ls --format "{{ .Name }} {{ .Replicas }}" )
+done < <( sudo docker service ls --format "{{ .Name }} {{ .Replicas }}" )
 
 for SERVICE in "${SERVICES[@]}"; do
     SERVICE="${SERVICE// /~}"           # hacky fix to avoid spaces
@@ -140,7 +140,7 @@ done
 declare -a RUNNING_CONTAINERS
 while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
-done < <( docker container ls -f "status=running" -f "name=catalog-beta-" --format "{{ .Names }}" )
+done < <( sudo docker container ls -f "status=running" -f "name=catalog-beta-" --format "{{ .Names }}" )
 
 EXPECTED_CONTAINERS=(
     catalog-beta-catalog_catalog
@@ -165,7 +165,7 @@ done
 UNIX_NOW=$( date +%s )
 UNIX_M35=$(( UNIX_NOW - 35 ))
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
-    STARTED=$( docker container inspect "$RUNNING" | jq -r .[0].State.StartedAt )
+    STARTED=$( sudo docker container inspect "$RUNNING" | jq -r .[0].State.StartedAt )
     UNIX_STARTED=$( date -d "$STARTED" +%s )
     if [[ -z "$STARTED" ]]; then
         echo "UNKNOWN: Docker container missing StartedAt value ($RUNNING)."
