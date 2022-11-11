@@ -7,3 +7,8 @@
     state: present
     shell: /usr/sbin/nologin
     groups: ""
+
+- name: Remove ubuntu user sudo access
+  ansible.builtin.file:
+    path: /etc/sudoers.d/90-cloud-init-users
+    state: absent
