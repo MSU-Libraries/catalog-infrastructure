@@ -98,6 +98,15 @@ resource "aws_security_group" "security_group_public_net" {
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = []
   }
+  ingress {
+    description      = "ICMP TIMESTAMP (Nagios only)"
+    from_port        = 13
+    to_port          = 0
+    protocol         = "icmp"
+    cidr_blocks      = var.net_allow_inbound_ncpa
+    ipv6_cidr_blocks = []
+  }
+
 
   egress {
     from_port        = 0
