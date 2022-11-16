@@ -1,6 +1,8 @@
 ---
 
 - name: restart docker
-  ansible.builtin.service:
-    name: docker
-    state: restarted
+  # Restart Docker, but only on 1 node at time and give nodes time to stop/start/resync cleanly
+  ansible.builtin.shell: |
+    systemctl restart docker
+    sleep 200
+  throttle: 1
