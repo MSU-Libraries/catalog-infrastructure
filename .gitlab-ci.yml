@@ -44,5 +44,4 @@ Provision:
     # Run the configure playbook
     - cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
-    - echo "Success! Servers are now accessible with the following IPs"
-    - cat configure-playbook/hosts
+    - echo "Success! Servers are now accessible."
