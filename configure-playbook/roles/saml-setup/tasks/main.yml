@@ -22,10 +22,14 @@
   delegate_to: 127.0.0.1
   run_once: true
 
-- name: Generate public keys for SAML
-  community.crypto.openssl_publickey:
-    path: "samlcerts/{{ item }}/sp-public.pem"
+- name: Create CSR for SAML certs
+  community.crypto.openssl_csr:
+    path: "samlcerts/{{ item }}/sp.csr"
     privatekey_path: "samlcerts/{{ item }}/sp-private.pem"
+    country_name: US
+    organization_name: Michigan State University Libraries
+    common_name: catalog.lib.msu.edu
+    subject_alt_name: "DNS:catalog-prod.lib.msu.edu,DNS:catalog-beta.lib.msu.edu,DNS:devel-authentication.lib.msu.edu"
   loop:
     - test
     - qa
@@ -34,13 +38,11 @@
   run_once: true
 
 - name: Create new certs for SAML
-  community.crypto.openssh_cert:
-    type: host
-    signing_key: "samlcerts/{{ item }}/sp-private.pem"
-    public_key: "samlcerts/{{ item }}/sp-public.pem"
+  community.crypto.x509_certificate:
     path: "samlcerts/{{ item }}/sp.crt"
-    valid_from: +0s
-    valid_to: +400w
+    privatekey_path: "samlcerts/{{ item }}/sp-private.pem"
+    csr_path: "samlcerts/{{ item }}/sp.csr"
+    provider: selfsigned
   loop:
     - test
     - qa
@@ -54,5 +56,5 @@
     dest: /home/deploy/samlcerts/
     owner: root
     group: root
-    mode: '0640'
+    #mode: '0640'
     directory_mode: '0750'
