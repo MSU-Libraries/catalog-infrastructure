@@ -56,5 +56,5 @@
     dest: /home/deploy/samlcerts/
     owner: root
     group: root
-    #mode: '0640'
+    mode: preserve
     directory_mode: '0750'
