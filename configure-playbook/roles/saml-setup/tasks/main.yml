@@ -2,7 +2,7 @@
 
 - name: Create directories for SAML key/cert generation
   ansible.builtin.file:
-    path: "/tmp/samlcerts/{{ item }}"
+    path: "samlcerts/{{ item }}"
     state: directory
     mode: '0750'
   loop:
@@ -14,7 +14,7 @@
 
 - name: Create new private keys for SAML
   community.crypto.openssl_privatekey:
-    path: "/tmp/samlcerts/{{ item }}/sp-private.pem"
+    path: "samlcerts/{{ item }}/sp-private.pem"
   loop:
     - test
     - qa
@@ -24,8 +24,8 @@
 
 - name: Generate public keys for SAML
   community.crypto.openssl_publickey:
-    path: "/tmp/samlcerts/{{ item }}/sp-public.pem"
-    privatekey_path: "/tmp/samlcerts/{{ item }}/sp-private.pem"
+    path: "samlcerts/{{ item }}/sp-public.pem"
+    privatekey_path: "samlcerts/{{ item }}/sp-private.pem"
   loop:
     - test
     - qa
@@ -36,9 +36,9 @@
 - name: Create new certs for SAML
   community.crypto.openssh_cert:
     type: host
-    signing_key: "/tmp/samlcerts/{{ item }}/sp-private.pem"
-    public_key: "/tmp/samlcerts/{{ item }}/sp-public.pem"
-    path: "/tmp/samlcerts/{{ item }}/sp.crt"
+    signing_key: "samlcerts/{{ item }}/sp-private.pem"
+    public_key: "samlcerts/{{ item }}/sp-public.pem"
+    path: "samlcerts/{{ item }}/sp.crt"
     valid_from: +0s
     valid_to: +400w
   loop:
@@ -50,7 +50,7 @@
 
 - name: Copy SAML keys/certs to hosts
   ansible.builtin.copy:
-    src: /tmp/samlcerts/
+    src: samlcerts/
     dest: /home/deploy/samlcerts/
     owner: root
     group: root
