@@ -13,10 +13,12 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
 
 RUN add-apt-repository --yes --update ppa:ansible/ansible && \
     # Install Ansible
-    apt install moreutils gettext-base ansible pip -y && \
+    apt install moreutils gettext-base ansible pip openssl -y && \
     # Installing specific version of resolvelib to fix:
     # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
     pip install -Iv 'resolvelib<0.6.0' && \
+    # Dependency of Ansible module community.crypto.openssl_privatekey
+    pip install -v cryptography && \
     ansible-galaxy collection install community.general ansible.posix community.docker && \
     # Install Terraform
     curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
