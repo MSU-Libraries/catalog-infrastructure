@@ -4,11 +4,11 @@
   ansible.builtin.file:
     path: "samlcerts/{{ item }}"
     state: directory
-    mode: '0750'
+    mode: '0755'
   loop:
-    - test
-    - qa
-    - prod
+    - devel-authentication
+    - catalog-beta
+    - catalog-prod
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -16,9 +16,9 @@
   community.crypto.openssl_privatekey:
     path: "samlcerts/{{ item }}/sp-private.pem"
   loop:
-    - test
-    - qa
-    - prod
+    - devel-authentication
+    - catalog-beta
+    - catalog-prod
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -31,9 +31,9 @@
     common_name: catalog.lib.msu.edu
     subject_alt_name: "DNS:catalog-prod.lib.msu.edu,DNS:catalog-beta.lib.msu.edu,DNS:devel-authentication.lib.msu.edu"
   loop:
-    - test
-    - qa
-    - prod
+    - devel-authentication
+    - catalog-beta
+    - catalog-prod
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -44,9 +44,9 @@
     csr_path: "samlcerts/{{ item }}/sp.csr"
     provider: selfsigned
   loop:
-    - test
-    - qa
-    - prod
+    - devel-authentication
+    - catalog-beta
+    - catalog-prod
   delegate_to: 127.0.0.1
   run_once: true
 
