@@ -34,7 +34,7 @@ module "catalog" {
       server_name = "catalog-1"
       aws_availability_zone = "a"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.xlarge"
+      aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 256
       private_ip = "10.1.1.10"
       subnet_cidr = "10.1.1.0/24"
@@ -52,7 +52,7 @@ module "catalog" {
       server_name = "catalog-3"
       aws_availability_zone = "c"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.xlarge"
+      aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 256
       private_ip = "10.1.3.10"
       subnet_cidr = "10.1.3.0/24"
