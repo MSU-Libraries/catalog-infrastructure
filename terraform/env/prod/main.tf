@@ -43,7 +43,7 @@ module "catalog" {
       server_name = "catalog-2"
       aws_availability_zone = "b"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.xlarge"
+      aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 256
       private_ip = "10.1.2.10"
       subnet_cidr = "10.1.2.0/24"
