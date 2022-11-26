@@ -150,6 +150,7 @@ EXPECTED_CONTAINERS=(
     catalog-beta-solr_cron
     catalog-beta-solr_solr
     catalog-beta-solr_zk
+    catalog-beta-monitoring_monitoring
 )
 
 # Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
