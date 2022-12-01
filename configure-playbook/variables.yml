@@ -13,7 +13,7 @@ create_users:
 
  - name: colli372
    comment: 'Nathan Collins'
-   groups: sudo,adm,docker,deploy
+   groups: sudo,adm,docker,deploy,ubuntu
 #   public_keys:
 #     - 
 
@@ -25,7 +25,7 @@ create_users:
 
  - name: schanzme
    comment: 'Megan Schanz'
-   groups: sudo,adm,docker,deploy
+   groups: sudo,adm,docker,deploy,ubuntu
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsF77c1J8qixXUadOWV9v94XBxfvkirSHk7gxRL29I0 schanzme@ddas.devel
 
