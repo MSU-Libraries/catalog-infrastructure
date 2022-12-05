@@ -25,7 +25,7 @@ fi
 
 run_sql() {
     FILTER="${2}"
-    echo "$1" | docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind | grep "$FILTER"
+    echo "$1" | sudo docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind | grep "$FILTER"
     if [[ $? -ne 0 ]]; then
         echo "CRITICAL: Could not make SQL call to $MARIADB_NAME."
         exit 2
