@@ -184,5 +184,5 @@ for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
     fi
 done
 
-echo "Docker status OK"
+echo "Docker status OK for $DEPLOYMENT"
 exit 0
