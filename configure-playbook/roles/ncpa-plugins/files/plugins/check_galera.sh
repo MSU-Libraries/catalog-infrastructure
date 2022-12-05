@@ -53,5 +53,5 @@ if [[ "$QUERY_OUT" != id* ]]; then
     exit 1
 fi
 
-echo "MariaDB Galera status OK"
+echo "MariaDB Galera status OK for $DEPLOYMENT"
 exit 0
