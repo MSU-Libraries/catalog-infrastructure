@@ -2,6 +2,13 @@
 
 #TODO this script could benefit from refactoring
 
+if [[ -z "$1" ]]; then
+    echo "INVALID: Must pass a deployment name to check_docker.sh."
+    exit 2
+fi
+
+DEPLOYMENT="$1"
+
 ## Note that the node number here is based on order returned, and NOT the "nodeid" label
 NODE_NUM=1
 while read -r LINE; do
@@ -87,10 +94,10 @@ verify_nodes 3 "Active" "availability"
 
 # Check appropriate stacks are deployed (both shared containers and prod containers)
 STACK_NAMES=(
-    catalog-beta-catalog
-    catalog-beta-internal
-    catalog-beta-mariadb
-    catalog-beta-solr
+    ${DEPLOYMENT}-catalog
+    ${DEPLOYMENT}-internal
+    ${DEPLOYMENT}-mariadb
+    ${DEPLOYMENT}-solr
     swarm-cron
     traefik
 )
@@ -112,13 +119,13 @@ fi
 # Check appropriate service replicas are running
 # TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
 SERVICES=(
-    "catalog-beta-catalog_catalog 3/3 (max 1 per node)"
-    "catalog-beta-catalog_cron 1/1"
-    "catalog-beta-internal_health 1/1"
-    "catalog-beta-mariadb_galera 3/3 (max 1 per node)"
-    "catalog-beta-solr_cron 3/3 (max 1 per node)"
-    "catalog-beta-solr_solr 3/3 (max 1 per node)"
-    "catalog-beta-solr_zk 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-catalog_catalog 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-catalog_cron 1/1"
+    "${DEPLOYMENT}-internal_health 1/1"
+    "${DEPLOYMENT}-mariadb_galera 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-solr_cron 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-solr_solr 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-solr_zk 3/3 (max 1 per node)"
     "swarm-cron_swarm-cronjob 1/1"
     "traefik_traefik 1/1 (max 1 per node)"
 )
@@ -140,17 +147,17 @@ done
 declare -a RUNNING_CONTAINERS
 while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
-done < <( sudo docker container ls -f "status=running" -f "name=catalog-beta-" --format "{{ .Names }}" )
+done < <( sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
 EXPECTED_CONTAINERS=(
-    catalog-beta-catalog_catalog
-    catalog-beta-catalog_cron
-    catalog-beta-internal_health
-    catalog-beta-mariadb_galera
-    catalog-beta-solr_cron
-    catalog-beta-solr_solr
-    catalog-beta-solr_zk
-    catalog-beta-monitoring_monitoring
+    ${DEPLOYMENT}-catalog_catalog
+    ${DEPLOYMENT}-catalog_cron
+    ${DEPLOYMENT}-internal_health
+    ${DEPLOYMENT}-mariadb_galera
+    ${DEPLOYMENT}-solr_cron
+    ${DEPLOYMENT}-solr_solr
+    ${DEPLOYMENT}-solr_zk
+    ${DEPLOYMENT}-monitoring_monitoring
 )
 
 # Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
