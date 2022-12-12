@@ -47,9 +47,9 @@ if [[ "$CSIZE_OUT" != "wsrep_cluster_size	3" ]]; then
 fi
 
 # Verify a SQL query runs without error
-QUERY_OUT=$( run_sql "SELECT id FROM search LIMIT 1" )
+QUERY_OUT=$( run_sql "SELECT id FROM user LIMIT 1" )
 if [[ "$QUERY_OUT" != id* ]]; then
-    echo "WARNING: MariaDB Galera could not be queried."
+    echo "WARNING: MariaDB Galera could not query row from user table."
     exit 1
 fi
 
