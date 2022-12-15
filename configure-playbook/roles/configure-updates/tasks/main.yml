@@ -18,6 +18,6 @@
 - name: Enable updates to non-security packages
   ansible.builtin.lineinfile:
     path: /etc/apt/apt.conf.d/50unattended-upgrades
-    regexp: '\/\/  "\${distro_id}:\${distro_codename}-updates";'
+    regexp: '^\/\/  "\${distro_id}:\${distro_codename}-updates";'
     line: '    "${distro_id}:${distro_codename}-updates";'
 
