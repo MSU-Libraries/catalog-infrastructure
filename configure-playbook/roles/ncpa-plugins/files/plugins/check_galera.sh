@@ -23,6 +23,7 @@ if [[ -z "$MARIADB_NAME" ]]; then
     exit 2
 fi
 
+# SQL single line query match
 run_sql() {
     FILTER="${2}"
     echo "$1" | sudo docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind | grep "$FILTER"
@@ -31,6 +32,56 @@ run_sql() {
         exit 2
     fi
 }
+
+# SQL full query response
+run_full_sql() {
+    QUERY="$1"
+    declare -g ROW_CNT=0
+    declare -g -a ROW_$ROW_CNT=
+    while read -r -a ROW_$ROW_CNT; do
+        (( ROW_CNT+=1 ))
+        declare -g -a ROW_$ROW_CNT
+    done < <( sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind --silent -e "$QUERY" )
+    if [[ "$ROW_CNT" -eq 0 ]]; then
+        echo "CRITICAL: No response from $MARIADB_NAME query >> $QUERY"
+        exit 2
+    fi
+    return $ROW_CNT
+}
+
+# Verify node and cluster status
+run_full_sql "SHOW WSREP_STATUS"
+# Row indices => 0:Node_Index,1:Node_Status,2:Cluster_Status,3:Cluster_Size
+if [[ "${ROW_0[1]}" != "synced" ]]; then
+    echo "WARNING: Node not synced (status: ${ROW_0[1]})"
+    exit 1
+fi
+if [[ "${ROW_0[2]}" != "primary" ]]; then
+    echo "WARNING: Cluster not primary (status: ${ROW_0[2]})"
+    exit 1
+fi
+
+run_full_sql "SHOW WSREP_MEMBERSHIP"
+# Row indices => 0:Index,1:Uuid,2:Name,3:Address
+ROW_CNT="$?"
+declare -a EXPECT_NODES=("galera1" "galera2" "galera3")
+declare -a FOUND_NODES=()
+declare -a FOUND_SORTED=()
+for ((IDX=0; IDX<ROW_CNT; IDX++)); do
+    NNVAR="ROW_$IDX[2]"
+    FOUND_NODES+=("${!NNVAR}")
+done
+OIFS="$IFS";
+IFS=$'\n' FOUND_SORTED=($(sort <<<"${FOUND_NODES[*]}"))
+IFS="$OIFS"
+if [[ "${EXPECT_NODES[*]}" != "${FOUND_SORTED[*]}" ]]; then
+    echo "WARNING: Cluster members incorrect >> ${FOUND_SORTED[*]}"
+    exit 1
+fi
+if [[ "$ROW_CNT" -ne 3 ]]; then
+    echo "WARNING: Bad member count ($ROW_CNT) from WSREP_MEMBERSHIP."
+    exit 1
+fi
 
 # Verify node is not desynced
 DESYNC_OUT=$( run_sql "SHOW VARIABLES LIKE 'wsrep_desync'" "wsrep_desync" )
@@ -49,9 +100,13 @@ fi
 # Verify a SQL query runs without error
 QUERY_OUT=$( run_sql "SELECT id FROM user LIMIT 1" )
 if [[ "$QUERY_OUT" != id* ]]; then
-    echo "WARNING: MariaDB Galera could not query row from user table."
+    echo "WARNING: Could not query row from user table."
     exit 1
 fi
+
+# Check for unsafe shutdown
+# TODO /bitnami/node_shutdown_unsafely on $DEPLOYMENT-mariadb_db-bitnami
+# TODO at /var/lib/docker/volumes/$DEPLOYMENT-mariadb_db-bitnami/_data/node_shutdown_unsafely
 
 echo "MariaDB Galera status OK for $DEPLOYMENT"
 exit 0
