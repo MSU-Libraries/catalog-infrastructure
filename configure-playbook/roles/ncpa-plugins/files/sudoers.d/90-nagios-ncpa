@@ -1,5 +1,5 @@
 # Commands Nagios user / NCPA may run as sudo
-Cmnd_Alias  NAGIOS=/usr/bin/docker node ls *,/usr/bin/docker stack ls *,/usr/bin/docker service ls *,/usr/bin/docker container ls *,/usr/bin/docker container inspect *, /usr/bin/docker exec *
+Cmnd_Alias  NAGIOS=/usr/bin/docker node ls *,/usr/bin/docker stack ls *,/usr/bin/docker service ls *,/usr/bin/docker container ls *,/usr/bin/docker container inspect *,/usr/bin/docker exec *,/usr/bin/test -f *
 
 # Password-less
 nagios  ALL=(root) NOPASSWD: NAGIOS
