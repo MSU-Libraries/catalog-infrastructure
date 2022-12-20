@@ -1,0 +1,23 @@
+---
+- name: Create timer override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/apt-daily-upgrade.timer.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy timer config
+  ansible.builtin.template:
+    src: timer.j2
+    dest: /etc/systemd/system/apt-daily-upgrade.timer.d/override.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable updates to non-security packages
+  ansible.builtin.lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/\s+"\$\{distro_id\}:\$\{distro_codename\}-updates";'
+    line: '    "${distro_id}:${distro_codename}-updates";'
+

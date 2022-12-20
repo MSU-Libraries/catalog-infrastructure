@@ -1,0 +1,3 @@
+[Timer]
+OnCalendar=*-*-* {{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) + 2 }}:00
+RandomizedDelaySec=0
