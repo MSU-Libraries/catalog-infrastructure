@@ -105,9 +105,9 @@ if [[ "$QUERY_OUT" != id* ]]; then
 fi
 
 # Check for unsafe shutdown
-sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/custom/node_shutdown_unsafely
+sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely
 if [[ "$?" -eq 0 ]]; then
-    echo "WARNING: Node had unsafe shutdown flag file (/bitnami/custom/node_shutdown_unsafely)"
+    echo "WARNING: Node had unsafe shutdown flag file (/bitnami/mariadb/node_shutdown_unsafely)"
     exit 1
 fi
 
