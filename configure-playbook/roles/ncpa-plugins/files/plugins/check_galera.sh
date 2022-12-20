@@ -105,8 +105,11 @@ if [[ "$QUERY_OUT" != id* ]]; then
 fi
 
 # Check for unsafe shutdown
-# TODO /bitnami/node_shutdown_unsafely on $DEPLOYMENT-mariadb_db-bitnami
-# TODO at /var/lib/docker/volumes/$DEPLOYMENT-mariadb_db-bitnami/_data/node_shutdown_unsafely
+sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/custom/node_shutdown_unsafely
+if [[ "$?" -eq 0 ]]; then
+    echo "WARNING: Node had unsafe shutdown flag file (/bitnami/custom/node_shutdown_unsafely)"
+    exit 1
+fi
 
 echo "MariaDB Galera status OK for $DEPLOYMENT"
 exit 0
