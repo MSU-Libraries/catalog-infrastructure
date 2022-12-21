@@ -231,7 +231,7 @@ done
 
 # Services update state should be 'completed'
 for SERVICE in "${EXPECTED_SERVICES[@]}"; do
-    UPDATE_STATE=$(docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
+    UPDATE_STATE=$(sudo docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
     if [[ "$UPDATE_STATE" != "completed" ]]; then
         echo "WARNING: Service $SERVICE update state is '$UPDATE_STATE' (expected 'completed')"
         exit 1
