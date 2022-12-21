@@ -159,7 +159,9 @@ while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
 done < <( sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
+# The -internal_health must be first below, as it is unset after this check
 EXPECTED_SERVICES=(
+    "${DEPLOYMENT}-internal_health"
     "${DEPLOYMENT}-catalog_catalog"
     "${DEPLOYMENT}-mariadb_galera"
     "${DEPLOYMENT}-solr_cron"
@@ -181,6 +183,9 @@ for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
         exit 1
     fi
 done
+
+# Remove -internal_health for remainder of checks
+unset 'EXPECTED_SERVICES[0]'
 
 # Check containers have been running for longer than 35 seconds
 UNIX_NOW=$( date +%s )
