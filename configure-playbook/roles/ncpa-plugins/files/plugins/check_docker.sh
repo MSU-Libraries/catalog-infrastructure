@@ -9,6 +9,11 @@ fi
 
 DEPLOYMENT="$1"
 
+is_main() {
+    [[ "$DEPLOYMENT" == "catalog"* ]]
+    return $?
+}
+
 ## Note that the node number here is based on order returned, and NOT the "nodeid" label
 NODE_NUM=1
 while read -r LINE; do
@@ -94,12 +99,13 @@ verify_nodes 3 "Active" "availability"
 
 # Check appropriate stacks are deployed (both shared containers and prod containers)
 STACK_NAMES=(
-    ${DEPLOYMENT}-catalog
-    ${DEPLOYMENT}-internal
-    ${DEPLOYMENT}-mariadb
-    ${DEPLOYMENT}-solr
-    swarm-cron
-    traefik
+    "${DEPLOYMENT}-catalog"
+    "${DEPLOYMENT}-internal"
+    "${DEPLOYMENT}-mariadb"
+    "${DEPLOYMENT}-solr"
+    "${DEPLOYMENT}-monitoring"
+    "swarm-cron"
+    "traefik"
 )
 FOUND_STACKS=0
 while read -r LINE; do
@@ -120,15 +126,19 @@ fi
 # TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
 SERVICES=(
     "${DEPLOYMENT}-catalog_catalog 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-catalog_cron 1/1"
     "${DEPLOYMENT}-internal_health 1/1"
     "${DEPLOYMENT}-mariadb_galera 3/3 (max 1 per node)"
     "${DEPLOYMENT}-solr_cron 3/3 (max 1 per node)"
     "${DEPLOYMENT}-solr_solr 3/3 (max 1 per node)"
     "${DEPLOYMENT}-solr_zk 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-monitoring_monitoring 3/3 (max 1 per node)"
     "swarm-cron_swarm-cronjob 1/1"
     "traefik_traefik 1/1 (max 1 per node)"
 )
+if is_main; then
+    SERVICES+=("${DEPLOYMENT}-catalog_cron 1/1")
+fi
+
 declare -a FOUND_SERVICES
 while read -r LINE; do
     FOUND_SERVICES+=( "${LINE// /~}" )  # hacky fix to avoid spaces
@@ -149,21 +159,24 @@ while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
 done < <( sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
-EXPECTED_CONTAINERS=(
-    ${DEPLOYMENT}-catalog_catalog
-    ${DEPLOYMENT}-catalog_cron
-    ${DEPLOYMENT}-internal_health
-    ${DEPLOYMENT}-mariadb_galera
-    ${DEPLOYMENT}-solr_cron
-    ${DEPLOYMENT}-solr_solr
-    ${DEPLOYMENT}-solr_zk
-    ${DEPLOYMENT}-monitoring_monitoring
+EXPECTED_SERVICES=(
+    "${DEPLOYMENT}-catalog_catalog"
+    "${DEPLOYMENT}-mariadb_galera"
+    "${DEPLOYMENT}-solr_cron"
+    "${DEPLOYMENT}-solr_solr"
+    "${DEPLOYMENT}-solr_zk"
+    "${DEPLOYMENT}-monitoring_monitoring"
 )
+if is_main; then
+    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cron")
+else
+    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cachecron")
+fi
 
 # Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
     RUN_CONTAINER=$( echo "$RUNNING" | cut -d. -f1 )
-    if ! array_contains EXPECTED_CONTAINERS "$RUN_CONTAINER"; then
+    if ! array_contains EXPECTED_SERVICES "$RUN_CONTAINER"; then
         echo "WARNING: Docker container not expected ($RUN_CONTAINER)."
         exit 1
     fi
@@ -180,6 +193,42 @@ for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
         exit 3
     elif [[ "$UNIX_STARTED" -ge "$UNIX_M35" ]]; then
         echo "WARNING: Docker container is too young ($RUNNING). Is the health check killing it?."
+        exit 1
+    fi
+done
+
+# Image tags for all replicas in a service should be the same
+for SERVICE in "${EXPECTED_SERVICES[@]}"; do
+    TARGET_IMAGE=$(sudo docker service inspect "$SERVICE" | jq -r '.[0].Spec.Labels."com.docker.stack.image"')
+    if [[ "$TARGET_IMAGE" == "null" ]]; then
+        echo "CRITICAL: No service or no image found for service ($SERVICE : $TARGET_IMAGE)"
+        exit 2
+    fi
+
+    FOUND_REPLICAS=0
+    while read -r LINE; do
+        (( FOUND_REPLICAS += 1 ))
+        if [[ "$LINE" != "$TARGET_IMAGE" ]]; then
+            echo "WARNING: Incorrect image tag for ${SERVICE}; expect: ${TARGET_IMAGE##*/}, got: ${LINE##*/}"
+            exit 1
+        fi
+    done < <( sudo docker service ps -f "desired-state=running" --format "{{ .Image }}" "${SERVICE}" )
+
+    if [[ "$SERVICE" != *"-catalog_cron" && "$FOUND_REPLICAS" -ne 3 ]]; then
+        echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 3)"
+        exit 1
+    fi
+    if [[ "$SERVICE" == *"-catalog_cron" && "$FOUND_REPLICAS" -ne 1 ]]; then
+        echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 1)"
+        exit 1
+    fi
+done
+
+# Services update state should be 'completed'
+for SERVICE in "${EXPECTED_SERVICES[@]}"; do
+    UPDATE_STATE=$(docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
+    if [[ "$UPDATE_STATE" != "completed" ]]; then
+        echo "WARNING: Service $SERVICE update state is '$UPDATE_STATE' (expected 'completed')"
         exit 1
     fi
 done
