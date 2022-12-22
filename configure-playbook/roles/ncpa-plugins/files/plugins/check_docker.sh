@@ -2,9 +2,15 @@
 
 #TODO this script could benefit from refactoring
 
+# Prepend sudo to a command if user is not in docker group
+docker_sudo() {
+    if ! groups | grep -qw docker; then sudo "$@";
+    else "$@"; fi
+}
+
 if [[ -z "$1" ]]; then
-    echo "INVALID: Must pass a deployment name to check_docker.sh."
-    exit 2
+    echo "UNKNOWN: You must provide a deployment name (e.g. catalog-beta) as the first argument."
+    exit 3
 fi
 
 DEPLOYMENT="$1"
@@ -23,7 +29,7 @@ while read -r LINE; do
     #    declare -g NODE_OUT_SELF="${!NODE_VARNAME}"
     #fi
     (( NODE_NUM += 1 ))
-done < <( sudo docker node ls --format '{{ .Self }} {{ .Hostname }} {{ .Status }} {{ .Availability }} {{ .ManagerStatus }} {{ .EngineVersion }}' )
+done < <( docker_sudo docker node ls --format '{{ .Self }} {{ .Hostname }} {{ .Status }} {{ .Availability }} {{ .ManagerStatus }} {{ .EngineVersion }}' )
 
 # Node info by index
 #   0 = is_self
@@ -112,7 +118,7 @@ while read -r LINE; do
     if array_contains STACK_NAMES "$LINE"; then
         (( FOUND_STACKS += 1 ))
     fi
-done < <( sudo docker stack ls --format "{{ .Name }}" )
+done < <( docker_sudo docker stack ls --format "{{ .Name }}" )
 
 if [[ "${#STACK_NAMES[@]}" -gt "$FOUND_STACKS" ]]; then
     echo "CRITICAL: Missing one or more production Docker stacks (${FOUND_STACKS}/${#STACK_NAMES[@]})."
@@ -142,7 +148,7 @@ fi
 declare -a FOUND_SERVICES
 while read -r LINE; do
     FOUND_SERVICES+=( "${LINE// /~}" )  # hacky fix to avoid spaces
-done < <( sudo docker service ls --format "{{ .Name }} {{ .Replicas }}" )
+done < <( docker_sudo docker service ls --format "{{ .Name }} {{ .Replicas }}" )
 
 for SERVICE in "${SERVICES[@]}"; do
     SERVICE="${SERVICE// /~}"           # hacky fix to avoid spaces
@@ -157,7 +163,7 @@ done
 declare -a RUNNING_CONTAINERS
 while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
-done < <( sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
+done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
 # The -internal_health must be first below, as it is unset after this check
 EXPECTED_SERVICES=(
@@ -191,7 +197,7 @@ unset 'EXPECTED_SERVICES[0]'
 UNIX_NOW=$( date +%s )
 UNIX_M35=$(( UNIX_NOW - 35 ))
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
-    STARTED=$( sudo docker container inspect "$RUNNING" | jq -r .[0].State.StartedAt )
+    STARTED=$( docker_sudo docker container inspect "$RUNNING" | jq -r .[0].State.StartedAt )
     UNIX_STARTED=$( date -d "$STARTED" +%s )
     if [[ -z "$STARTED" ]]; then
         echo "UNKNOWN: Docker container missing StartedAt value ($RUNNING)."
@@ -204,7 +210,7 @@ done
 
 # Image tags for all replicas in a service should be the same
 for SERVICE in "${EXPECTED_SERVICES[@]}"; do
-    TARGET_IMAGE=$(sudo docker service inspect "$SERVICE" | jq -r '.[0].Spec.Labels."com.docker.stack.image"')
+    TARGET_IMAGE=$(docker_sudo docker service inspect "$SERVICE" | jq -r '.[0].Spec.Labels."com.docker.stack.image"')
     if [[ "$TARGET_IMAGE" == "null" ]]; then
         echo "CRITICAL: No service or no image found for service ($SERVICE : $TARGET_IMAGE)"
         exit 2
@@ -217,7 +223,7 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
             echo "WARNING: Incorrect image tag for ${SERVICE}; expect: ${TARGET_IMAGE##*/}, got: ${LINE##*/}"
             exit 1
         fi
-    done < <( sudo docker service ps -f "desired-state=running" --format "{{ .Image }}" "${SERVICE}" )
+    done < <( docker_sudo docker service ps -f "desired-state=running" --format "{{ .Image }}" "${SERVICE}" )
 
     if [[ "$SERVICE" != *"-catalog_cron" && "$FOUND_REPLICAS" -ne 3 ]]; then
         echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 3)"
@@ -231,7 +237,7 @@ done
 
 # Services' update state should be 'completed' (or 'null' if service never updated)
 for SERVICE in "${EXPECTED_SERVICES[@]}"; do
-    UPDATE_STATE=$(sudo docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
+    UPDATE_STATE=$(docker_sudo docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
     if [[ "$UPDATE_STATE" != "completed" && "$UPDATE_STATE" != "null" ]]; then
         echo "WARNING: Service $SERVICE update state is '$UPDATE_STATE' (expected 'completed')"
         exit 1

@@ -1,8 +1,20 @@
 #!/bin/bash
 
+# Prepend sudo to a command if user is not in docker group
+docker_sudo() {
+    if ! groups | grep -qw docker; then sudo "$@";
+    else "$@"; fi
+}
+
+# Prepend sudo to a command if user is not root
+root_sudo() {
+    if [[ "$EUID" -ne 0 ]]; then sudo "$@";
+    else "$@"; fi
+}
+
 if [[ -z "$1" ]]; then
-    echo "INVALID: Must pass a deployment name to check_docker.sh."
-    exit 2
+    echo "UNKNOWN: You must provide a deployment name (e.g. catalog-beta) as the first argument."
+    exit 3
 fi
 
 DEPLOYMENT="$1"
@@ -16,7 +28,7 @@ while read -r LINE; do
         MARIADB_NAME="$LINE"
         break;
     fi
-done < <( sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
+done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
 if [[ -z "$MARIADB_NAME" ]]; then
     echo "CRITICAL: Cannot find MariaDB container for given stack."
@@ -26,7 +38,7 @@ fi
 # SQL single line query match
 run_sql() {
     FILTER="${2}"
-    echo "$1" | sudo docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind | grep "$FILTER"
+    docker_sudo docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind -e "$1" | grep "$FILTER"
     if [[ $? -ne 0 ]]; then
         echo "CRITICAL: Could not make SQL call to $MARIADB_NAME."
         exit 2
@@ -41,7 +53,7 @@ run_full_sql() {
     while read -r -a ROW_$ROW_CNT; do
         (( ROW_CNT+=1 ))
         declare -g -a ROW_$ROW_CNT
-    done < <( sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind --silent -e "$QUERY" )
+    done < <( docker_sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind --silent -e "$QUERY" )
     if [[ "$ROW_CNT" -eq 0 ]]; then
         echo "CRITICAL: No response from $MARIADB_NAME query >> $QUERY"
         exit 2
@@ -105,7 +117,7 @@ if [[ "$QUERY_OUT" != id* ]]; then
 fi
 
 # Check for unsafe shutdown
-sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely
+root_sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely
 if [[ "$?" -eq 0 ]]; then
     echo "WARNING: Node had unsafe shutdown flag file (/bitnami/mariadb/node_shutdown_unsafely)"
     exit 1
