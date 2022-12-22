@@ -13,6 +13,7 @@ fi
 
 DEPLOYMENT="$1"
 SOLR_NODE="$2"      # If left blank, will use SOLR_HOST in container
+SOLR_NODES=(solr1 solr2 solr3)
 
 # Find local Solr container
 CONTAINER=
@@ -57,14 +58,50 @@ if [[ "${COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
     exit 2
 fi
 
-# TODO verify each node has one (and only one) replica online for each collection
-# TODO verify no other replicas exist
+CLUSTER_STATUS=$( run_curl 'http://$SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json' )
+for COLLECTION in "${COLLECTIONS[@]}"; do
+    # Verify shard health
+    SHARD_HEALTH=$( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.shard1.health" )
+    if [[ "$SHARD_HEALTH" != "GREEN" ]]; then
+        echo "WARNING: Shard health for ${COLLECTION} is ${SHARD_HEALTH}"
+        exit 1
+    fi
 
-# TODO verify (from each node's perspective) that there is only a single leader for each collection
+    # Verify each node has one (and only one) replica for each collection
+    REP_IDX=0
+    REP_PREV=
+    while read -r REP_HOST; do
+        if [[ "$REP_PREV" == "$REP_HOST" ]]; then
+            echo "CRITICAL: Found more than one replica for $COLLECTION on $REP_HOST"
+            exit 1
+        fi
+        if [[ "$REP_IDX" -ge 3 ]]; then
+            echo "CRITICAL: Found extra replica for $COLLECTION on $REP_HOST"
+            exit 2
+        fi
+        if [[ "${SOLR_NODES[$REP_IDX]}" != "$REP_HOST" ]]; then
+            echo "WARNING: Missing expected $COLLECTION replica on ${SOLR_NODES[$REP_IDX]}"
+            exit 1
+        fi
+        (( REP_IDX += 1 ))
+        REP_PREV="$REP_HOST"
+    done < <( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.shard1.replicas[].node_name" | cut -f1 -d':' | sort )
 
-# TODO verify each node has near identical number of records for each collection
+    if [[ "$REP_IDX" -ne 3 ]]; then
+        echo "CRITICAL: Missing replica(s) for $COLLECTION (found ${REP_IDX})"
+        exit 2
+    fi
 
-# TODO verify a Solr query runs against each collection without error (in an approriate time)
+    # Run from each node's perspective to ensure consistency
+    for NODE in "${SOLR_NODES[@]}"; do
+        :
+        # TODO verify that there is only a single leader for each collection
+
+        # TODO verify each node has near identical number of records for each collection
+    done
+
+    # TODO verify a Solr query runs against each collection without error (in an approriate time)
+done
 
 echo "Solr status OK for $DEPLOYMENT"
 exit 0
