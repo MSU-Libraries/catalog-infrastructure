@@ -49,13 +49,6 @@ fi
 NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs&wt=json" )
 CLUSTER_STATUS=$( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json" )
 for COLLECTION in "${COLLECTIONS[@]}"; do
-    # Verify shard health
-    SHARD_HEALTH=$( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.shard1.health" )
-    if [[ "$SHARD_HEALTH" != "GREEN" ]]; then
-        echo "WARNING: Shard health for ${COLLECTION} is ${SHARD_HEALTH}"
-        exit 1
-    fi
-
     # Verify each node has one (and only one) replica for each collection
     REP_IDX=0
     REP_PREV=
@@ -107,6 +100,13 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     if [[ "${#LEADER_MATCH[@]}" -ne 1 ]]; then
         echo "CRITICAL: For collection ${COLLECTION}, multiple leaders found: ${LEADER_MATCH[*]}"
         exit 2
+    fi
+
+    # Verify shard health
+    SHARD_HEALTH=$( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.shard1.health" )
+    if [[ "$SHARD_HEALTH" != "GREEN" ]]; then
+        echo "WARNING: Shard health for ${COLLECTION} is ${SHARD_HEALTH}"
+        exit 1
     fi
 
     # Verify each node has (near?) identical number of records for each collection
