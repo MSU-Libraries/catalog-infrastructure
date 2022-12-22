@@ -26,25 +26,13 @@ if [[ -z "$CONTAINER" ]]; then
     exit 2
 fi
 
-#CLUSTER INFORMATION
-#http://SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json
+# PERFORMANCE
+#TODO warn if load become excessive or query performance slows
+#http://SOLR_NODE:8983/solr/admin/metrics?nodes=SOLR_NODE:8983_solr&prefix=org.eclipse.jetty.server.handler.DefaultHandler.get-requests&wt=json
 
-#REPLICAS LIST (is it useful?)
-#http://SOLR_NODE:8983/solr/admin/cores?indexInfo=false&wt=json
-
-#http://SOLR_NODE:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&prefix=CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime&wt=json
-# Metric fields:
-#  nodes : list of nodes to to pull metrics for
-#  prefix: list of data to pull
-#    CONTAINER.fs: Node file system information (e.g. total/usable space)
-#    org.eclipse.jetty.server.handler.DefaultHandler.get-requests: Service performance metrics on GET requests
-#    INDEX.sizeInBytes: Per replica, size of replica
-#    SEARCHER.searcher.numDocs: Per replica, total number of documents
-#    SEARCHER.searcher.deletedDocs: Per replica, number of documents which are marked deleted
-#    SEARCHER.searcher.warmupTime: Per replica, warmup time
-
-#MEMORY USE
-#http://SOLR_NODE:8983/solr/admin/info/system?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&wt=json
+# MEMORY USE
+#TODO warn if Solr memory use approaches Java max allotment
+#http://SOLR_NODE:8983/solr/admin/info/system?nodes=SOLR_NODE:8983_solr&wt=json
 
 run_curl() {
     docker_sudo docker exec -i --env SOLR_NODE="$SOLR_NODE" --env CURL="$1" "${CONTAINER}" bash -c 'export SOLR_NODE="${SOLR_NODE:-$SOLR_HOST}"; curl -s "$(eval echo $CURL)"'
@@ -52,13 +40,14 @@ run_curl() {
 
 # Verify all appropriate collections exist
 COLLECTIONS=( authority biblio reserves website )
-FOUND_COLLECTIONS=( $( run_curl 'http://$SOLR_NODE:8983/solr/admin/collections?action=LIST&wt=json' | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
+FOUND_COLLECTIONS=( $( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=LIST&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
 if [[ "${COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
     echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}"
     exit 2
 fi
 
-CLUSTER_STATUS=$( run_curl 'http://$SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json' )
+NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs&wt=json" )
+CLUSTER_STATUS=$( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json" )
 for COLLECTION in "${COLLECTIONS[@]}"; do
     # Verify shard health
     SHARD_HEALTH=$( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.shard1.health" )
@@ -93,14 +82,47 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     fi
 
     # Run from each node's perspective to ensure consistency
+    LEADERS=()
+    RCOUNTS=()
     for NODE in "${SOLR_NODES[@]}"; do
-        :
-        # TODO verify that there is only a single leader for each collection
+        NODE_CLUSTER_STATUS=$( run_curl "http://${NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json" )
 
-        # TODO verify each node has near identical number of records for each collection
+        NODE_LEADERS=( $( echo "$NODE_CLUSTER_STATUS" | jq -r "[.cluster.collections.${COLLECTION}.shards.shard1.replicas[]]|sort_by(.node_name)[].leader" | paste -sd ' ' - ) )
+        for IDX in "${!NODE_LEADERS[@]}"; do
+            if [[ "${NODE_LEADERS[$IDX]}" == "true" ]]; then
+                LEADERS+=("${SOLR_NODES[$IDX]}")
+            fi
+        done
+
+        NODE_RCOUNT=$( echo "$NODE_METRICS" | jq -r "to_entries[]|select(.key|startswith(\"${NODE}:\")).value.metrics|to_entries[]|select(.key|startswith(\"solr.core.${COLLECTION}.\")).value.\"SEARCHER.searcher.numDocs\"" )
+        RCOUNTS+=("$NODE_RCOUNT")
     done
 
-    # TODO verify a Solr query runs against each collection without error (in an approriate time)
+    # Verify that there is only a single leader for each collection
+    if [[ "${#LEADERS[@]}" -ne 3 ]]; then
+        echo "CRITICAL: For collection ${COLLECTION}, 3 nodes found ${#LEADERS[@]} leaders: ${LEADERS[*]}"
+        exit 2
+    fi
+    mapfile -t LEADER_MATCH < <( printf "%s\n" "${LEADERS[@]}" | sort -u )
+    if [[ "${#LEADER_MATCH[@]}" -ne 1 ]]; then
+        echo "CRITICAL: For collection ${COLLECTION}, multiple leaders found: ${LEADER_MATCH[*]}"
+        exit 2
+    fi
+
+    # Verify each node has (near?) identical number of records for each collection
+    mapfile -t RCOUNT_MATCH < <( printf "%s\n" "${RCOUNTS[@]}" | sort -u )
+    if [[ "${#RCOUNT_MATCH[@]}" -ne 1 ]]; then
+        echo "WARNING: For collection ${COLLECTION}, replica doc counts do not match: ${RCOUNT_MATCH[*]}"
+        exit 1
+    fi
+
+    # Verify a Solr query runs against the collection without error
+    QUERY_RESP=$( run_curl "http://\$SOLR_NODE:8983/solr/${COLLECTION}/select?q=*:*&rows=1&wt=json" )
+    QUERY_STATUS=$( echo "$QUERY_RESP" | jq -r '.responseHeader.status' )
+    if [[ "$QUERY_STATUS" -ne 0 ]]; then
+        echo "CRITICAL: Unable to query collection ${COLLECTION}; response status of ${QUERY_STATUS}"
+        exit 2
+    fi
 done
 
 echo "Solr status OK for $DEPLOYMENT"
