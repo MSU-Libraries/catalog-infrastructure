@@ -3,4 +3,3 @@ Cmnd_Alias  NAGIOS=/usr/bin/docker node ls *,/usr/bin/docker stack ls *,/usr/bin
 
 # Password-less
 nagios  ALL=(root) NOPASSWD: NAGIOS
-
