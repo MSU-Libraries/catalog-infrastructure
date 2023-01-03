@@ -110,9 +110,9 @@ if [[ "$CSIZE_OUT" != "wsrep_cluster_size	3" ]]; then
 fi
 
 # Verify a SQL query runs without error
-QUERY_OUT=$( run_sql "SELECT id FROM user LIMIT 1" )
-if [[ "$QUERY_OUT" != id* ]]; then
-    echo "WARNING: Could not query row from user table."
+QUERY_OUT=$( run_sql "SHOW CREATE TABLE user" )
+if [[ "$QUERY_OUT" != Table* ]]; then
+    echo "WARNING: Could not query create data from user table."
     exit 1
 fi
 
