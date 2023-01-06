@@ -1,0 +1,8 @@
+/var/lib/docker/volumes/*_logs/_data/*/*.log {
+  rotate 7
+  daily
+  compress
+  missingok
+  delaycompress
+  copytruncate
+}
