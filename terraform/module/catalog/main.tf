@@ -302,11 +302,20 @@ module "nodes" {
   efs_id = aws_efs_file_system.catalog_efs.id
 }
 
-# Create a round robin hostname records
+# Create round robin hostname records
 resource "aws_route53_record" "roundrobin_dnsrec" {
   # Zone: aws.lib.msu.edu
   zone_id = "Z0159018169CCNUQINNQG"
   name    = "catalog.aws.lib.msu.edu"
+  type    = "A"
+  ttl     = "300"
+  records = [for node in module.nodes:"${node.public_ip}"]
+}
+
+resource "aws_route53_record" "roundrobin_dnsproxy" {
+  # Zone: aws.lib.msu.edu
+  zone_id = "Z0159018169CCNUQINNQG"
+  name    = "catalog-proxy.aws.lib.msu.edu"
   type    = "A"
   ttl     = "300"
   records = [for node in module.nodes:"${node.public_ip}"]
