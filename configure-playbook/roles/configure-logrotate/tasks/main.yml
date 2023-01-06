@@ -2,7 +2,7 @@
 
 - name: Copy logrotation file
   ansible.builtin.copy:
-    src: "{{ role_path }}/logrotate.d/pubcat"
+    src: "{{ role_path }}/files/logrotate.d/pubcat"
     dest: /etc/logrotate.d/pubcat
     owner: root
     group: root
