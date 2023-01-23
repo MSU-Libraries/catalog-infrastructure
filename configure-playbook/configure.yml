@@ -19,6 +19,7 @@
     - deploy-variables
     - restrict-ubuntu-user
     - ncpa-plugins
+    - configure-logrotate
 
   tasks:
     - name: Create users
