@@ -109,6 +109,9 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
         exit 1
     fi
 
+    # Verify one replica per node and they are active
+    #TODO
+
     # Verify each node has (near?) identical number of records for each collection
     mapfile -t RCOUNT_MATCH < <( printf "%s\n" "${RCOUNTS[@]}" | sort -u )
     if [[ "${#RCOUNT_MATCH[@]}" -ne 1 ]]; then
@@ -123,6 +126,9 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
         echo "CRITICAL: Unable to query collection ${COLLECTION}; response status of ${QUERY_STATUS}"
         exit 2
     fi
+
+    # General health check against collection
+    #TODO  .cluster.collections.biblio.health should be GREEN
 done
 
 echo "Solr status OK for $DEPLOYMENT"

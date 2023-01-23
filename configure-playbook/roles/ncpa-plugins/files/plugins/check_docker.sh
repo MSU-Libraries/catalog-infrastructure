@@ -121,10 +121,10 @@ while read -r LINE; do
 done < <( docker_sudo docker stack ls --format "{{ .Name }}" )
 
 if [[ "${#STACK_NAMES[@]}" -gt "$FOUND_STACKS" ]]; then
-    echo "CRITICAL: Missing one or more production Docker stacks (${FOUND_STACKS}/${#STACK_NAMES[@]})."
+    echo "CRITICAL: Missing one or more Docker stacks (${FOUND_STACKS}/${#STACK_NAMES[@]})."
     exit 2
 elif [[ "${#STACK_NAMES}" -lt "$FOUND_STACKS" ]]; then
-    echo "UNKNOWN: Excess production Docker stacks found! (${FOUND_STACKS}/${#STACK_NAMES[@]}) How?"
+    echo "UNKNOWN: Excess Docker stacks found! (${FOUND_STACKS}/${#STACK_NAMES[@]}) How?"
     exit 3
 fi
 
