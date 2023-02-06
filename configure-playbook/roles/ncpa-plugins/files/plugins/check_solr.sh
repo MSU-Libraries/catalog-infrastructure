@@ -110,7 +110,17 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     fi
 
     # Verify one replica per node and they are active
-    #TODO
+    SHARDS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards | keys | join (\" \")") )
+    for SHARD in "${SHARDS[@]}"; do
+        ACTIVE_REPLICAS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.${SHARD}.replicas[] | select(.state == \"active\") | .node_name | sub(\":8983_solr\";\"\")" | sort) )
+        if [[ -z "${ACTIVE_REPLICAS[@]}" ]]; then
+            echo "CRITICAL: No active replicas for ${COLLECTION}.${SHARD}"
+            exit 1
+        elif [[ "${ACTIVE_REPLICAS[@]}" != "${SOLR_NODES[@]}" ]]; then
+            echo "WARNING: Active replicas for ${COLLECTION}.${SHARD} is '${ACTIVE_REPLICAS[@]}' (should be '${SOLR_NODES[@]}')"
+            exit 1
+        fi
+    done
 
     # Verify each node has (near?) identical number of records for each collection
     mapfile -t RCOUNT_MATCH < <( printf "%s\n" "${RCOUNTS[@]}" | sort -u )
@@ -128,7 +138,11 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     fi
 
     # General health check against collection
-    #TODO  .cluster.collections.biblio.health should be GREEN
+    COLL_HEALTH=$( echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.health" )
+    if [[ "$COLL_HEALTH" != "GREEN" ]]; then
+        echo "WARNING: Collection health for ${COLLECTION} is ${COLL_HEALTH}"
+        exit 1
+    fi
 done
 
 echo "Solr status OK for $DEPLOYMENT"
