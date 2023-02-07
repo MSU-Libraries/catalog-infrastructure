@@ -112,4 +112,5 @@ for COLL in "${COLLECTIONS[@]}"; do
     done
 done
 
+echo "Zookeeper status OK for $DEPLOYMENT"
 exit 0
