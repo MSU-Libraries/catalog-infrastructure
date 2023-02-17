@@ -5,7 +5,7 @@ stages:
 Build Base Image:
   stage: build
   tags:
-    - msul-docker
+    - msul-shared
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
   image: docker:19.03
@@ -18,7 +18,7 @@ Build Base Image:
 Provision:
   stage: provision
   tags:
-    - msul-docker
+    - msul-shared
   image: $CI_REGISTRY_IMAGE/ansible:latest
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
