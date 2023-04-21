@@ -33,11 +33,11 @@ while read -r LINE; do
 done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
 folio_api_url() {
-    docker exec -t "$VUFIND_NAME" cat /usr/local/vufind/local/config/vufind/folio.ini | grep -E "^ *base_url *=" | head -n1 | cut -d= -f2- | sed 's/ *$//' | sed 's/^ *//'
+    docker_sudo docker exec -t "$VUFIND_NAME" cat /usr/local/vufind/local/config/vufind/folio.ini | grep -E "^ *base_url *=" | head -n1 | cut -d= -f2- | sed 's/ *$//' | sed 's/^ *//'
 }
 
 oai_api_url() {
-    docker exec -t "$VUFIND_NAME" cat /usr/local/vufind/local/harvest/oai.ini | grep -E "^ *url *=" | head -n1 | cut -d= -f2- | sed 's/[" \n\r]*$//' | sed 's/^[" ]*//'
+    docker_sudo docker exec -t "$VUFIND_NAME" cat /usr/local/vufind/local/harvest/oai.ini | grep -E "^ *url *=" | head -n1 | cut -d= -f2- | sed 's/[" \n\r]*$//' | sed 's/^[" ]*//'
 }
 
 # Validate API URLs match their environments
