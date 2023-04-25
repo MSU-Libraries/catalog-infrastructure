@@ -32,6 +32,26 @@ while read -r LINE; do
     fi
 done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
+# Find local VuFind Cron container
+CRON_NAME=
+while read -r LINE; do
+    if [[ "$LINE" == "${DEPLOYMENT}-catalog_cron"* ]]; then
+        CRON_NAME="$LINE"
+        break;
+    fi
+done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
+
+cron_is_disabled() {
+    # Only detect disabled if cron container exists on this host
+    if [[ -n "$CRON_NAME" ]]; then
+        DISABLED=$( docker_sudo docker exec -t "$CRON_NAME" find "/mnt/oai" -mindepth 1 -maxdepth 1 -type f -iname 'disabled' | wc -l )
+        if [[ "$DISABLED" -gt 0 ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 folio_api_url() {
     docker_sudo docker exec -t "$VUFIND_NAME" cat /usr/local/vufind/local/config/vufind/folio.ini | grep -E "^ *base_url *=" | head -n1 | cut -d= -f2- | sed 's/ *$//' | sed 's/^ *//'
 }
@@ -61,6 +81,12 @@ elif is_url_test_api "$OAI_API_URL" && is_main; then
     exit 2
 elif ! is_url_test_api "$OAI_API_URL" && ! is_main; then
     echo "WARNING: Non-main OAI configuration is NOT pointing to TEST environment!"
+    exit 1
+fi
+
+# Check for disabled OAI harvesting
+if is_main && cron_is_disabled; then
+    echo "WARNING: OAI harvesting has been disabled for $DEPLOYMENT!"
     exit 1
 fi
 
