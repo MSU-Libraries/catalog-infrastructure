@@ -44,7 +44,7 @@ done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYM
 cron_is_disabled() {
     # Only detect disabled if cron container exists on this host
     if [[ -n "$CRON_NAME" ]]; then
-        DISABLED=$( docker_sudo docker exec -t "$CRON_NAME" find "/mnt/oai" -mindepth 1 -maxdepth 1 -type f -iname 'disabled' | wc -l )
+        DISABLED=$( docker_sudo docker exec -t "$CRON_NAME" find -L /mnt/oai -mindepth 1 -maxdepth 1 -type f -iname 'disabled' | wc -l )
         if [[ "$DISABLED" -gt 0 ]]; then
             return 0
         fi
