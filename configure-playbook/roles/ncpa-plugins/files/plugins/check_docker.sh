@@ -132,6 +132,7 @@ fi
 # TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
 SERVICES=(
     "${DEPLOYMENT}-catalog_catalog 3/3 (max 1 per node)"
+    "${DEPLOYMENT}-catalog_legacylinks 3/3 (max 1 per node)"
     "${DEPLOYMENT}-internal_health 1/1"
     "${DEPLOYMENT}-mariadb_galera 3/3 (max 1 per node)"
     "${DEPLOYMENT}-solr_cron 3/3 (max 1 per node)"
@@ -169,6 +170,7 @@ done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYM
 EXPECTED_SERVICES=(
     "${DEPLOYMENT}-internal_health"
     "${DEPLOYMENT}-catalog_catalog"
+    "${DEPLOYMENT}-catalog_legacylinks"
     "${DEPLOYMENT}-mariadb_galera"
     "${DEPLOYMENT}-solr_cron"
     "${DEPLOYMENT}-solr_solr"
