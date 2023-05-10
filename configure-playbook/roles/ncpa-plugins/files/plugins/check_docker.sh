@@ -49,11 +49,10 @@ NODE_INFO_3=( $NODE_OUT_3 )
 ##  $2 -> Value to find
 ## Returns 0 if an element matches the value to find
 array_contains() {
-    local ARRNAME=$1[@]
-    local HAYSTACK=( ${!ARRNAME} )
+    local ARRNAME="$1[@]"
     local NEEDLE="$2"
-    for VAL in "${HAYSTACK[@]}"; do
-        if [[ "$NEEDLE" == "$VAL" ]]; then
+    for HAY in "${!ARRNAME}"; do
+        if [[ "$NEEDLE" == "$HAY" ]]; then
             return 0
         fi
     done
