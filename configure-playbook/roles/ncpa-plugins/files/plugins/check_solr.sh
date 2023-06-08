@@ -38,6 +38,18 @@ run_curl() {
     docker_sudo docker exec -i --env SOLR_NODE="$SOLR_NODE" --env CURL="$1" "${CONTAINER}" bash -c 'export SOLR_NODE="${SOLR_NODE:-$SOLR_HOST}"; curl -s "$(eval echo $CURL)"'
 }
 
+run_getent_hosts() {
+    docker_sudo docker exec -i --env HOSTCHECK="$1" "${CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
+}
+
+# Verify each container can resolve the hostname of all cluster containers
+for NODE in "${SOLR_NODES[@]}"; do
+    if ! run_getent_hosts "$NODE"; then
+        echo "WARNING: Could not resolve host $NODE from within solr container."
+        exit 1
+    fi
+done
+
 # Verify all appropriate collections exist
 COLLECTIONS=( authority biblio reserves website )
 FOUND_COLLECTIONS=( $( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=LIST&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
