@@ -20,6 +20,7 @@ fi
 DEPLOYMENT="$1"
 MARIADB_USER="${2:-root}"
 MARIADB_PASS="${3:-12345}"
+GALERA_NODES=(galera1 galera2 galera3)
 
 # Find local MariaDB container
 MARIADB_NAME=
@@ -61,6 +62,18 @@ run_full_sql() {
     return $ROW_CNT
 }
 
+run_getent_hosts() {
+    docker_sudo docker exec -i --env HOSTCHECK="$1" "${MARIADB_NAME}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
+}
+
+# Verify each container can resolve the hostname of all cluster containers
+for NODE in "${GALERA_NODES[@]}"; do
+    if ! run_getent_hosts "$NODE"; then
+        echo "WARNING: Could not resolve host $NODE from within galera container."
+        exit 1
+    fi
+done
+
 # Verify node and cluster status
 run_full_sql "SHOW WSREP_STATUS"
 # Row indices => 0:Node_Index,1:Node_Status,2:Cluster_Status,3:Cluster_Size
@@ -76,7 +89,6 @@ fi
 run_full_sql "SHOW WSREP_MEMBERSHIP"
 # Row indices => 0:Index,1:Uuid,2:Name,3:Address
 ROW_CNT="$?"
-declare -a EXPECT_NODES=("galera1" "galera2" "galera3")
 declare -a FOUND_NODES=()
 declare -a FOUND_SORTED=()
 for ((IDX=0; IDX<ROW_CNT; IDX++)); do
@@ -86,7 +98,7 @@ done
 OIFS="$IFS";
 IFS=$'\n' FOUND_SORTED=($(sort <<<"${FOUND_NODES[*]}"))
 IFS="$OIFS"
-if [[ "${EXPECT_NODES[*]}" != "${FOUND_SORTED[*]}" ]]; then
+if [[ "${GALERA_NODES[*]}" != "${FOUND_SORTED[*]}" ]]; then
     echo "WARNING: Cluster members incorrect >> ${FOUND_SORTED[*]}"
     exit 1
 fi
