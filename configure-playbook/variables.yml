@@ -38,7 +38,7 @@ create_users:
 
  - name: damieng
    comment: 'Damien Guillaume'
-   groups: sudo,adm,docker,deploy
+   groups: sudo,adm,docker,deploy,ubuntu
    public_keys:
      - ***REMOVED***
 
