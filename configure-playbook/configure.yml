@@ -20,6 +20,7 @@
     - restrict-ubuntu-user
     - ncpa-plugins
     - configure-logrotate
+    - grant-permissions
 
   tasks:
     - name: Create users

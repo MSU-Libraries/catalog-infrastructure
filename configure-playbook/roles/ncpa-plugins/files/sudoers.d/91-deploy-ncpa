@@ -1,5 +1,0 @@
-# Commands deploy user may run as sudo
-Cmnd_Alias  DEPLOY=/usr/bin/test -f /var/lib/docker/volumes/*
-
-# Password-less
-deploy  ALL=(root) NOPASSWD: DEPLOY

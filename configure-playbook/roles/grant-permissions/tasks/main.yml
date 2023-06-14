@@ -1,0 +1,9 @@
+---
+
+- name: Allow specific sudo commands (deploy user)
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/sudoers.d/91-deploy-user"
+    dest: /etc/sudoers.d/91-deploy-user
+    owner: root
+    group: root
+    mode: '0440'
