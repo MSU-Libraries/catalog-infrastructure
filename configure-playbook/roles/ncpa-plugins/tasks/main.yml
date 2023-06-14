@@ -8,10 +8,18 @@
     group: root
     mode: '0755'
 
-- name: Allow specific sudo commands (NCPA)
+- name: Allow specific sudo commands (NCPA - nagios)
   ansible.builtin.copy:
     src: "{{ role_path }}/files/sudoers.d/90-nagios-ncpa"
     dest: /etc/sudoers.d/90-nagios-ncpa
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: Allow specific sudo commands (NCPA - deploy)
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/sudoers.d/92-deploy-ncpa"
+    dest: /etc/sudoers.d/92-deploy-ncpa
     owner: root
     group: root
     mode: '0440'
