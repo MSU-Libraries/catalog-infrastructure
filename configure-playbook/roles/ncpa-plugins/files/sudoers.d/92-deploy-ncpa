@@ -1,0 +1,6 @@
+# The deploy user connects directly from nagios server to check
+# for a mariadb/node_shutdown_unsafely file in Docker volumes.
+# TODO: could this be done just by the nagios user instead?
+Cmnd_Alias  DEPLOY_NCPA=/usr/bin/test -f /var/lib/docker/volumes/*
+
+deploy  ALL=(root) NOPASSWD: DEPLOY_NCPA
