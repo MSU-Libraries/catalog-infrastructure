@@ -138,7 +138,7 @@ SERVICES=(
     "${DEPLOYMENT}-solr_solr 3/3 (max 1 per node)"
     "${DEPLOYMENT}-solr_zk 3/3 (max 1 per node)"
     "${DEPLOYMENT}-monitoring_monitoring 3/3 (max 1 per node)"
-    "swarm-cleanup_swarm-cleanup 0/0"
+    "swarm-cleanup_prune-nodes 0/0"
     "traefik_traefik 1/1 (max 1 per node)"
 )
 if is_main; then
