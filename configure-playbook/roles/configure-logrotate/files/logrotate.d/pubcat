@@ -1,4 +1,4 @@
-/var/lib/docker/volumes/*_logs/_data/*/*.log {
+/var/lib/docker/volumes/*_logs/_data/*/{access,error,other_vhosts_access,db,solr,authority,folio,hlm,mysqld,simplesamlphp,alphabrowse,reserves_update,searches_cleanup,sessions_cleanup,vufind}.log /var/lib/docker/volumes/traefik_logs/_data/*.log {
   rotate 7
   daily
   compress
