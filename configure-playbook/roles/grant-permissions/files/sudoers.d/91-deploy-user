@@ -1,4 +1,7 @@
 # Commands deploy user may run as sudo
-Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*
+Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
+                        !/usr/bin/mkdir -p /mnt/shared/*..*, \
+                        /usr/bin/mv /home/deploy/* /mnt/shared/*, \
+                        !/usr/bin/mv /home/deploy/*..* /mnt/shared/*..*
 
 deploy  ALL=(root) NOPASSWD: DEPLOY_USER
