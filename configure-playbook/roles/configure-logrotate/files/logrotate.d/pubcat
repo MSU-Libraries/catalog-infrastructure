@@ -8,4 +8,7 @@
   prerotate
     bash -c "[[ ! $1 =~ _latest ]]"
   endscript
+  postrotate
+    docker ps | grep traefik | awk '{print $1}' | xargs -I {} sh -c "echo docker kill signal=USR1 {}"
+  endscript
 }
