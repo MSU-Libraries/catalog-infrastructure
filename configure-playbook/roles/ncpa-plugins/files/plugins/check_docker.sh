@@ -172,6 +172,7 @@ EXPECTED_SERVICES=(
     "${DEPLOYMENT}-catalog_legacylinks"
     "${DEPLOYMENT}-mariadb_galera"
     "${DEPLOYMENT}-solr_cron"
+    "${DEPLOYMENT}-solr_proxysolr"
     "${DEPLOYMENT}-solr_solr"
     "${DEPLOYMENT}-solr_zk"
     "${DEPLOYMENT}-monitoring_monitoring"
