@@ -180,8 +180,8 @@ EXPECTED_SERVICES=(
 if is_main; then
     EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cron")
 else
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cachecron")
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_mail")
+    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_croncache")
+    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_mail-${DEPLOYMENT}")
 fi
 
 # Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
@@ -228,11 +228,11 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
         fi
     done < <( docker_sudo docker service ps -f "desired-state=running" --format "{{ .Image }}" "${SERVICE}" )
 
-    if [[ "$SERVICE" != *"-catalog_cron" && "$SERVICE" != *"-catalog_mail" ]] && [[ "$FOUND_REPLICAS" -ne 3 ]]; then
+    if [[ "$SERVICE" != *"-catalog_cron" && "$SERVICE" != *"-catalog_mail-"* ]] && [[ "$FOUND_REPLICAS" -ne 3 ]]; then
         echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 3)"
         exit 1
     fi
-    if [[ "$SERVICE" == *"-catalog_cron" || "$SERVICE" == *"-catalog_mail" ]] && [[ "$FOUND_REPLICAS" -ne 1 ]]; then
+    if [[ "$SERVICE" == *"-catalog_cron" || "$SERVICE" == *"-catalog_mail-"* ]] && [[ "$FOUND_REPLICAS" -ne 1 ]]; then
         echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 1)"
         exit 1
     fi
