@@ -139,7 +139,7 @@ SERVICES=(
     "${DEPLOYMENT}-solr_zk 3/3 (max 1 per node)"
     "${DEPLOYMENT}-monitoring_monitoring 3/3 (max 1 per node)"
     "swarm-cleanup_prune-nodes 0/0"
-    "traefik_traefik 1/1 (max 1 per node)"
+    "traefik_traefik 3/3"
 )
 if is_main; then
     SERVICES+=("${DEPLOYMENT}-catalog_cron 1/1")
