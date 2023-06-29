@@ -311,12 +311,3 @@ resource "aws_route53_record" "roundrobin_dnsrec" {
   ttl     = "300"
   records = [for node in module.nodes:"${node.public_ip}"]
 }
-
-resource "aws_route53_record" "roundrobin_dnsproxy" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "catalog-proxy.aws.lib.msu.edu"
-  type    = "A"
-  ttl     = "300"
-  records = [for node in module.nodes:"${node.public_ip}"]
-}
