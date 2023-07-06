@@ -13,18 +13,36 @@ fi
 
 DEPLOYMENT="$1"
 SOLR_NODE="$2"      # If left blank, will use SOLR_HOST in container
+ZK_HOSTS="$3"      # If left blank, will use SOLR_ZK_HOSTS in container
 SOLR_NODES=(solr1 solr2 solr3)
 
-# Find local Solr container
-CONTAINER=
-while read -r CONTAINER; do
+# Find local container
+ZK_CONTAINER=
+while read -r ZK_CONTAINER; do
+    break   # should only be one match anyways
+done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-solr_zk." --format "{{ .Names }}" )
+
+if [[ -z "$ZK_CONTAINER" ]]; then
+    echo "CRITICAL: Cannot find a local Zookeeper container for stack $DEPLOYMENT."
+    exit 2
+fi
+
+SOLR_CONTAINER=
+while read -r SOLR_CONTAINER; do
     break   # should only be one match anyways
 done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-solr_solr." --format "{{ .Names }}" )
 
-if [[ -z "$CONTAINER" ]]; then
+if [[ -z "$SOLR_CONTAINER" ]]; then
     echo "CRITICAL: Cannot find a local Solr container for stack $DEPLOYMENT."
     exit 2
 fi
+
+SOLR_ZK_HOSTS=$( docker_sudo docker exec -i "${SOLR_CONTAINER}" bash -c 'echo "$SOLR_ZK_HOSTS"' )
+NODE_ZK_HOST=$( docker_sudo docker exec -i "${ZK_CONTAINER}" bash -c 'echo "$HOSTNAME"' )
+ZK_HOSTS="${SOLR_ZK_HOSTS:-$ZK_HOSTS}"
+# Somewhat-hacky converting to array and then more-hacky to hostname only array
+ZK_HOST_ARR=( ${ZK_HOSTS//,/ } )
+ZK_HOSTNAME_ARR=( ${ZK_HOST_ARR[@]//:*/ } )
 
 # PERFORMANCE
 #TODO warn if load become excessive or query performance slows
@@ -35,11 +53,18 @@ fi
 #http://SOLR_NODE:8983/solr/admin/info/system?nodes=SOLR_NODE:8983_solr&wt=json
 
 run_curl() {
-    docker_sudo docker exec -i --env SOLR_NODE="$SOLR_NODE" --env CURL="$1" "${CONTAINER}" bash -c 'export SOLR_NODE="${SOLR_NODE:-$SOLR_HOST}"; curl -s "$(eval echo $CURL)"'
+    docker_sudo docker exec -i --env SOLR_NODE="$SOLR_NODE" --env CURL="$1" "${SOLR_CONTAINER}" bash -c 'export SOLR_NODE="${SOLR_NODE:-$SOLR_HOST}"; curl -s "$(eval echo $CURL)"'
 }
 
 run_getent_hosts() {
-    docker_sudo docker exec -i --env HOSTCHECK="$1" "${CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
+    docker_sudo docker exec -i --env HOSTCHECK="$1" "${SOLR_CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
+}
+
+# Get/cat a JSON file from Zookeeper
+#  $1 => The full zk path to the file
+#  $2 => The zookeeper host (e.g. "zk2:2181") to connect to. Optional, if not specified will container: ${HOSTNAME}:2181
+run_zkshell_cat() {
+    docker_sudo docker exec -i --env ZK_HOSTS="${2:-$NODE_ZK_HOST:2181}" --env ARG="$1" "${ZK_CONTAINER}" bash -c 'zk-shell "$ZK_HOSTS" --run-once "json_cat ${ARG}"'
 }
 
 # Verify each container can resolve the hostname of all cluster containers
@@ -50,16 +75,32 @@ for NODE in "${SOLR_NODES[@]}"; do
     fi
 done
 
+# Map collections to aliases
+FIND_COLLECTIONS=( authority biblio reserves website )
+COLLECTIONS=()
+ALIASES=$( run_zkshell_cat "/solr/aliases.json" || echo "None") # Returns None if file doesn't exist
+if [[ "${ALIASES}" == "None" ]]; then
+    COLLECTIONS=( "${FIND_COLLECTIONS[@]}" )
+else
+    for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
+        ALIAS=$(echo "${ALIASES}" | jq -r ".collection.${COLLECTION}")
+        if [[ "${ALIAS}" != "null" ]]; then
+            COLLECTIONS+=( "${ALIAS}" )
+        else
+            COLLECTIONS+=( "${COLLECTION}" )
+        fi
+    done
+fi
+
 # Verify all appropriate collections exist
-COLLECTIONS=( authority biblio reserves website )
-FOUND_COLLECTIONS=( $( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=LIST&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
+FOUND_COLLECTIONS=( $( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=LIST\&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
 if [[ "${COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
-    echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}"
+    echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}. Expected: ${COLLECTIONS[*]}"
     exit 2
 fi
 
-NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs&wt=json" )
-CLUSTER_STATUS=$( run_curl "http://\$SOLR_NODE:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json" )
+NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr\&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs\&wt=json" )
+CLUSTER_STATUS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS\&wt=json" )
 for COLLECTION in "${COLLECTIONS[@]}"; do
     # Verify each node has one (and only one) replica for each collection
     REP_IDX=0
@@ -90,7 +131,7 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     LEADERS=()
     RCOUNTS=()
     for NODE in "${SOLR_NODES[@]}"; do
-        NODE_CLUSTER_STATUS=$( run_curl "http://${NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS&wt=json" )
+        NODE_CLUSTER_STATUS=$( run_curl "http://${NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS\&wt=json" )
 
         NODE_LEADERS=( $( echo "$NODE_CLUSTER_STATUS" | jq -r "[.cluster.collections.${COLLECTION}.shards.shard1.replicas[]]|sort_by(.node_name)[].leader" | paste -sd ' ' - ) )
         for IDX in "${!NODE_LEADERS[@]}"; do
@@ -142,7 +183,7 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     fi
 
     # Verify a Solr query runs against the collection without error
-    QUERY_RESP=$( run_curl "http://\$SOLR_NODE:8983/solr/${COLLECTION}/select?q=*:*&rows=1&wt=json" )
+    QUERY_RESP=$( run_curl "http://\${SOLR_NODE}:8983/solr/${COLLECTION}/select?q=*:*\&rows=1\&wt=json" )
     QUERY_STATUS=$( echo "$QUERY_RESP" | jq -r '.responseHeader.status' )
     if [[ "$QUERY_STATUS" -ne 0 ]]; then
         echo "CRITICAL: Unable to query collection ${COLLECTION}; response status of ${QUERY_STATUS}"
