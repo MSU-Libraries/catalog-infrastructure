@@ -37,6 +37,7 @@
     cmd: |
       export BASICAUTH_FOR_RESOURCES='{{ lookup('ansible.builtin.env', 'BASICAUTH_FOR_RESOURCES') }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
+      chown deploy:deploy docker-compose.traefik.yml
   args:
     chdir: /home/deploy/core-stacks/
 
@@ -55,12 +56,10 @@
     chdir: /home/deploy/core-stacks/
 
 - name: Deploy public network stack
-  community.docker.docker_stack:
-    name: public
-    state: present
-    prune: true
-    compose:
-      - /home/deploy/core-stacks/docker-compose.public.yml
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.public.yml public
+  args:
+    chdir: /home/deploy/core-stacks/
   run_once: true
 
 - name: Waiting to let public network deploy
@@ -68,19 +67,15 @@
     seconds: 15
 
 - name: Deploy swarm-cleanup stack
-  community.docker.docker_stack:
-    name: swarm-cleanup
-    state: present
-    prune: true
-    compose:
-      - /home/deploy/core-stacks/docker-compose.swarm-cleanup.yml
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.swarm-cleanup.yml swarm-cleanup
+  args:
+    chdir: /home/deploy/core-stacks/
   run_once: true
 
-#- name: Deploy traefik stack
-#  community.docker.docker_stack:
-#    name: traefik
-#    state: present
-#    prune: true
-#    compose:
-#      - /home/deploy/core-stacks/docker-compose.traefik.yml
-#  run_once: true
+- name: Deploy traefik stack
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.traefik.yml traefik
+  args:
+    chdir: /home/deploy/core-stacks/
+  run_once: true
