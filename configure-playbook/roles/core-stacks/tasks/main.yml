@@ -1,0 +1,79 @@
+---
+
+- name: Ensure Docker core-stacks dir exists
+  ansible.builtin.file:
+    path: /home/deploy/core-stacks/
+    state: directory
+    mode: '0755'
+    owner: deploy
+    group: deploy
+
+- name: Copy public network docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.public.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
+- name: Copy swarm-cleanup docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.swarm-cleanup.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
+- name: Copy traefik docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.traefik.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
+- name: Run envsubst on traefik docker-compose
+  ansible.builtin.shell:
+    cmd: |
+      export BASICAUTH_FOR_RESOURCES={{ lookup('ansible.builtin.env', 'BASICAUTH_FOR_RESOURCES') }}
+      envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+- name: Insert AWS creds into traefik docker-compose
+  ansible.builtin.shell:
+    cmd: yq -i ".services.traefik.environment=$( yq . ./traefik-env.yml -o json )" ./core-stacks/docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/
+    executable: /bin/bash
+
+- name: Clean up empty lines from traefik docker-compose
+  # related to https://github.com/mikefarah/yq/issues/1191
+  ansible.builtin.command:
+  cmd: sed -i "/^$/d" docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+#- name: Deploy public network stack
+#  community.docker.docker_stack:
+#    name: public
+#    state: present
+#    prune: true
+#    compose:
+#      - /home/deploy/core-stacks/docker-compose.public.yml
+#
+#- name: Deploy swarm-cleanup stack
+#  community.docker.docker_stack:
+#    name: swarm-cleanup
+#    state: present
+#    prune: true
+#    compose:
+#      - /home/deploy/core-stacks/docker-compose.swarm-cleanup.yml
+#
+#- name: Deploy traefik stack
+#  community.docker.docker_stack:
+#    name: traefik
+#    state: present
+#    prune: true
+#    compose:
+#      - /home/deploy/core-stacks/docker-compose.traefik.yml

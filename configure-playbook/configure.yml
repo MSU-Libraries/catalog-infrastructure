@@ -30,6 +30,10 @@
       loop_control:
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
+    - name: Deploy docker core stacks
+      # Must occur after create users
+      include_role:
+        name: core-stacks
 
 - name: Call coreboot playbook
   ansible.builtin.import_playbook: playbook-conditional-reboot/playbook-setup-only.yml
