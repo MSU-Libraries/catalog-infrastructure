@@ -47,10 +47,10 @@
     chdir: /home/deploy/
     executable: /bin/bash
 
+# related to https://github.com/mikefarah/yq/issues/1191
 - name: Clean up empty lines from traefik docker-compose
-  # related to https://github.com/mikefarah/yq/issues/1191
   ansible.builtin.command:
-  cmd: sed -i "/^$/d" docker-compose.traefik.yml
+    cmd: sed -i "/^$/d" docker-compose.traefik.yml
   args:
     chdir: /home/deploy/core-stacks/
 
