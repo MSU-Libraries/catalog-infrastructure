@@ -35,7 +35,7 @@
 - name: Run envsubst on traefik docker-compose
   ansible.builtin.shell:
     cmd: |
-      export BASICAUTH_FOR_RESOURCES={{ lookup('ansible.builtin.env', 'BASICAUTH_FOR_RESOURCES') }}
+      export BASICAUTH_FOR_RESOURCES='{{ lookup('ansible.builtin.env', 'BASICAUTH_FOR_RESOURCES') }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
   args:
     chdir: /home/deploy/core-stacks/
@@ -54,22 +54,28 @@
   args:
     chdir: /home/deploy/core-stacks/
 
-#- name: Deploy public network stack
-#  community.docker.docker_stack:
-#    name: public
-#    state: present
-#    prune: true
-#    compose:
-#      - /home/deploy/core-stacks/docker-compose.public.yml
-#
-#- name: Deploy swarm-cleanup stack
-#  community.docker.docker_stack:
-#    name: swarm-cleanup
-#    state: present
-#    prune: true
-#    compose:
-#      - /home/deploy/core-stacks/docker-compose.swarm-cleanup.yml
-#
+- name: Deploy public network stack
+  community.docker.docker_stack:
+    name: public
+    state: present
+    prune: true
+    compose:
+      - /home/deploy/core-stacks/docker-compose.public.yml
+  run_once: true
+
+- name: Waiting to let public network deploy
+  ansible.builtin.pause:
+    seconds: 15
+
+- name: Deploy swarm-cleanup stack
+  community.docker.docker_stack:
+    name: swarm-cleanup
+    state: present
+    prune: true
+    compose:
+      - /home/deploy/core-stacks/docker-compose.swarm-cleanup.yml
+  run_once: true
+
 #- name: Deploy traefik stack
 #  community.docker.docker_stack:
 #    name: traefik
@@ -77,3 +83,4 @@
 #    prune: true
 #    compose:
 #      - /home/deploy/core-stacks/docker-compose.traefik.yml
+#  run_once: true
