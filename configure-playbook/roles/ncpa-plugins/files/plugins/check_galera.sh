@@ -20,6 +20,7 @@ fi
 DEPLOYMENT="$1"
 MARIADB_USER="${2:-root}"
 MARIADB_PASS="${3:-12345}"
+# MARIADB_PASS of 12345 will be overriden by MARIADB_ROOT_PASSWORD env variable within the container
 GALERA_NODES=(galera1 galera2 galera3)
 
 # Find local MariaDB container
@@ -34,6 +35,14 @@ done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYM
 if [[ -z "$MARIADB_NAME" ]]; then
     echo "CRITICAL: Cannot find MariaDB container for given stack."
     exit 2
+fi
+
+# Override default password with DB container root password if available
+if [[ $MARIADB_PASS == "12345" ]]; then
+    CNTNR_MARIADB_PASS=$( docker_sudo docker exec "$MARIADB_NAME" printenv MARIADB_ROOT_PASSWORD )
+    if [[ -n "$CNTNR_MARIADB_PASS" ]]; then
+        MARIADB_PASS="$CNTNR_MARIADB_PASS"
+    fi
 fi
 
 # SQL single line query match
