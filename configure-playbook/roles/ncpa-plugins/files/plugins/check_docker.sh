@@ -176,7 +176,7 @@ EXPECTED_SERVICES=(
     "${DEPLOYMENT}-solr_solr"
     "${DEPLOYMENT}-solr_zk"
     "${DEPLOYMENT}-monitoring_monitoring"
-    "${DEPLOYMENT}-monitoring_proxymonitoring-${DEPLOYMENT}"
+    "${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"
 )
 if is_main; then
     EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cron")
