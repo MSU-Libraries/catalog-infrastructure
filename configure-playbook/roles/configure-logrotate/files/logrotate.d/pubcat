@@ -4,11 +4,11 @@
   compress
   missingok
   delaycompress
-  copytruncate
   prerotate
     bash -c "[[ ! $1 =~ _latest ]]"
   endscript
-  postrotate
-    docker ps | grep traefik | awk '{print $1}' | xargs -I {} sh -c "echo docker kill signal=USR1 {}"
+  lastaction
+    docker ps --format '{{.Names}}' --filter name=traefik | xargs -I {} sh -c "docker kill --signal=USR1 {}"
+    docker ps --format '{{.Names}}' --filter name=catalog_catalog | xargs -I {} sh -c "docker exec {} apachectl graceful"
   endscript
 }
