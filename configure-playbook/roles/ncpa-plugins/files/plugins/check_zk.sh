@@ -94,7 +94,7 @@ elif [[ "${#ZK_FOLLOW[@]}" -ne 2 ]]; then
     exit 2
 fi
 
-COLLECTIONS=( authority biblio reserves website )
+COLLECTIONS=( authority biblio1 biblio2 reserves website )
 for COLL in "${COLLECTIONS[@]}"; do
     ZK_HOST_ARR=( ${ZK_HOSTS//,/ } )
     COLL_MD5=
