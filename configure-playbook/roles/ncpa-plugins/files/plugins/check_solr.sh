@@ -80,8 +80,8 @@ FIND_COLLECTIONS=( authority biblio1 biblio2 reserves website )
 
 # Verify all appropriate collections exist
 FOUND_COLLECTIONS=( $( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=LIST\&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
-if [[ "${COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
-    echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}. Expected: ${COLLECTIONS[*]}"
+if [[ "${FIND_COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
+    echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}. Expected: ${FIND_COLLECTIONS[*]}"
     exit 2
 fi
 
