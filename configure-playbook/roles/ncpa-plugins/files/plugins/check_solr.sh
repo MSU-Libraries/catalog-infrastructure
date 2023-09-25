@@ -76,21 +76,7 @@ for NODE in "${SOLR_NODES[@]}"; do
 done
 
 # Map collections to aliases
-FIND_COLLECTIONS=( authority biblio reserves website )
-COLLECTIONS=()
-ALIASES=$( run_zkshell_cat "/solr/aliases.json" || echo "None") # Returns None if file doesn't exist
-if [[ "${ALIASES}" == "None" ]]; then
-    COLLECTIONS=( "${FIND_COLLECTIONS[@]}" )
-else
-    for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
-        ALIAS=$(echo "${ALIASES}" | jq -r ".collection.${COLLECTION}")
-        if [[ "${ALIAS}" != "null" ]]; then
-            COLLECTIONS+=( "${ALIAS}" )
-        else
-            COLLECTIONS+=( "${COLLECTION}" )
-        fi
-    done
-fi
+FIND_COLLECTIONS=( authority biblio1 biblio2 reserves website )
 
 # Verify all appropriate collections exist
 FOUND_COLLECTIONS=( $( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=LIST\&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
