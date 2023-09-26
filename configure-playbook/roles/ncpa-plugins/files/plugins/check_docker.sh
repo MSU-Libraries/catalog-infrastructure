@@ -143,6 +143,7 @@ SERVICES=(
 )
 if is_main; then
     SERVICES+=("${DEPLOYMENT}-catalog_cron 1/1")
+    SERVICES+=("${DEPLOYMENT}-catalog_build 1/1")
 fi
 
 declare -a FOUND_SERVICES
