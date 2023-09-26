@@ -13,7 +13,11 @@ if [[ -z "$1" ]]; then
     exit 3
 fi
 
+# Stack deployment name (e.g. catalog-beta, devel-nathan)
 DEPLOYMENT="$1"
+
+# Messages to add to the exit output
+declare -a MESSAGES
 
 is_main() {
     [[ "$DEPLOYMENT" == "catalog"* ]]
@@ -42,6 +46,17 @@ NODE_INFO_1=( $NODE_OUT_1 )
 NODE_INFO_2=( $NODE_OUT_2 )
 NODE_INFO_3=( $NODE_OUT_3 )
 #NODE_INFO_SELF=( $NODE_OUT_SELF )
+
+###############################
+## Join all elements of a simple array, optionally be provided delimiter (default: space)
+##  $1 -> Name of array to join
+##  $2 -> Delimiter
+## Output a joined string
+join_array() {
+    local ARRNAME="$1[*]"
+    local DELIM="${2:- }"
+    (IFS="$DELIM"; echo "${!ARRNAME}")
+}
 
 ###############################
 ## Check if array contains a given value
@@ -127,65 +142,36 @@ elif [[ "${#STACK_NAMES}" -lt "$FOUND_STACKS" ]]; then
     exit 3
 fi
 
-# Check appropriate service replicas are running
-# TODO can improve this by separating sevice name and expected replica count and checking/reporting specifics
-SERVICES=(
-    "${DEPLOYMENT}-catalog_catalog 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-catalog_legacylinks 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-internal_health 1/1"
-    "${DEPLOYMENT}-mariadb_galera 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-solr_cron 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-solr_solr 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-solr_zk 3/3 (max 1 per node)"
-    "${DEPLOYMENT}-monitoring_monitoring 3/3 (max 1 per node)"
-    "swarm-cleanup_prune-nodes 0/0"
-    "traefik_traefik 3/3"
-)
-if is_main; then
-    SERVICES+=("${DEPLOYMENT}-catalog_cron 1/1")
-    SERVICES+=("${DEPLOYMENT}-catalog_build 1/1")
-fi
-
-declare -a FOUND_SERVICES
-while read -r LINE; do
-    FOUND_SERVICES+=( "${LINE// /~}" )  # hacky fix to avoid spaces
-done < <( docker_sudo docker service ls --format "{{ .Name }} {{ .Replicas }}" )
-
-for SERVICE in "${SERVICES[@]}"; do
-    SERVICE="${SERVICE// /~}"           # hacky fix to avoid spaces
-    if ! array_contains FOUND_SERVICES "$SERVICE"; then
-        SSPLIT=( ${SERVICE//~/ } )
-        echo "WARNING: Docker service ${SSPLIT[0]} not at expected replica count."
-        exit 1
-    fi
-done
-
 # Create list of running containers
 declare -a RUNNING_CONTAINERS
 while read -r LINE; do
     RUNNING_CONTAINERS+=( "$LINE" )
 done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
-# The -internal_health must be first below, as it is unset after this check
-EXPECTED_SERVICES=(
-    "${DEPLOYMENT}-internal_health"
-    "${DEPLOYMENT}-catalog_catalog"
-    "${DEPLOYMENT}-catalog_legacylinks"
-    "${DEPLOYMENT}-mariadb_galera"
-    "${DEPLOYMENT}-solr_cron"
-    "${DEPLOYMENT}-solr_proxysolr"
-    "${DEPLOYMENT}-solr_solr"
-    "${DEPLOYMENT}-solr_zk"
-    "${DEPLOYMENT}-monitoring_monitoring"
-    "${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"
+declare -A EXPECTED_REPLICAS
+EXPECTED_REPLICAS=(
+    ["${DEPLOYMENT}-internal_health"]=1
+    ["${DEPLOYMENT}-catalog_catalog"]=3
+    ["${DEPLOYMENT}-catalog_legacylinks"]=3
+    ["${DEPLOYMENT}-mariadb_galera"]=3
+    ["${DEPLOYMENT}-solr_cron"]=3
+    ["${DEPLOYMENT}-solr_proxysolr"]=3
+    ["${DEPLOYMENT}-solr_solr"]=3
+    ["${DEPLOYMENT}-solr_zk"]=3
+    ["${DEPLOYMENT}-monitoring_monitoring"]=3
+    ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
+    ["swarm-cleanup_prune-nodes"]=0
+    ["traefik_traefik"]=3
 )
 if is_main; then
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cron")
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_build")
+    EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_cron"]=1
+    EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_build"]=1
 else
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_croncache")
-    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_mail-${DEPLOYMENT}")
+    EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_croncache"]=3
+    EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_mail-${DEPLOYMENT}"]=1
 fi
+
+mapfile -t -d' ' EXPECTED_SERVICES < <( echo -n "${!EXPECTED_REPLICAS[@]}" )
 
 # Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
@@ -195,9 +181,6 @@ for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
         exit 1
     fi
 done
-
-# Remove -internal_health for remainder of checks
-unset 'EXPECTED_SERVICES[0]'
 
 # Check containers have been running for longer than 35 seconds
 UNIX_NOW=$( date +%s )
@@ -231,12 +214,14 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
         fi
     done < <( docker_sudo docker service ps -f "desired-state=running" --format "{{ .Image }}" "${SERVICE}" )
 
-    if [[ "$SERVICE" != *"-catalog_cron" && "$SERVICE" != *"-catalog_mail-"* ]] && [[ "$FOUND_REPLICAS" -ne 3 ]]; then
-        echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 3)"
-        exit 1
+    if ! is_main && [[ "$SERVICE" == "${DEPLOYMENT}-catalog_catalog" && "$FOUND_REPLICAS" -eq 1 ]]; then
+        # We're okay with devel environments being scaled down to 1 catalog replica
+        MESSAGES+=("catalog scaled to 1")
+        continue
     fi
-    if [[ "$SERVICE" == *"-catalog_cron" || "$SERVICE" == *"-catalog_mail-"* ]] && [[ "$FOUND_REPLICAS" -ne 1 ]]; then
-        echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be 1)"
+    TARGET_REPLICAS="${EXPECTED_REPLICAS[$SERVICE]}"
+    if [[ $FOUND_REPLICAS -ne $TARGET_REPLICAS ]]; then
+        echo "WARNING: Service $SERVICE has $FOUND_REPLICAS replicas as 'running' (should be $TARGET_REPLICAS)"
         exit 1
     fi
 done
@@ -250,5 +235,8 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
     fi
 done
 
-echo "Docker status OK for $DEPLOYMENT"
+if [[ "${#MESSAGES[@]}" -gt 0 ]]; then
+    MSGSTR=" ($( join_array MESSAGES ';' ))"
+fi
+echo "Docker status OK for ${DEPLOYMENT}${MSGSTR}"
 exit 0
