@@ -180,6 +180,7 @@ EXPECTED_SERVICES=(
 )
 if is_main; then
     EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_cron")
+    EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_build")
 else
     EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_croncache")
     EXPECTED_SERVICES+=("${DEPLOYMENT}-catalog_mail-${DEPLOYMENT}")
