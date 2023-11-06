@@ -5,7 +5,7 @@
   missingok
   delaycompress
   prerotate
-    bash -c "[[ ! $1 =~ _latest ]]"
+    bash -c "[[ ! $1 =~ _latest && ! $1 =~ /mnt/logs/solr/ ]]"
   endscript
   lastaction
     docker ps --format '{{.Names}}' --filter name=traefik | xargs -I {} sh -c "docker kill --signal=USR1 {}"
