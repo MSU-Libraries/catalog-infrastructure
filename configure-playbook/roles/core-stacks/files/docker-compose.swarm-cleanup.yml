@@ -5,6 +5,8 @@ services:
   prune-nodes:
     image: docker
     command: ["docker", "system", "prune", "-a", "-f", "--filter", "until=30m"]
+    networks:
+      - public
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "var_lib_docker:/var/lib/docker"
@@ -14,6 +16,11 @@ services:
         delay: 30m
       update_config:
         failure_action: rollback
+
+networks:
+  public:
+    name: public
+    external: true
 
 volumes:
   var_lib_docker:
