@@ -1,8 +1,0 @@
----
-- name: Copy coreboot config
-  ansible.builtin.template:
-    src: coreboot.j2
-    dest: /etc/coreboot.cfg
-    owner: root
-    group: root
-    mode: 0640

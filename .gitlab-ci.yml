@@ -32,8 +32,6 @@ Provision:
     - ( umask 022; touch ~/.ssh/known_hosts )
     - ssh-keyscan ansible.lib.msu.edu >> ~/.ssh/known_hosts
   script:
-    # Clone the coreboot playbook
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.msu.edu/msu-libraries/systems/playbook-conditional-reboot configure-playbook/playbook-conditional-reboot
     # Run the playbook to provision
     - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
     - ansible-playbook provision-playbook/provision.yml
