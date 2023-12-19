@@ -1,0 +1,15 @@
+---
+
+- name: Install conreboot
+  ansible.builtin.apt:
+    deb: "https://github.com/MSU-Libraries/conreboot/releases/download/{{CONREBOOT_VERSION}}/conreboot-{{CONREBOOT_VERSION}}.deb"
+
+- name: Copy coreboot config
+  ansible.builtin.template:
+    src: conreboot.cfg
+    dest: /etc/conreboot.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - configure-conreboot

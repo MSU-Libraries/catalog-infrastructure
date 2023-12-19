@@ -1,0 +1,51 @@
+# Allowed times when this server is allowed to reboot.
+# Value is a range of times, e.g. 1am-4:30am
+# Multiple ranges can be specified using a comma delimited list.
+# Default: never
+REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 4 }}am-{{ (ansible_play_hosts_all.index(inventory_hostname)+ 1) * 2 + 5 }}am
+
+
+# Remove any /etc/nologin or /var/run/nologin files which preventing logins
+# when about to reboot. The nologin file is set when SHUTDOWN_TIME is set
+# greater than 0, and even then it normally exists only for the last 5 minutes
+# before the reboot.
+# Default: 0
+PREVENT_NOLOGIN=1
+
+# Insert a message into /etc/motd when a reboot is required, pending, or
+# in progress.
+# Default: 0
+#UPDATE_MOTD=1
+
+# Whether to periodically broadcast wall messages to logged in users once a
+# reboot has been scheduled.
+# Default: 1
+#BROADCAST_REBOOT=0
+
+# How long a user must be idle (in minutes) before they are considered no longer active
+# Set to 0 to reboot while users are active
+# Default: 60
+PREVENT_ACTIVE_USER_MINUTES=120
+
+# Prevent a reboot if the specificed process is detected running. Can be
+# just the command name (rsync) or a specific command invocation
+# (mysqldump -u root --all-databases). If multiple definitions of this
+# parameter are specified, they will all be evaluated.
+# Default: (nothing)
+PREVENT_WHEN_PROCESS=harvest-and-import.sh
+
+# This bash command must return success (exit code 0) or a reboot will be
+# prevented. Note that this command should be able to be executed quickly,
+# and repeatedly, as coreboot will continually run this every minute while
+# waiting for a reboot to become safe to do. If multiple definitions of
+# this parameter are specified, they will all be evaluated.
+# Default: (nothing)
+PREVENT_IF_SCRIPT_FAILS=
+
+# Bash command(s) to run just prior to issuing the `shutdown -r` command.
+# Regardless of success or failure of this script, the reboot will commence
+# afterward. If multiple definitions of this parameter are specified, they
+# will all be evaluated.
+# Default: (nothing)
+PRE_SHUTDOWN_COMMAND=
+
