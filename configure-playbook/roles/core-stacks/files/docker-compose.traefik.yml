@@ -90,6 +90,8 @@ services:
         - "traefik.http.middlewares.remove-prefix.redirectregex.regex=^(https://[^/]+)/vufind(/.*)"
         - "traefik.http.middlewares.remove-prefix.redirectregex.replacement=$${1}$${2}"
         - "traefik.http.middlewares.remove-prefix.redirectregex.permanent=true"
+        # IP restrictions middleware
+        - "traefik.http.middlewares.ip-campus.ipwhitelist.sourcerange=35.8.0.0/13,35.20.0.0/14"
         # Traefik Dashboard HTTP
         - "traefik.http.routers.dashboard-http-router.entrypoints=msul-http-ent"
         - "traefik.http.routers.dashboard-http-router.middlewares=http-redirect"
