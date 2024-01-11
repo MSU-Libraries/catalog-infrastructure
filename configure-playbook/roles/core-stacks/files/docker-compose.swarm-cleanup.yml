@@ -4,7 +4,9 @@ version: "3.8"
 services:
   prune-nodes:
     image: docker
-    command: ["docker", "system", "prune", "-a", "-f", "--filter", "until=30m"]
+    # Need the sleep so Docker has enough time to add networking to the container
+    # to not consider this a failed task and roll back deploys
+    command: ["sh", "-c", "docker system prune -a -f --filter until=30m; sleep 10;"]
     networks:
       - public
     volumes:
