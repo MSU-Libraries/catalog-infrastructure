@@ -176,7 +176,7 @@ main() {
     D_PATH="${ENV_SEARCH_DIR}/${ARGS[ENV]}"
 
     if [[ "${ARGS[DRYRUN]}" -eq 1 ]]; then
-        verbose "(dry-run) sudo -Hu deploy docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}" 1
+        verbose "(dry-run) sudo su -c \"docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}\" - deploy" 1
     else
         # shellcheck source=/dev/null
         if ! OUTPUT=$(su -c "docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}" - deploy); then
