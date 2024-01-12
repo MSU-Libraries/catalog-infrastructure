@@ -1,0 +1,195 @@
+#! /bin/bash
+#! /usr/local/bin/pc-deploy DEPLOY_ENV STACK_CONF
+
+# Set defaults
+default_args() {
+    ENV_SEARCH_DIR="/home/deploy"
+
+    declare -g -A ARGS
+    ARGS[STACK]=
+    ARGS[ENV]=
+    ARGS[COMPOSE]=
+    ARGS[DRYRUN]=0
+    ARGS[VERBOSE]=0
+
+    CORE_STACKS=("public" "swarm-cleanup" "traefik")
+    STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
+}
+default_args
+
+runhelp() {
+    echo ""
+    echo "Usage: Deploy stack using environment data and stack config file"
+    echo ""
+    echo "Examples: "
+    echo "   /pc-deploy catalog-prod solr-cloud"
+    echo "     Use the docker-compose.solr-cloud.yml and .env files at /home/deploy/catalog-prod"
+    echo "     to deploy a stack called catalog-prod-solr"
+    echo "   /pc-deploy catalog-prod docker-compose.solr-cloud.yml"
+    echo "     Use the docker-compose.solr-cloud.yml and .env files at /home/deploy/catalog-prod"
+    echo "     to deploy a stack called catalog-prod-solr"
+    echo "   /pc-deploy core-stacks swarm-cleanup -n"
+    echo "     Use the docker-compose.swarm-cleanup.yml and .env files at /home/deploy/core-stacks"
+    echo "     to display the dry-run command for deploying the stack called swarm-cleanup"
+    echo ""
+    echo "ARGS:"
+    echo "  DEPLOY_ENV"
+    echo "      Required. Relative path to which environment directory should be used for selecting compose files within /home/deploy."
+    echo "  STACK_CONF"
+    echo "      Required. Stack configuration or Docker compose file to deploy within DEPLOY_ENV."
+    echo "  -n|--dry-run"
+    echo "      Do not perform any actions, just dry-run the output."
+    echo "  -v|--verbose"
+    echo "      Show verbose output."
+    echo ""
+}
+
+# Print message if verbose is enabled or if force is passed
+# $1 (string) Message to print
+# $2 (int) Pass a value of 1 if the message should be printed
+#          even if verbose is not set
+verbose() {
+    FORCE=$2
+    LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+    MSG="[${LOG_TS}] $1"
+    if [[ "${ARGS[VERBOSE]}" -eq 1 ]] || [[ "$FORCE" -eq 1 ]]; then
+        echo "${MSG}"
+    fi
+}
+
+# Print help message
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    runhelp
+    exit 0
+fi
+
+# Check if run as root
+if [[ $EUID -ne 0 ]]; then
+    verbose "Error: The script must be run with sudo (unless using --help)." 1
+    exit 1
+fi
+
+# Parse command arguments
+parse_args() {
+    local POSITION=0
+    # Parse flag arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            shift;;
+        -n|--dry-run)
+            ARGS[DRYRUN]=1
+            ARGS[VERBOSE]=1
+            shift;;
+        -v|--verbose)
+            ARGS[VERBOSE]=1
+            shift;;
+        *)
+            case "${POSITION}" in
+            0)
+                ARGS[ENV]=$1
+                if [[ ! -d "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" ]]; then
+                    echo "ERROR: environment does not exist: ${ENV_SEARCH_DIR}/$1"
+                    exit 1
+                fi
+                POSITION=1
+                shift ;;
+            1)
+                # Find a compose file in ENV_SEARCH_DIR/ARGS[ENV] that matches the pattern
+                set_compose "$1"
+                set_stackname
+                POSITION=2
+                shift ;;
+            2)
+                echo "ERROR: Unknown argument: $1"
+                runhelp
+                exit 1
+            esac
+        esac
+    done
+}
+
+# Does additional validation of the values in the command parameters
+# and will exit if not met
+catch_invalid_args() {
+    # Check for missing arguments
+    if [[ -z "${ARGS[ENV]}" ]]; then
+        verbose "ERROR: DEPLOY_ENV is a required argument" 1
+        exit 1
+    fi
+    if [[ -z "${ARGS[COMPOSE]}" ]]; then
+        verbose "ERROR: STACK_CONF is a required arugment cannot be empty" 1
+        exit 1
+    fi
+
+    # Check for missing derived values
+    if [[ -z "${ARGS[STACK]}" ]]; then
+        verbose "ERROR: The docker stack could not be determined from the provided STACK_CONF: ${ARGS[COMPOSE]}" 1
+        exit 1
+    fi
+
+    # Check for invalid paths
+    if [[ ! -f "${ARGS[COMPOSE]}" ]]; then
+        verbose "ERROR: Compose file not found at ${ARGS[COMPOSE]}" 1
+        exit 1
+    fi
+}
+
+# Find the compose file given the patten (which may be the whole compose file name)
+# $1 (string) pattern to match
+set_compose() {
+    ARGS[COMPOSE]=""
+    if [ -f "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}"/"docker-compose.${1}.yml" ]; then
+        ARGS[COMPOSE]="${ENV_SEARCH_DIR}/${ARGS[ENV]}/docker-compose.${1}.yml"
+    fi
+    if [ "$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" | wc -l)" -eq 1 ]; then
+        ARGS[COMPOSE]=$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*")
+    fi
+}
+
+# Set the stack name variable based of the set compose file
+set_stackname() {
+    ARGS[STACK]=
+    # Check if it is a core stack
+    for IDX in "${!CORE_STACKS[@]}"; do
+        if [[ ${ARGS[COMPOSE]} = *"${CORE_STACKS[$IDX]}"* ]]; then
+            ARGS[STACK]="${CORE_STACKS[$IDX]}"
+            break
+        fi
+    done
+    # Check if it is an environment stack
+    for IDX in "${!STACKS[@]}"; do
+        if [[ ${ARGS[COMPOSE]} = *"${STACKS[$IDX]}"* ]]; then
+            ARGS[STACK]="${ARGS[ENV]}-${STACKS[$IDX]}"
+            break
+        fi
+    done
+}
+
+# Deploy the Docker stack, exiting unsuccessfully if the deploy fails
+main() {
+    verbose "Deploying stack ${ARGS[STACK]} using ${ARGS[COMPOSE]}" 1
+    verbose "and ${ENV_SEARCH_DIR}/${ARGS[ENV]}/.env" 1
+    
+    D_PATH="${ENV_SEARCH_DIR}/${ARGS[ENV]}"
+
+    if [[ "${ARGS[DRYRUN]}" -eq 1 ]]; then
+        verbose "(dry-run) sudo -Hu deploy docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}" 1
+    else
+        # shellcheck source=/dev/null
+        if ! OUTPUT=$(su -c "docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}" - deploy); then
+            verbose "ERROR: Failed to deploy stack. ${OUTPUT}" 1
+            exit 1
+        fi
+        verbose "Deploy complete!"
+    fi
+
+}
+
+# Parse and start running
+parse_args "$@"
+catch_invalid_args
+main
+

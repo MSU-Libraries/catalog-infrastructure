@@ -21,6 +21,7 @@
     - ncpa-plugins
     - configure-logrotate
     - grant-permissions
+    - deploy-helper-scripts
 
   tasks:
     - name: Create users
