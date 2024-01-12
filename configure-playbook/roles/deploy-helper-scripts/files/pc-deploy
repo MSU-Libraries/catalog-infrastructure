@@ -183,6 +183,9 @@ main() {
             verbose "ERROR: Failed to deploy stack. ${OUTPUT}" 1
             exit 1
         fi
+        # Show output of the deploy command if verbose enabled
+        verbose "${OUTPUT}"
+
         verbose "Deploy complete!"
     fi
 
