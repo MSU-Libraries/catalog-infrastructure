@@ -64,7 +64,7 @@ if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
 fi
 
 # Check if run as root
-if [[ $EUID -ne 0 ]]; then
+if [[ $USER != "deploy" && $EUID -ne 0 ]]; then
     verbose "Error: The script must be run with sudo (unless using --help)." 1
     exit 1
 fi

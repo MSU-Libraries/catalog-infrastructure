@@ -5,6 +5,9 @@ _pc-deploy()
     CURRENT="${COMP_WORDS[$COMP_CWORD]}"
     PREV="${COMP_WORDS[$COMP_CWORD-1]}"
     DEPLOY_DIR="/home/deploy"
+    # Change directory to avoid cases where user is currently in an unreadable
+    # directory (e.g. just after a sudo) which would cause `find` to throw errors
+    cd /
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         # Get all the environment directory names in DEPLOY_DIR
