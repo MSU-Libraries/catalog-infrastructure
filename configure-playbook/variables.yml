@@ -53,6 +53,7 @@ create_users:
  - name: roudonro
    comment: 'Robby Roudon'
    groups: sudo,adm,docker,deploy,ubuntu
+   shell: /usr/bin/zsh
    public_keys:
      - ***REMOVED***
 

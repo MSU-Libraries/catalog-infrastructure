@@ -6,6 +6,7 @@
       - docker.io
       - python3-docker
       - nfs-common
+      - zsh
     state: present
     lock_timeout: 999999
 
