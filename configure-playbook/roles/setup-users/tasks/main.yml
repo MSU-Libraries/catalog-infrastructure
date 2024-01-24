@@ -13,7 +13,7 @@
     name: "{{ user_dict.name }}"
     comment: "{{ user_dict.comment }}"
     state: present
-    shell: /bin/bash
+    shell: "{{ user_dict.shell | default('/bin/bash') }}"
     groups: "{{ user_dict.groups }}"
     append: yes
   register: created_user
