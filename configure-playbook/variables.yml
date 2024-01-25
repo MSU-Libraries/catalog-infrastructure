@@ -54,6 +54,8 @@ create_users:
    comment: 'Robby Roudon'
    groups: sudo,adm,docker,deploy,ubuntu
    shell: /usr/bin/zsh
+   send_files: [ .bashrc, .zshrc ]
+   force_push: no
    public_keys:
      - ***REMOVED***
 
