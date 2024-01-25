@@ -54,8 +54,6 @@ create_users:
    comment: 'Robby Roudon'
    groups: sudo,adm,docker,deploy,ubuntu
    shell: /usr/bin/zsh
-   send_files: [ .bashrc, .zshrc ]
-   force_push: no
    public_keys:
      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDZpz3F+naNkIkxouxvGthebAjhIR5sD0NzPFVDOpPQAO6/TKfpLN7R7dg+Dg84ooC7DagzFdSkzV+im6e8FMw5asVrpbCe+EtpuLbQZ1yh2gl6BJykA2RUooFfknXrSjPv4FkctdG0zBz+iP16VsBvxR+hPvlLBoM/RYDJ5xjav4aztKb6leMvFDG/TAXp/2LITwG1mJ/wsMpz0VNfqmofIFm1ucE6bPmu8l9hJPpgwgVBJlkd7tWGciXL31yiLFU0C9Tj7LEIJWm4IBk9X6WCXn231pUrQbYn3ocP04XUMY0phCMhnqI5BxeffKxYgrbP6ahdXwg+L1YGL1reqawdg9vcRIoNhNm8X9ar4K6iRS7R2evYqPwNKZxiKQTuxuF9JmzDnnNdmt2q4HFumftRWjmEJ2zryv4hniM9ACw1tD6hYLQW4FOLxzr70BYk3i6iXNcTbzIaXFNa3bAy8ZV+vHMI2eCJ5/UNdS/n7uyrhPOfffr6d53iJeWTTZJFFid7BiUDSQ+Gd1LPrVn52j63+MIzGIjmUsTks7va4qS82Bx43vP5I9HUVANJFgyT3UVG9deZ4yDmMjFGGkZEfzjStBPr9vvNuYXEZm4fGVcMHhTSEeetWGXoPtYGVAA8PjAi4GNmbG2mrx1o7cNpkMO1/VqI7vvgsgodTQfG91t/zQ== roudonro@msu.edu
 
