@@ -1,3 +1,5 @@
 *.swp
 .terraform.lock.hcl
 .terraform
+# PHPStorm folder
+.idea/

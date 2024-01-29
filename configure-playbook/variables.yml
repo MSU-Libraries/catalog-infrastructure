@@ -54,6 +54,7 @@ create_users:
    comment: 'Robby Roudon'
    groups: sudo,adm,docker,deploy,ubuntu
    shell: /usr/bin/zsh
+   chezmoi_repository: https://gitlab.msu.edu/roudonro/dotfiles.git
    public_keys:
      - ***REMOVED***
 
