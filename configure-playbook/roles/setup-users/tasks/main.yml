@@ -53,3 +53,9 @@
   - user_dict.name is defined
   - user_dict.comment is defined
   - user_dict.public_keys is defined
+
+- name: Dotfiles through chezmoi
+  become_user: "{{ user_dict.name }}"
+  command: "chezmoi init --apply {{ user_dict.chezmoi_repository }} --guess-repo-url=false"
+  when:
+  - user_dict.chezmoi_repository is defined
