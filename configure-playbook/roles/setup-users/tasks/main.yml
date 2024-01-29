@@ -55,6 +55,7 @@
   - user_dict.public_keys is defined
 
 - name: Dotfiles through chezmoi
+  become: true
   become_user: "{{ user_dict.name }}"
   command: "chezmoi init --apply {{ user_dict.chezmoi_repository }} --guess-repo-url=false"
   when:
