@@ -23,3 +23,19 @@
     mode: '0644'
     owner: root
     group: root
+
+- name: Deploy pc-locate-oai script
+  ansible.builtin.copy:
+    src: pc-locate-oai
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-locate-oai autocomplete script
+  ansible.builtin.copy:
+    src: auto_pc-locate-oai.bash
+    dest: /etc/bash_completion.d/pc-locate-oai
+    mode: '0644'
+    owner: root
+    group: root

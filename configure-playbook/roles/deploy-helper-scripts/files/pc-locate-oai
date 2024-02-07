@@ -1,0 +1,124 @@
+#!/bin/bash
+
+# Set defaults
+default_args() {
+    SEARCH_DIR="/mnt/shared/oai"
+    SEARCH_SUBDIR="harvest_folio/processed" # within /mnt/shared/[STACK]
+
+    declare -g -A ARGS
+    ARGS[STACK]="catalog-prod"
+    ARGS[INSTANCE_ID]=
+    ARGS[VERBOSE]=0
+}
+default_args
+
+runhelp() {
+    echo ""
+    echo "Usage: Locate the OAI file by the FOLIO instance ID"
+    echo ""
+    echo "Examples: "
+    echo "   /pc-locate-oai in00005342798"
+    echo "     Locate the OAI file containing in00005342798 within catalog-prod's files"
+    echo "   /pc-locate-oai in00005342798 catalog-beta"
+    echo "     Locate the OAI file containing in00005342798 within catalog-beta's files"
+    echo ""
+    echo "ARGS:"
+    echo "  DEPLOY_ENV"
+    echo "      Required. Relative path to which environment directory should be used for selecting compose files within /home/deploy."
+    echo "  STACK_CONF"
+    echo "      Required. Stack configuration or Docker compose file to deploy within DEPLOY_ENV."
+    echo "  -v|--verbose"
+    echo "      Show verbose output."
+    echo ""
+}
+
+# Print message if verbose is enabled or if force is passed
+# $1 (string) Message to print
+# $2 (int) Pass a value of 1 if the message should be printed
+#          even if verbose is not set
+verbose() {
+    FORCE=$2
+    LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+    MSG="[${LOG_TS}] $1"
+    if [[ "${ARGS[VERBOSE]}" -eq 1 ]] || [[ "$FORCE" -eq 1 ]]; then
+        echo "${MSG}"
+    fi
+}
+
+# Print help message
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    runhelp
+    exit 0
+fi
+
+# Parse command arguments
+parse_args() {
+    local POSITION=0
+    # Parse flag arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            shift;;
+        -v|--verbose)
+            ARGS[VERBOSE]=1
+            shift;;
+        *)
+            case "${POSITION}" in
+            0)
+                ARGS[INSTANCE_ID]=$1
+                if [[ ! -d "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" ]]; then
+                    echo "ERROR: environment does not exist: ${ENV_SEARCH_DIR}/$1"
+                    exit 1
+                fi
+                POSITION=1
+                shift ;;
+            1)
+                ARGS[STACK]=$1
+                if [[ ! -d "${SEARCH_DIR}"/"${1}" ]]; then
+                    echo "ERROR: OAI does not exist for the given environment: ${SEARCH_DIR}/$1"
+                    exit 1
+                fi
+                POSITION=2
+                shift ;;
+            2)
+                echo "ERROR: Unknown argument: $1"
+                runhelp
+                exit 1
+            esac
+        esac
+    done
+}
+
+# Does additional validation of the values in the command parameters
+# and will exit if not met
+catch_invalid_args() {
+    # Check for missing arguments
+    if [[ -z "${ARGS[INSTANCE_ID]}" ]]; then
+        verbose "ERROR: INSTANCE_ID is a required arugment cannot be empty" 1
+        exit 1
+    fi
+    if [[ -z "${ARGS[STACK]}" ]]; then
+        verbose "ERROR: STACK is a required argument" 1
+        exit 1
+    fi
+    if [[ ! -d "${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}" ]]; then
+        verbose "ERROR: OAI directory not found: ${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}" 1
+        exit 1
+    fi
+}
+
+# Performs the search given the FOLIO instance ID and stack
+main() {
+    FULL_SEARCH_DIR=${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}
+    verbose "Searching for ${ARGS[INSTANCE_ID]} within ${FULL_SEARCH_DIR}" 1
+
+    verbose "parallel -j 16 -n 16 grep -l \"${ARGS[INSTANCE_ID]}\" -- ${FULL_SEARCH_DIR}/combined_202*.xml"
+    parallel -j 16 -n 16 grep -l "${ARGS[INSTANCE_ID]}" -- "${FULL_SEARCH_DIR}"/combined_202*.xml
+}
+
+# Parse and start running
+parse_args "$@"
+catch_invalid_args
+main
