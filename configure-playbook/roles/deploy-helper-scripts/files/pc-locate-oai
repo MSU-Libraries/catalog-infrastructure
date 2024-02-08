@@ -1,49 +1,77 @@
 #!/bin/bash
 
-# Set defaults
-default_args() {
-    SEARCH_DIR="/mnt/shared/oai"
-    SEARCH_SUBDIR="harvest_folio/processed" # within /mnt/shared/[STACK]
+# TODO Ability to match only latest version of instances (ignore duplicate records in older files)
 
-    declare -g -A ARGS
-    ARGS[STACK]="catalog-prod"
-    ARGS[INSTANCE_ID]=
-    ARGS[VERBOSE]=0
+SCRIPT_NAME=$( basename "$0" )
+
+init_var_defaults() {
+    declare -g SEARCH_DIR="/mnt/shared/oai"
+    declare -g SEARCH_SUBDIR="harvest_folio/processed" # within $SEARCH_DIR/[STACK]
+
+    declare -g ARG_STACK="catalog-prod"
+    declare -g ARG_VERBOSE=0
+    declare -g ARG_DEBUG=0
+    declare -g ARG_EXTRACT=0
+    declare -g -a ARG_INSTANCE_IDS
 }
-default_args
+init_var_defaults
 
 runhelp() {
     echo ""
     echo "Usage: Locate the OAI file by the FOLIO instance ID"
+    echo "    ./$SCRIPT_NAME INSTANCE_IDS [STACK_NAME] [FLAGS]"
     echo ""
     echo "Examples: "
-    echo "   /pc-locate-oai in00005342798"
+    echo "   ./$SCRIPT_NAME in00005342798"
     echo "     Locate the OAI file containing in00005342798 within catalog-prod's files"
-    echo "   /pc-locate-oai in00005342798 catalog-beta"
-    echo "     Locate the OAI file containing in00005342798 within catalog-beta's files"
+    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catalog-beta"
+    echo "     Locate the OAI files containing any of listed instances within catalog-beta's files"
+    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catalog-beta --extract"
+    echo "     Copy records matching instances from catalog-beta OAI files to a new temp XML file"
     echo ""
     echo "ARGS:"
-    echo "  DEPLOY_ENV"
-    echo "      Required. Relative path to which environment directory should be used for selecting compose files within /home/deploy."
-    echo "  STACK_CONF"
-    echo "      Required. Stack configuration or Docker compose file to deploy within DEPLOY_ENV."
+    echo "  INSTANCE_IDS"
+    echo "      Comma delimited list of instance ids; no spaces allowed. Required."
+    echo "  STACK_NAME"
+    echo "      The stack under which to search for OAI file matches. Default: catalog-prod"
+    echo "  -e|--extract"
+    echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
     echo "  -v|--verbose"
     echo "      Show verbose output."
     echo ""
 }
 
-# Print message if verbose is enabled or if force is passed
-# $1 (string) Message to print
-# $2 (int) Pass a value of 1 if the message should be printed
-#          even if verbose is not set
 verbose() {
-    FORCE=$2
     LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
-    MSG="[${LOG_TS}] $1"
-    if [[ "${ARGS[VERBOSE]}" -eq 1 ]] || [[ "$FORCE" -eq 1 ]]; then
-        echo "${MSG}"
+    MSG="[${LOG_TS}] $*"
+    if [[ $STDERR -eq 1 ]]; then
+        1>&2 echo "$MSG"
+    elif [[ ${ARG_VERBOSE} -eq 1 ]]; then
+        echo "$MSG"
     fi
 }
+
+error() {
+    declare -g STDERR
+    STDERR=1
+    verbose "ERROR: $*"
+    STDERR=0
+}
+
+debug() {
+    if [[ $ARG_DEBUG -eq 1 ]]; then
+        declare -g STDERR
+        STDERR=1
+        verbose "Debug: $*"
+        STDERR=0
+    fi
+}
+
+die() {
+    error "$*"
+    exit 1
+}
+
 
 # Print help message
 if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
@@ -62,28 +90,33 @@ parse_args() {
             exit 0
             shift;;
         -v|--verbose)
-            ARGS[VERBOSE]=1
+            ARG_VERBOSE=1
+            shift;;
+        -e|--extract)
+            ARG_EXTRACT=1
+            shift;;
+        --debug)
+            ARG_DEBUG=1
             shift;;
         *)
             case "${POSITION}" in
             0)
-                ARGS[INSTANCE_ID]=$1
-                if [[ ! -d "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" ]]; then
-                    echo "ERROR: environment does not exist: ${ENV_SEARCH_DIR}/$1"
-                    exit 1
+                VALID_IDS_PATTERN="^in[0-9]{11}(,in[0-9]{11})*$"
+                if [[ ! $1 =~ $VALID_IDS_PATTERN ]]; then
+                    die "Invalid INSTANCE_IDS list"
                 fi
+                ARG_INSTANCE_IDS=(${1//,/ })
                 POSITION=1
                 shift ;;
             1)
-                ARGS[STACK]=$1
+                ARG_STACK=$1
                 if [[ ! -d "${SEARCH_DIR}"/"${1}" ]]; then
-                    echo "ERROR: OAI does not exist for the given environment: ${SEARCH_DIR}/$1"
-                    exit 1
+                    die "OAI does not exist for the given environment: ${SEARCH_DIR}/$1"
                 fi
                 POSITION=2
                 shift ;;
             2)
-                echo "ERROR: Unknown argument: $1"
+                error "Unknown argument: $1"
                 runhelp
                 exit 1
             esac
@@ -95,27 +128,47 @@ parse_args() {
 # and will exit if not met
 catch_invalid_args() {
     # Check for missing arguments
-    if [[ -z "${ARGS[INSTANCE_ID]}" ]]; then
-        verbose "ERROR: INSTANCE_ID is a required arugment cannot be empty" 1
-        exit 1
+    if [[ -z "${ARG_INSTANCE_IDS[*]}" ]]; then
+        die "INSTANCE_IDS is a required argument cannot be empty"
     fi
-    if [[ -z "${ARGS[STACK]}" ]]; then
-        verbose "ERROR: STACK is a required argument" 1
-        exit 1
+    if [[ ! -d "${SEARCH_DIR}/${ARG_STACK}/${SEARCH_SUBDIR}" ]]; then
+        die "OAI directory not found: ${SEARCH_DIR}/${ARG_STACK}/${SEARCH_SUBDIR}"
     fi
-    if [[ ! -d "${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}" ]]; then
-        verbose "ERROR: OAI directory not found: ${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}" 1
-        exit 1
-    fi
+}
+
+match_files() {
+    INSTANCE_MATCHES=()
+    for INSTANCE_ID in "${ARG_INSTANCE_IDS[@]}"; do
+        INSTANCE_MATCHES+=(-e ${INSTANCE_ID})
+    done
+    debug "parallel -j 16 -n 16 grep -lF ${INSTANCE_MATCHES[*]} -- \"${FULL_SEARCH_DIR}\"/combined_20*.xml"
+    parallel -j 16 -n 16 grep -lF ${INSTANCE_MATCHES[*]} -- "${FULL_SEARCH_DIR}"/combined_20*.xml
 }
 
 # Performs the search given the FOLIO instance ID and stack
 main() {
-    FULL_SEARCH_DIR=${SEARCH_DIR}/${ARGS[STACK]}/${SEARCH_SUBDIR}
-    verbose "Searching for ${ARGS[INSTANCE_ID]} within ${FULL_SEARCH_DIR}" 1
+    FULL_SEARCH_DIR=${SEARCH_DIR}/${ARG_STACK}/${SEARCH_SUBDIR}
+    verbose "Searching for $(IFS=, ; echo "${ARG_INSTANCE_IDS[*]}") within ${FULL_SEARCH_DIR}"
 
-    verbose "parallel -j 16 -n 16 grep -l \"${ARGS[INSTANCE_ID]}\" -- ${FULL_SEARCH_DIR}/combined_202*.xml"
-    parallel -j 16 -n 16 grep -l "${ARGS[INSTANCE_ID]}" -- "${FULL_SEARCH_DIR}"/combined_202*.xml
+    mapfile -t MATCHED_FILES < <( match_files )
+    if [[ ${ARG_EXTRACT} -eq 0 ]]; then
+        printf '%s\n' "${MATCHED_FILES[@]}"
+    else
+        TEMP_XML=$(mktemp --suffix=.xml)
+        echo '<?xml version="1.0" ?>' > "$TEMP_XML"
+        echo '<collection>' >> "$TEMP_XML"
+        for MATCHED_FILE in "${MATCHED_FILES[@]}"; do
+            # TODO join instances checks onto single xmlstarlet command
+            for INSTANCE_ID in "${ARG_INSTANCE_IDS[@]}"; do
+                xmlstarlet sel \
+                    -N marc="http://www.loc.gov/MARC21/slim" -t \
+                    -m "//collection/marc:record/marc:controlfield[@tag='001'][text()='$INSTANCE_ID']/.." \
+                    -c . -n "$MATCHED_FILE" >> "$TEMP_XML" || true
+            done
+        done
+        echo '</collection>' >> "$TEMP_XML"
+        echo "$TEMP_XML"
+    fi
 }
 
 # Parse and start running
