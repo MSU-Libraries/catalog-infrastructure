@@ -16,6 +16,7 @@ _pc-locate-oai()
 
         mapfile -t COMPREPLY < <(compgen -W "${DEPLOY_ENVS[*]}" -- "$CURRENT")
     fi
+    COMPREPLY+=(-e --extract -v --verbose --debug)
     shopt -u nullglob
     return 0
 }
