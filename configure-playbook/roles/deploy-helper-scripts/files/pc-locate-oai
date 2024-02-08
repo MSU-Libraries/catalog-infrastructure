@@ -38,6 +38,8 @@ runhelp() {
     echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
     echo "  -v|--verbose"
     echo "      Show verbose output."
+    echo "  --debug"
+    echo "      Show debug output."
     echo ""
 }
 
