@@ -1,18 +1,17 @@
 #!/bin/bash
 
-# TODO Ability to match only latest version of instances (ignore duplicate records in older files)
-
 SCRIPT_NAME=$( basename "$0" )
 
 init_var_defaults() {
     declare -g SEARCH_DIR="/mnt/shared/oai"
     declare -g SEARCH_SUBDIR="harvest_folio/processed" # within $SEARCH_DIR/[STACK]
-
     declare -g ARG_STACK="catalog-prod"
     declare -g ARG_VERBOSE=0
     declare -g ARG_DEBUG=0
     declare -g ARG_EXTRACT=0
+    declare -g ARG_RECENT=0
     declare -g -a ARG_INSTANCE_IDS
+    declare -g -A INSTANCE_RECORDS
 }
 init_var_defaults
 
@@ -36,6 +35,8 @@ runhelp() {
     echo "      The stack under which to search for OAI file matches. Default: catalog-prod"
     echo "  -e|--extract"
     echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
+    echo "  -r|--recent"
+    echo "      Match only the most recent file containing each instance id"
     echo "  -v|--verbose"
     echo "      Show verbose output."
     echo "  --debug"
@@ -94,6 +95,9 @@ parse_args() {
         -v|--verbose)
             ARG_VERBOSE=1
             shift;;
+        -r|--recent)
+            ARG_RECENT=1
+            shift;;
         -e|--extract)
             ARG_EXTRACT=1
             shift;;
@@ -107,7 +111,10 @@ parse_args() {
                 if [[ ! $1 =~ $VALID_IDS_PATTERN ]]; then
                     die "Invalid INSTANCE_IDS list"
                 fi
-                ARG_INSTANCE_IDS=(${1//,/ })
+                # sorting instances for laster ease in comparing which weren't found
+                # shellcheck disable=SC2207
+                IFS=$'\n' ARG_INSTANCE_IDS=($(sort <<< "${1//,/$'\n'}"))
+                unset IFS
                 POSITION=1
                 shift ;;
             1)
@@ -141,10 +148,41 @@ catch_invalid_args() {
 match_files() {
     INSTANCE_MATCHES=()
     for INSTANCE_ID in "${ARG_INSTANCE_IDS[@]}"; do
+        # shellcheck disable=SC2206
         INSTANCE_MATCHES+=(-e ${INSTANCE_ID})
     done
     debug "parallel -j 16 -n 16 grep -lF ${INSTANCE_MATCHES[*]} -- \"${FULL_SEARCH_DIR}\"/combined_20*.xml"
+    # shellcheck disable=SC2048,SC2086
     parallel -j 16 -n 16 grep -lF ${INSTANCE_MATCHES[*]} -- "${FULL_SEARCH_DIR}"/combined_20*.xml
+}
+
+file_has_instance() {
+    FILE_PATH="$1"
+    INSTANCE_ID="$2"
+
+    RECORD=$(xmlstarlet sel \
+            -N marc="http://www.loc.gov/MARC21/slim" -t \
+            -m "//collection/marc:record/marc:controlfield[@tag='001'][text()='$INSTANCE_ID']/.." \
+            -c . -n "$FILE_PATH")
+    FOUND=$?
+    if [[ $FOUND -eq 0 ]]; then
+        debug "Found instance $INSTANCE_ID in $( basename "${FILE_PATH}" )"
+        INSTANCE_RECORDS[$INSTANCE_ID]="$RECORD"
+    fi
+    return $FOUND
+}
+
+filter_to_recent_files() {
+    FILTERED_FILES=()
+    for INSTANCE_ID in "${INSTANCE_IDS[@]}"; do
+        for MATCHED_FILE in "${MATCHED_FILES[@]}"; do
+            if file_has_instance "$MATCHED_FILE" "$INSTANCE_ID"; then
+                # first instance found; no further checking required
+                FILTERED_FILES+=("$MATCHED_FILE")
+                continue 2
+            fi
+        done
+    done
 }
 
 # Performs the search given the FOLIO instance ID and stack
@@ -152,28 +190,36 @@ main() {
     FULL_SEARCH_DIR=${SEARCH_DIR}/${ARG_STACK}/${SEARCH_SUBDIR}
     verbose "Searching for $(IFS=, ; echo "${ARG_INSTANCE_IDS[*]}") within ${FULL_SEARCH_DIR}"
 
-    mapfile -t MATCHED_FILES < <( match_files )
+    declare -g -a INSTANCE_IDS=("${ARG_INSTANCE_IDS[@]}")
+    declare -g -a MATCHED_FILES
+    mapfile -t MATCHED_FILES < <( match_files | sort -r )
+    declare -g -a FILTERED_FILES=("${MATCHED_FILES[@]}")
+    verbose "Found ${#FILTERED_FILES[@]} files that match."
+    for FILTERED_FILE in "${FILTERED_FILES[@]}"; do
+        debug "Matched $( basename "${FILTERED_FILE}" )"
+    done
+    if [[ ${ARG_RECENT} -eq 1 ]]; then
+        verbose "Filtering to only most recent files with instance matches"
+        filter_to_recent_files
+    fi
+
     if [[ ${ARG_EXTRACT} -eq 0 ]]; then
-        printf '%s\n' "${MATCHED_FILES[@]}"
+        printf '%s\n' "${FILTERED_FILES[@]}"
     else
         TEMP_XML=$(mktemp --suffix=.xml)
         echo '<?xml version="1.0" ?>' > "$TEMP_XML"
         echo '<collection>' >> "$TEMP_XML"
-        for MATCHED_FILE in "${MATCHED_FILES[@]}"; do
-            # TODO join instances checks onto single xmlstarlet command
-            for INSTANCE_ID in "${ARG_INSTANCE_IDS[@]}"; do
-                xmlstarlet sel \
-                    -N marc="http://www.loc.gov/MARC21/slim" -t \
-                    -m "//collection/marc:record/marc:controlfield[@tag='001'][text()='$INSTANCE_ID']/.." \
-                    -c . -n "$MATCHED_FILE" >> "$TEMP_XML" || true
-            done
+        for INSTANCE_RECORD in "${INSTANCE_RECORDS[@]}"; do
+            echo "$INSTANCE_RECORD" >> "$TEMP_XML"
         done
         echo '</collection>' >> "$TEMP_XML"
         echo "$TEMP_XML"
     fi
+    # TODO debug message for instances not found at all
 }
 
-# Parse and start running
 parse_args "$@"
 catch_invalid_args
+debug "$SCRIPT_NAME starting"
 main
+debug "$SCRIPT_NAME completed"
