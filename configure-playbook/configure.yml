@@ -22,6 +22,7 @@
     - configure-logrotate
     - grant-permissions
     - deploy-helper-scripts
+    - clone-vufind
 
   tasks:
     - name: Create users
