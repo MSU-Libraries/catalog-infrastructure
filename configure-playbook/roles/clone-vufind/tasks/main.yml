@@ -2,5 +2,5 @@
 
 - name: Clone VuFind core repository
   ansible.builtin.git:
-    repo: 'git@github.com:vufind-org/vufind.git'
+    repo: 'https://github.com/vufind-org/vufind.git'
     dest: /mnt/shared/vufind
