@@ -1,6 +1,12 @@
 ---
 
+- name: Check if VuFind clone exists
+  ansible.builtin.stat:
+    path: /mnt/shared/vufind/.git
+  register: clone_stat
+
 - name: Clone VuFind core repository
   ansible.builtin.git:
     repo: 'https://github.com/vufind-org/vufind.git'
     dest: /mnt/shared/vufind
+  when: not clone_stat.stat.exists
