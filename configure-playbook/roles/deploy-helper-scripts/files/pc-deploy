@@ -44,17 +44,21 @@ runhelp() {
     echo ""
 }
 
-# Print message if verbose is enabled or if force is passed
-# $1 (string) Message to print
-# $2 (int) Pass a value of 1 if the message should be printed
-#          even if verbose is not set
-verbose() {
-    FORCE=$2
+declare -g STDERR
+message() {
     LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
-    MSG="[${LOG_TS}] $1"
-    if [[ "${ARGS[VERBOSE]}" -eq 1 ]] || [[ "$FORCE" -eq 1 ]]; then
-        1>&2 echo "${MSG}"
-    fi
+    1>&2 echo "[${LOG_TS}] $*"
+}
+verbose() {
+    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$@"
+}
+error() {
+    message "ERROR: $*"
+}
+die() {
+    error "$*"
+    exit 1
 }
 
 # Print help message
@@ -65,8 +69,7 @@ fi
 
 # Check if run as root
 if [[ $USER != "deploy" && $EUID -ne 0 ]]; then
-    verbose "Error: The script must be run with sudo (unless using --help)." 1
-    exit 1
+    die "The script must be run with sudo (unless using --help)."
 fi
 
 # Parse command arguments
@@ -115,26 +118,18 @@ parse_args() {
 # and will exit if not met
 catch_invalid_args() {
     # Check for missing arguments
-    if [[ -z "${ARGS[ENV]}" ]]; then
-        verbose "ERROR: DEPLOY_ENV is a required argument" 1
-        exit 1
-    fi
-    if [[ -z "${ARGS[COMPOSE]}" ]]; then
-        verbose "ERROR: STACK_CONF is a required arugment cannot be empty" 1
-        exit 1
-    fi
+    [[ -z "${ARGS[ENV]}" ]] \
+        && die "DEPLOY_ENV is a required argument"
+    [[ -z "${ARGS[COMPOSE]}" ]] \
+        && die "STACK_CONF is a required arugment cannot be empty"
 
     # Check for missing derived values
-    if [[ -z "${ARGS[STACK]}" ]]; then
-        verbose "ERROR: The docker stack could not be determined from the provided STACK_CONF: ${ARGS[COMPOSE]}" 1
-        exit 1
-    fi
+    [[ -z "${ARGS[STACK]}" ]] \
+        && die "The docker stack could not be determined from the provided STACK_CONF: ${ARGS[COMPOSE]}"
 
     # Check for invalid paths
-    if [[ ! -f "${ARGS[COMPOSE]}" ]]; then
-        verbose "ERROR: Compose file not found at ${ARGS[COMPOSE]}" 1
-        exit 1
-    fi
+    [[ ! -f "${ARGS[COMPOSE]}" ]] \
+        && die "Compose file not found at ${ARGS[COMPOSE]}"
 }
 
 # Find the compose file given the patten (which may be the whole compose file name)
@@ -168,28 +163,24 @@ set_stackname() {
     done
 }
 
-sudo_command() {
+run_command() {
     if [[ $USER != "deploy" ]]; then
         SUDO_PREFIX=(sudo -Hu deploy)
     fi
-    if [[ ${ARGS[DRYRUN]} -eq 1 ]]; then
-        DRYRUN="(dry-run) "
-    fi
     CMD="docker stack deploy --with-registry-auth -c <(source \"${VAR_FILE}\"; envsubst < \"${ARGS[COMPOSE]}\") \"${ARGS[STACK]}\""
-    verbose "${DRYRUN}Command:   ${SUDO_PREFIX[*]} bash -c '$CMD'"
+    verbose "Command:   ${SUDO_PREFIX[*]} bash -c '$CMD'"
     ([[ ${ARGS[DRYRUN]} -eq 0 ]] && "${SUDO_PREFIX[@]}" bash -c "$CMD") || true
 }
 
 # Deploy the Docker stack, exiting unsuccessfully if the deploy fails
 main() {
     declare -g VAR_FILE="${ENV_SEARCH_DIR}/${ARGS[ENV]}/.env"
-    verbose "Stack:     ${ARGS[STACK]}" 1
-    verbose "Compose:   ${ARGS[COMPOSE]}" 1
-    verbose "Variables: ${VAR_FILE}" 1
+    verbose "Stack:     ${ARGS[STACK]}"
+    verbose "Compose:   ${ARGS[COMPOSE]}"
+    verbose "Variables: ${VAR_FILE}"
     
-    if ! OUTPUT=$(sudo_command); then
-        verbose "ERROR: Failed to deploy stack. ${OUTPUT}" 1
-        exit 1
+    if ! OUTPUT=$(run_command); then
+        die "Failed to deploy stack. ${OUTPUT}"
     fi
     # Show output of the deploy command if verbose enabled
     [[ -n ${OUTPUT} ]] && verbose "${OUTPUT}"
