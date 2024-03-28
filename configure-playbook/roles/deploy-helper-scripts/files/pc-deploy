@@ -44,7 +44,6 @@ runhelp() {
     echo ""
 }
 
-declare -g STDERR
 message() {
     LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
     1>&2 echo "[${LOG_TS}] $*"
