@@ -53,7 +53,7 @@ verbose() {
     LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
     MSG="[${LOG_TS}] $1"
     if [[ "${ARGS[VERBOSE]}" -eq 1 ]] || [[ "$FORCE" -eq 1 ]]; then
-        echo "${MSG}"
+        1>&2 echo "${MSG}"
     fi
 }
 
@@ -168,27 +168,32 @@ set_stackname() {
     done
 }
 
+sudo_command() {
+    if [[ $USER != "deploy" ]]; then
+        SUDO_PREFIX=(sudo -Hu deploy)
+    fi
+    if [[ ${ARGS[DRYRUN]} -eq 1 ]]; then
+        DRYRUN="(dry-run) "
+    fi
+    CMD="docker stack deploy --with-registry-auth -c <(source \"${VAR_FILE}\"; envsubst < \"${ARGS[COMPOSE]}\") \"${ARGS[STACK]}\""
+    verbose "${DRYRUN}Command:   ${SUDO_PREFIX[*]} bash -c '$CMD'"
+    ([[ ${ARGS[DRYRUN]} -eq 0 ]] && "${SUDO_PREFIX[@]}" bash -c "$CMD") || true
+}
+
 # Deploy the Docker stack, exiting unsuccessfully if the deploy fails
 main() {
-    verbose "Deploying stack ${ARGS[STACK]} using ${ARGS[COMPOSE]}" 1
-    verbose "and ${ENV_SEARCH_DIR}/${ARGS[ENV]}/.env" 1
+    declare -g VAR_FILE="${ENV_SEARCH_DIR}/${ARGS[ENV]}/.env"
+    verbose "Stack:     ${ARGS[STACK]}" 1
+    verbose "Compose:   ${ARGS[COMPOSE]}" 1
+    verbose "Variables: ${VAR_FILE}" 1
     
-    D_PATH="${ENV_SEARCH_DIR}/${ARGS[ENV]}"
-
-    if [[ "${ARGS[DRYRUN]}" -eq 1 ]]; then
-        verbose "(dry-run) sudo su -c \"docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}\" - deploy" 1
-    else
-        # shellcheck source=/dev/null
-        if ! OUTPUT=$(su -c "docker stack deploy --with-registry-auth -c <(source ${D_PATH}/.env; envsubst <${ARGS[COMPOSE]}) ${ARGS[STACK]}" - deploy); then
-            verbose "ERROR: Failed to deploy stack. ${OUTPUT}" 1
-            exit 1
-        fi
-        # Show output of the deploy command if verbose enabled
-        verbose "${OUTPUT}"
-
-        verbose "Deploy complete!"
+    if ! OUTPUT=$(sudo_command); then
+        verbose "ERROR: Failed to deploy stack. ${OUTPUT}" 1
+        exit 1
     fi
-
+    # Show output of the deploy command if verbose enabled
+    [[ -n ${OUTPUT} ]] && verbose "${OUTPUT}"
+    verbose "Deploy complete!"
 }
 
 # Parse and start running
