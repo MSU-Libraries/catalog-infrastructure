@@ -11,6 +11,7 @@ default_args() {
     ARGS[COMPOSE]=
     ARGS[DRYRUN]=0
     ARGS[VERBOSE]=0
+    ARGS[DEBUG]=0
 
     CORE_STACKS=("public" "swarm-cleanup" "traefik")
     STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
@@ -19,16 +20,19 @@ default_args
 
 runhelp() {
     echo ""
-    echo "Usage: Deploy stack using environment data and stack config file"
+    echo "Deploy stack using environment data and stack config file"
+    echo ""
+    echo "Usage:"
+    echo "   pc-deploy [FLAGS] DEPLOY_ENV STACK_CONF"
     echo ""
     echo "Examples: "
-    echo "   /pc-deploy catalog-prod solr-cloud"
+    echo "   pc-deploy catalog-prod solr-cloud"
     echo "     Use the docker-compose.solr-cloud.yml and .env files at /home/deploy/catalog-prod"
     echo "     to deploy a stack called catalog-prod-solr"
-    echo "   /pc-deploy catalog-prod docker-compose.solr-cloud.yml"
+    echo "   pc-deploy catalog-prod docker-compose.solr-cloud.yml"
     echo "     Use the docker-compose.solr-cloud.yml and .env files at /home/deploy/catalog-prod"
     echo "     to deploy a stack called catalog-prod-solr"
-    echo "   /pc-deploy core-stacks swarm-cleanup -n"
+    echo "   pc-deploy core-stacks swarm-cleanup -n"
     echo "     Use the docker-compose.swarm-cleanup.yml and .env files at /home/deploy/core-stacks"
     echo "     to display the dry-run command for deploying the stack called swarm-cleanup"
     echo ""
@@ -41,6 +45,8 @@ runhelp() {
     echo "      Do not perform any actions, just dry-run the output."
     echo "  -v|--verbose"
     echo "      Show verbose output."
+    echo "  --debug"
+    echo "      Display debugging messages (should be set before passing command arguments)."
     echo ""
 }
 
@@ -54,6 +60,9 @@ verbose() {
 }
 error() {
     message "ERROR: $*"
+}
+debug() {
+    [[ ${ARGS[DEBUG]} -eq 1 ]] && message "Debug: $*"
 }
 die() {
     error "$*"
@@ -88,6 +97,12 @@ parse_args() {
         -v|--verbose)
             ARGS[VERBOSE]=1
             shift;;
+        --debug)
+            ARGS[DEBUG]=1
+            ARGS[VERBOSE]=1
+            [[ -n "${ARGS[STACK]}${ARGS[ENV]}${ARGS[COMPOSE]}" ]] && \
+                die "The --debug flag must be set before DEPLOY_ENV or STACK_CONF."
+            shift;;
         *)
             case "${POSITION}" in
             0)
@@ -120,7 +135,7 @@ catch_invalid_args() {
     [[ -z "${ARGS[ENV]}" ]] \
         && die "DEPLOY_ENV is a required argument"
     [[ -z "${ARGS[COMPOSE]}" ]] \
-        && die "STACK_CONF is a required arugment cannot be empty"
+        && die "STACK_CONF is a required arugment and must be a valid stack config file name"
 
     # Check for missing derived values
     [[ -z "${ARGS[STACK]}" ]] \
@@ -134,32 +149,40 @@ catch_invalid_args() {
 # Find the compose file given the patten (which may be the whole compose file name)
 # $1 (string) pattern to match
 set_compose() {
+    debug "set_compose called with args {1}=$1"
     ARGS[COMPOSE]=""
     if [ -f "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}"/"docker-compose.${1}.yml" ]; then
+        debug "set_compose match on docker-compose.{1}.yml"
         ARGS[COMPOSE]="${ENV_SEARCH_DIR}/${ARGS[ENV]}/docker-compose.${1}.yml"
     fi
     if [ "$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" | wc -l)" -eq 1 ]; then
+        debug "set_compose match on *{1}*"
         ARGS[COMPOSE]=$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*")
     fi
+    debug "set_compose set variable COMPOSE=${ARGS[COMPOSE]}"
 }
 
 # Set the stack name variable based of the set compose file
 set_stackname() {
+    debug "set_stackname called"
     ARGS[STACK]=
     # Check if it is a core stack
     for IDX in "${!CORE_STACKS[@]}"; do
-        if [[ ${ARGS[COMPOSE]} = *"${CORE_STACKS[$IDX]}"* ]]; then
+        if [[ ${ARGS[COMPOSE]##*/} == *"${CORE_STACKS[$IDX]}"* ]]; then
+            debug "set_stackname core stack match against: *${CORE_STACKS[$IDX]}*"
             ARGS[STACK]="${CORE_STACKS[$IDX]}"
             break
         fi
     done
     # Check if it is an environment stack
     for IDX in "${!STACKS[@]}"; do
-        if [[ ${ARGS[COMPOSE]} = *"${STACKS[$IDX]}"* ]]; then
+        if [[ ${ARGS[COMPOSE]##*/} == *"${STACKS[$IDX]}"* ]]; then
+            debug "set_stackname regular stack match against: *${STACKS[$IDX]}*"
             ARGS[STACK]="${ARGS[ENV]}-${STACKS[$IDX]}"
             break
         fi
     done
+    debug "set_stackname set variable STACK=${ARGS[STACK]}"
 }
 
 run_command() {

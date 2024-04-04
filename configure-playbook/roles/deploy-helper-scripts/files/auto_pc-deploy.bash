@@ -7,7 +7,7 @@ _pc-deploy()
     DEPLOY_DIR="/home/deploy"
     # Change directory to avoid cases where user is currently in an unreadable
     # directory (e.g. just after a sudo) which would cause `find` to throw errors
-    cd /
+    [[ -r $PWD ]] || cd /
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         # Get all the environment directory names in DEPLOY_DIR
