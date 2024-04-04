@@ -151,13 +151,15 @@ catch_invalid_args() {
 set_compose() {
     debug "set_compose called with args {1}=$1"
     ARGS[COMPOSE]=""
-    if [ -f "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}"/"docker-compose.${1}.yml" ]; then
+    if [[ -f "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}"/"docker-compose.${1}.yml" ]]; then
         debug "set_compose match on docker-compose.{1}.yml"
         ARGS[COMPOSE]="${ENV_SEARCH_DIR}/${ARGS[ENV]}/docker-compose.${1}.yml"
     fi
-    if [ "$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" | wc -l)" -eq 1 ]; then
+
+    FULL_MATCH="$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" 2>/dev/null)"
+    if [[ $(wc -l <<< $FULL_MATCH) -eq 1 ]]; then
         debug "set_compose match on *{1}*"
-        ARGS[COMPOSE]=$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*")
+        ARGS[COMPOSE]="$FULL_MATCH"
     fi
     debug "set_compose set variable COMPOSE=${ARGS[COMPOSE]}"
 }
