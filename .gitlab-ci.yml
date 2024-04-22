@@ -20,6 +20,13 @@ Shellcheck:
     # TODO eventually have this fail the job, but for now it's informational
     - shellcheck $(find . -name "*.sh" -o -name "*pc-*") || exit 0
 
+kics-iac-sast:
+  tags:
+    - msul-shared
+
+secret_detection:
+  tags:
+    - msul-shared
 
 Build Base Image:
   stage: build
