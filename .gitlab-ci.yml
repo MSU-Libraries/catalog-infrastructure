@@ -1,6 +1,25 @@
 stages:
+  - test
   - build
   - provision
+
+Shellcheck:
+  stage: test
+  image: alpine:latest
+  timeout: 5m
+  tags:
+    - msul-shared
+  interruptible: true
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_PIPELINE_SOURCE != "merge_request_event"'
+  before_script:
+    - apk add shellcheck || apt install shellcheck
+  script:
+    # TODO eventually have this fail the job, but for now it's informational
+    - shellcheck $(find . -name "*.sh" -o -name "*pc-*") || exit 0
+
 
 Build Base Image:
   stage: build
@@ -43,3 +62,7 @@ Provision:
     - cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml
     - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
     - echo "Success! Servers are now accessible."
+
+include:
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
