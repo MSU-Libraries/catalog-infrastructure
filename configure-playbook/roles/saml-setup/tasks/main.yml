@@ -18,6 +18,7 @@
 - name: Create new private keys for SAML
   community.crypto.openssl_privatekey:
     path: "samlcerts/{{ item }}/sp-private.pem"
+    owner: root
     group: www-data
     mode: '0640'
   loop:
