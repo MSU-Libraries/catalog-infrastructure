@@ -91,6 +91,7 @@ parse_args() {
         -h|--help)
             runhelp
             exit 0
+            ;;
         -v|--verbose)
             ARG_VERBOSE=1
             shift;;
