@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2016,SC2207
+
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -48,8 +50,7 @@ fi
 # SQL single line query match
 run_sql() {
     FILTER="${2}"
-    docker_sudo docker exec -i ${MARIADB_NAME} mysql -u${MARIADB_USER} -p${MARIADB_PASS} vufind -e "$1" | grep "$FILTER"
-    if [[ $? -ne 0 ]]; then
+    if ! docker_sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind -e "$1" | grep "$FILTER"; then
         echo "CRITICAL: Could not make SQL call to $MARIADB_NAME."
         exit 2
     fi
@@ -101,6 +102,7 @@ ROW_CNT="$?"
 declare -a FOUND_NODES=()
 declare -a FOUND_SORTED=()
 for ((IDX=0; IDX<ROW_CNT; IDX++)); do
+    #shellcheck disable=SC1087
     NNVAR="ROW_$IDX[2]"
     FOUND_NODES+=("${!NNVAR}")
 done
@@ -138,8 +140,7 @@ if [[ "$QUERY_OUT" != Table* ]]; then
 fi
 
 # Check for unsafe shutdown
-root_sudo /usr/bin/test -f /var/lib/docker/volumes/${DEPLOYMENT}-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely
-if [[ "$?" -eq 0 ]]; then
+if ! root_sudo /usr/bin/test -f /var/lib/docker/volumes/"${DEPLOYMENT}"-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely; then
     echo "WARNING: Node had unsafe shutdown flag file (/bitnami/mariadb/node_shutdown_unsafely)"
     exit 1
 fi

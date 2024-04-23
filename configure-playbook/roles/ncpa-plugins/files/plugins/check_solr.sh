@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2016,SC2207
+
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -37,12 +39,11 @@ if [[ -z "$SOLR_CONTAINER" ]]; then
     exit 2
 fi
 
+# shellcheck disable=SC2016
 SOLR_ZK_HOSTS=$( docker_sudo docker exec -i "${SOLR_CONTAINER}" bash -c 'echo "$SOLR_ZK_HOSTS"' )
+# shellcheck disable=SC2016
 NODE_ZK_HOST=$( docker_sudo docker exec -i "${ZK_CONTAINER}" bash -c 'echo "$HOSTNAME"' )
 ZK_HOSTS="${SOLR_ZK_HOSTS:-$ZK_HOSTS}"
-# Somewhat-hacky converting to array and then more-hacky to hostname only array
-ZK_HOST_ARR=( ${ZK_HOSTS//,/ } )
-ZK_HOSTNAME_ARR=( ${ZK_HOST_ARR[@]//:*/ } )
 
 # PERFORMANCE
 #TODO warn if load become excessive or query performance slows
@@ -87,7 +88,7 @@ fi
 
 NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr\&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs\&wt=json" )
 CLUSTER_STATUS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS\&wt=json" )
-for COLLECTION in "${COLLECTIONS[@]}"; do
+for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
     # Verify each node has one (and only one) replica for each collection
     REP_IDX=0
     REP_PREV=
@@ -152,11 +153,11 @@ for COLLECTION in "${COLLECTIONS[@]}"; do
     SHARDS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards | keys | join (\" \")") )
     for SHARD in "${SHARDS[@]}"; do
         ACTIVE_REPLICAS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.${SHARD}.replicas[] | select(.state == \"active\") | .node_name | sub(\":8983_solr\";\"\")" | sort) )
-        if [[ -z "${ACTIVE_REPLICAS[@]}" ]]; then
+        if [[ -z "${ACTIVE_REPLICAS[*]}" ]]; then
             echo "CRITICAL: No active replicas for ${COLLECTION}.${SHARD}"
             exit 1
-        elif [[ "${ACTIVE_REPLICAS[@]}" != "${SOLR_NODES[@]}" ]]; then
-            echo "WARNING: Active replicas for ${COLLECTION}.${SHARD} is '${ACTIVE_REPLICAS[@]}' (should be '${SOLR_NODES[@]}')"
+        elif [[ "${ACTIVE_REPLICAS[*]}" != "${SOLR_NODES[*]}" ]]; then
+            echo "WARNING: Active replicas for ${COLLECTION}.${SHARD} is '${ACTIVE_REPLICAS[*]}' (should be '${SOLR_NODES[*]}')"
             exit 1
         fi
     done

@@ -50,7 +50,7 @@ message() {
 }
 verbose() {
     [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
-    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$@"
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
 }
 error() {
     message "ERROR: $*"
