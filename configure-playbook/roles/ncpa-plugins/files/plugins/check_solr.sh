@@ -41,8 +41,6 @@ fi
 
 # shellcheck disable=SC2016
 SOLR_ZK_HOSTS=$( docker_sudo docker exec -i "${SOLR_CONTAINER}" bash -c 'echo "$SOLR_ZK_HOSTS"' )
-# shellcheck disable=SC2016
-NODE_ZK_HOST=$( docker_sudo docker exec -i "${ZK_CONTAINER}" bash -c 'echo "$HOSTNAME"' )
 ZK_HOSTS="${SOLR_ZK_HOSTS:-$ZK_HOSTS}"
 
 # PERFORMANCE
@@ -59,13 +57,6 @@ run_curl() {
 
 run_getent_hosts() {
     docker_sudo docker exec -i --env HOSTCHECK="$1" "${SOLR_CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
-}
-
-# Get/cat a JSON file from Zookeeper
-#  $1 => The full zk path to the file
-#  $2 => The zookeeper host (e.g. "zk2:2181") to connect to. Optional, if not specified will container: ${HOSTNAME}:2181
-run_zkshell_cat() {
-    docker_sudo docker exec -i --env ZK_HOSTS="${2:-$NODE_ZK_HOST:2181}" --env ARG="$1" "${ZK_CONTAINER}" bash -c 'zk-shell "$ZK_HOSTS" --run-once "json_cat ${ARG}"'
 }
 
 # Verify each container can resolve the hostname of all cluster containers
