@@ -1,0 +1,7 @@
+[kics]
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "1c1325ff-831d-43a1-973e-839ae57dfcc0:13:0i"
+      comment = "mounting docker socket in containers"
