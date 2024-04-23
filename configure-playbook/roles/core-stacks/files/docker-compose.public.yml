@@ -8,10 +8,6 @@ services:
     command: sleep inf
     networks:
       - public
-    resources:
-      limits:
-        cpus: '0.25'
-        memory: 20M
     cap_drop:
       - NET_ADMIN
       - SYS_ADMIN
@@ -22,6 +18,10 @@ services:
         window: 15s
       update_config:
         failure_action: rollback
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 20M
 
 networks:
   public:
