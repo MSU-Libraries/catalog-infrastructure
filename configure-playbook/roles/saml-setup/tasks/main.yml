@@ -4,6 +4,9 @@
   ansible.builtin.file:
     path: "samlcerts/{{ item }}"
     state: directory
+    owner: root
+    group: www-data
+    mode: '0755'
   loop:
     - devel-authentication
     - catalog-beta

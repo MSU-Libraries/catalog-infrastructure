@@ -5,3 +5,27 @@
       type = "kics_id"
       value = "1c1325ff-831d-43a1-973e-839ae57dfcc0"
       comment = "mounting docker socket in containers"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "d6355c88-1e8d-49e9-b2f2-f8a1ca12c75b"
+      comment = "mounting docker socket in containers"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "698ed579-b239-4f8f-a388-baa4bcb13ef8"
+      comment = "no healthcheck on service"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "51d79dc-0588-476a-ad03-3c7f0320abb3"
+      comment = "not recognizing port definition"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "610e266e-6c12-4bca-9925-1ed0cd29742b"
+      comment = "security_opt ignored in docker swarm"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "bc2908f3-f73c-40a9-8793-c1b7d5544f79"
+      comment = "traefik binds to privileged ports"
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "8c978947-0ff6-485c-b0c2-0bfca6026466"
+      comment = "volume shared between container"
