@@ -80,7 +80,6 @@ parse_args() {
         -h|--help)
             runhelp
             exit 0
-            shift;;
         -n|--dry-run)
             ARGS[DRYRUN]=1
             ARGS[VERBOSE]=1
