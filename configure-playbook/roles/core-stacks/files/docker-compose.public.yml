@@ -8,6 +8,13 @@ services:
     command: sleep inf
     networks:
       - public
+    resources:
+      limits:
+        cpus: '0.25'
+        memory: 20M
+    cap_drop:
+      - NET_ADMIN
+      - SYS_ADMIN
     deploy:
       mode: replicated
       replicas: 1

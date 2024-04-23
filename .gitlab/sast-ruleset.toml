@@ -21,7 +21,19 @@
     disable = true
     [kics.ruleset.identifier]
       type = "kics_id"
+      value = "b03a748a-542d-44f4-bb86-9199ab4fd2d5"
+      comment = "no healthcheck on service"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
       value = "51d79dc-0588-476a-ad03-3c7f0320abb3"
+      comment = "not recognizing port definition"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "451d79dc-0588-476a-ad03-3c7f0320abb3"
       comment = "not recognizing port definition"
   [[kics.ruleset]]
     disable = true
