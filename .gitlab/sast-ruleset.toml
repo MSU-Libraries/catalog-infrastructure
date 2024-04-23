@@ -53,3 +53,27 @@
       type = "kics_id"
       value = "8c978947-0ff6-485c-b0c2-0bfca6026466"
       comment = "volume shared between container"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "67fd0c4a-68cf-46d7-8c41-bc9fba7e40ae"
+      comment = "container running as root"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "965a08d7-ef86-4f14-8792-4a3b2098937e"
+      comment = "specify versions in apt install"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "88841d5c-d22d-4b7e-a6a0-89ca50e44b9f"
+      comment = "not recognizing file permissions in main provision role task"
+  [[kics.ruleset]]
+    disable = true
+    [kics.ruleset.identifier]
+      type = "kics_id"
+      value = "df746b39-6564-4fed-bf85-e9c44382303c"
+      comment = "false positive; we are removing the apt cache later"

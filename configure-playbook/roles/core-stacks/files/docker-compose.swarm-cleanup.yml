@@ -10,10 +10,6 @@ services:
     cap_drop:
       - NET_ADMIN
       - SYS_ADMIN
-    resources:
-      limits:
-        cpus: '0.50'
-        memory: 50M
     networks:
       - public
     volumes:
@@ -25,6 +21,10 @@ services:
         delay: 30m
       update_config:
         failure_action: rollback
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
 
 networks:
   public:
