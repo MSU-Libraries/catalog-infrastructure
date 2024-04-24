@@ -102,8 +102,7 @@ ROW_CNT="$?"
 declare -a FOUND_NODES=()
 declare -a FOUND_SORTED=()
 for ((IDX=0; IDX<ROW_CNT; IDX++)); do
-    #shellcheck disable=SC1087
-    NNVAR="ROW_$IDX[2]"
+    NNVAR="ROW_${IDX}[2]"
     FOUND_NODES+=("${!NNVAR}")
 done
 OIFS="$IFS";
@@ -140,7 +139,7 @@ if [[ "$QUERY_OUT" != Table* ]]; then
 fi
 
 # Check for unsafe shutdown
-if ! root_sudo /usr/bin/test -f /var/lib/docker/volumes/"${DEPLOYMENT}"-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely; then
+if root_sudo /usr/bin/test -f /var/lib/docker/volumes/"${DEPLOYMENT}"-mariadb_db-bitnami/_data/mariadb/node_shutdown_unsafely; then
     echo "WARNING: Node had unsafe shutdown flag file (/bitnami/mariadb/node_shutdown_unsafely)"
     exit 1
 fi
