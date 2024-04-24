@@ -30,7 +30,7 @@ create_users:
    groups: sudo,adm,docker,deploy,ubuntu
    chezmoi_repository: https://gitlab.msu.edu/schanzme/dotfiles.git
    public_keys:
-     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsF77c1J8qixXUadOWV9v94XBxfvkirSHk7gxRL29I0 schanzme@ddas.devel
+     - ***REMOVED***
 
  - name: higgi135
    comment: 'Devin Higgins'
