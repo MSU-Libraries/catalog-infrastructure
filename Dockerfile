@@ -28,6 +28,7 @@ RUN add-apt-repository --yes --update ppa:ansible/ansible && \
     curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
     add-apt-repository --yes --update "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"  && \
     apt-get install terraform -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 
 CMD ["bash"]
