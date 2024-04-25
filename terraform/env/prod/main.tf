@@ -61,64 +61,78 @@ module "catalog" {
 }
 
 output "aws_region" {
-    description = "AWS region being used"
-    value       = module.catalog.aws_region
+  description = "AWS region being used"
+  value       = module.catalog.aws_region
 }
 
 output "dnschallenge_key_id" {
-    value       = module.catalog.dnschallenge_key_id
+  description = "DNS challenge key id"
+  value       = module.catalog.dnschallenge_key_id
 }
 
 output "dnschallenge_key_secret" {
-    value       = module.catalog.dnschallenge_key_secret
-    sensitive   = true
+  description = "DNS chanllege key secret"
+  value       = module.catalog.dnschallenge_key_secret
+  sensitive   = true
 }
 
 output "catalog_a_instance_id" {
+  description = "Instance ID (catalog-1)"
   value = module.catalog.instance_ids[0]
 }
 
 output "catalog_a_fqdn" {
+  description = "FQDN (catalog-1)"
   value = module.catalog.fqdns[0]
 }
 
 output "catalog_a_public_ip" {
+  description = "Public IP (catalog-1)"
   value = module.catalog.public_ips[0]
 }
 
 output "catalog_a_efs_hostname" {
+  description = "AWS EFS hostname (catalog-1)"
   value = module.catalog.efs_hostnames[0]
 }
 
 output "catalog_b_instance_id" {
+  description = "Instance ID (catalog-2)"
   value = module.catalog.instance_ids[1]
 }
 
 output "catalog_b_fqdn" {
+  description = "FQDB (catalog-2)"
   value = module.catalog.fqdns[1]
 }
 
 output "catalog_b_public_ip" {
+  description = "Public IP (catalog-2)"
   value = module.catalog.public_ips[1]
 }
 
 output "catalog_b_efs_hostname" {
+  description = "AWS EFS hostname (catalog-2)"
   value = module.catalog.efs_hostnames[1]
 }
 
 output "catalog_c_instance_id" {
+  description = "Instance ID (catalog-3)"
   value = module.catalog.instance_ids[2]
 }
 
 output "catalog_c_fqdn" {
+  description = "FQDN (catalog-3)"
   value = module.catalog.fqdns[2]
 }
 
 output "catalog_c_public_ip" {
+  description = "Public IP (catalog-3)"
   value = module.catalog.public_ips[2]
 }
 
 output "catalog_c_efs_hostname" {
+  description = "AWS EFS hostname (catalog-3)"
   value = module.catalog.efs_hostnames[2]
 }
 

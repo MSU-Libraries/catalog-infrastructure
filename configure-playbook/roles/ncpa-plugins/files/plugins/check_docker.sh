@@ -42,9 +42,9 @@ done < <( docker_sudo docker node ls --format '{{ .Self }} {{ .Hostname }} {{ .S
 #   3 = availability
 #   4 = manager_status
 #   5 = engine_version
-NODE_INFO_1=( $NODE_OUT_1 )
-NODE_INFO_2=( $NODE_OUT_2 )
-NODE_INFO_3=( $NODE_OUT_3 )
+NODE_INFO_1=( "$NODE_OUT_1" )
+NODE_INFO_2=( "$NODE_OUT_2" )
+NODE_INFO_3=( "$NODE_OUT_3" )
 #NODE_INFO_SELF=( $NODE_OUT_SELF )
 
 ###############################
@@ -80,7 +80,8 @@ verify_nodes() {
     # $3 - Description of check type
     # $4 - Expected match count
     IDX=$1
-    declare -g -a ALLOWED=( $2 )
+    # shellcheck disable=SC2034
+    declare -g -a ALLOWED=( "$2" )
     CHECK_TYPE="$3"
     COUNT_OKAY=${4:-3}     # default to 3 matches needed
     COUNT_CRITICAL=$(( COUNT_OKAY > 2 ? COUNT_OKAY - 2 : COUNT_OKAY - 1 ))

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2016,SC2206,SC2207
+
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -101,7 +103,7 @@ for COLL in "${COLLECTIONS[@]}"; do
     for ZKH in "${ZK_HOST_ARR[@]}"; do
         COLL_STATE=$( run_zkshell_cat "/solr/collections/${COLL}/state.json" "$ZKH" )
         # Verify solr collections' state.json are identical from each node, if possible
-        MD5=($( echo "$COLL_STATE" | md5sum ))
+        MD5=$( echo "$COLL_STATE" | md5sum )
         if [[ -n "$COLL_MD5" && "$MD5" != "$COLL_MD5" ]]; then
             echo "CRITICAL: Zookeeper (${ZKH//:*}) for ${COLL} status.json out of sync from other node(s)"
             exit 2

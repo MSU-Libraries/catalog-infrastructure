@@ -56,7 +56,7 @@ message() {
 }
 verbose() {
     [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
-    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$@"
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
 }
 error() {
     message "ERROR: $*"
@@ -89,7 +89,7 @@ parse_args() {
         -h|--help)
             runhelp
             exit 0
-            shift;;
+            ;;
         -n|--dry-run)
             ARGS[DRYRUN]=1
             ARGS[VERBOSE]=1
