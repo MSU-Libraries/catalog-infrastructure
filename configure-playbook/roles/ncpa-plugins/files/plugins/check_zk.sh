@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC2016,SC2206,SC2207
-
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -37,17 +35,22 @@ if [[ -z "$SOLR_CONTAINER" ]]; then
     exit 2
 fi
 
+# shellcheck disable=SC2016
 SOLR_ZK_HOSTS=$( docker_sudo docker exec -i "${SOLR_CONTAINER}" bash -c 'echo "$SOLR_ZK_HOSTS"' )
+# shellcheck disable=SC2016
 NODE_ZK_HOST=$( docker_sudo docker exec -i "${ZK_CONTAINER}" bash -c 'echo "$HOSTNAME"' )
 ZK_HOSTS="${SOLR_ZK_HOSTS:-$ZK_HOSTS}"
 # Somewhat-hacky converting to array and then more-hacky to hostname only array
+# shellcheck disable=SC2206
 ZK_HOST_ARR=( ${ZK_HOSTS//,/ } )
+# shellcheck disable=SC2206
 ZK_HOSTNAME_ARR=( ${ZK_HOST_ARR[@]//:*/ } )
 
 # Send a command to Zookeeper and output the response
 #  $1 => The command to send
 #  $2 => The zookeeper host (e.g. "zk2:2181") to connect to. Optional, if not specified will container: ${HOSTNAME}:2181
 run_zk_cmd() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env ZK_HOSTS="${2:-$NODE_ZK_HOST:2181}" --env ARG="$1" "${ZK_CONTAINER}" bash -c 'export ZK_HOST=${ZK_HOSTS//,*}; echo "${ARG}" | nc ${ZK_HOST//:/ }'
 }
 
@@ -55,10 +58,12 @@ run_zk_cmd() {
 #  $1 => The full zk path to the file
 #  $2 => The zookeeper host (e.g. "zk2:2181") to connect to. Optional, if not specified will container: ${HOSTNAME}:2181
 run_zkshell_cat() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env ZK_HOSTS="${2:-$NODE_ZK_HOST:2181}" --env ARG="$1" "${ZK_CONTAINER}" bash -c 'zk-shell "$ZK_HOSTS" --run-once "json_cat ${ARG}"'
 }
 
 run_getent_hosts() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env HOSTCHECK="$1" "${ZK_CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
 }
 
@@ -98,6 +103,7 @@ fi
 
 COLLECTIONS=( authority biblio1 biblio2 reserves website )
 for COLL in "${COLLECTIONS[@]}"; do
+    # shellcheck disable=SC2206
     ZK_HOST_ARR=( ${ZK_HOSTS//,/ } )
     COLL_MD5=
     for ZKH in "${ZK_HOST_ARR[@]}"; do
@@ -113,6 +119,7 @@ for COLL in "${COLLECTIONS[@]}"; do
 
     for ZKH in "${ZK_HOST_ARR[@]}"; do
         # Verify solr collections' state.json indicate 1 leader and 2 non-leaders
+        # shellcheck disable=SC2207
         SHARDS=( $(echo "$COLL_STATE" | jq -r ".${COLL}.shards | keys | join (\" \")") )
         for SHARD in "${SHARDS[@]}"; do
             REPLICA_CNT=$(echo "$COLL_STATE" | jq -r ".${COLL}.shards.${SHARD}.replicas | length" )
