@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC2016,SC2207
-
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -73,6 +71,7 @@ run_full_sql() {
 }
 
 run_getent_hosts() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env HOSTCHECK="$1" "${MARIADB_NAME}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
 }
 
@@ -106,6 +105,7 @@ for ((IDX=0; IDX<ROW_CNT; IDX++)); do
     FOUND_NODES+=("${!NNVAR}")
 done
 OIFS="$IFS";
+# shellcheck disable=SC2207
 IFS=$'\n' FOUND_SORTED=($(sort <<<"${FOUND_NODES[*]}"))
 IFS="$OIFS"
 if [[ "${GALERA_NODES[*]}" != "${FOUND_SORTED[*]}" ]]; then

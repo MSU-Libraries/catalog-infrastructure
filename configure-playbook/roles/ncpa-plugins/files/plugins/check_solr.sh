@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shellcheck disable=SC2016,SC2207
-
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
@@ -52,10 +50,12 @@ ZK_HOSTS="${SOLR_ZK_HOSTS:-$ZK_HOSTS}"
 #http://SOLR_NODE:8983/solr/admin/info/system?nodes=SOLR_NODE:8983_solr&wt=json
 
 run_curl() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env SOLR_NODE="$SOLR_NODE" --env CURL="$1" "${SOLR_CONTAINER}" bash -c 'export SOLR_NODE="${SOLR_NODE:-$SOLR_HOST}"; curl -s "$(eval echo $CURL)"'
 }
 
 run_getent_hosts() {
+    # shellcheck disable=SC2016
     docker_sudo docker exec -i --env HOSTCHECK="$1" "${SOLR_CONTAINER}" bash -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
 }
 
@@ -71,6 +71,7 @@ done
 FIND_COLLECTIONS=( authority biblio1 biblio2 reserves website )
 
 # Verify all appropriate collections exist
+# shellcheck disable=SC2207
 FOUND_COLLECTIONS=( $( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=LIST\&wt=json" | jq -r '.collections|sort|.[]' | paste -sd ' ' - ) )
 if [[ "${FIND_COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
     echo "CRITICAL: Incorrect list of collections found: ${FOUND_COLLECTIONS[*]}. Expected: ${FIND_COLLECTIONS[*]}"
@@ -111,6 +112,7 @@ for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
     for NODE in "${SOLR_NODES[@]}"; do
         NODE_CLUSTER_STATUS=$( run_curl "http://${NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS\&wt=json" )
 
+        # shellcheck disable=SC2207
         NODE_LEADERS=( $( echo "$NODE_CLUSTER_STATUS" | jq -r "[.cluster.collections.${COLLECTION}.shards.shard1.replicas[]]|sort_by(.node_name)[].leader" | paste -sd ' ' - ) )
         for IDX in "${!NODE_LEADERS[@]}"; do
             if [[ "${NODE_LEADERS[$IDX]}" == "true" ]]; then
@@ -141,10 +143,12 @@ for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
     fi
 
     # Verify one replica per node and they are active
+    # shellcheck disable=SC2207
     SHARDS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards | keys | join (\" \")") )
     for SHARD in "${SHARDS[@]}"; do
+        # shellcheck disable=SC2207
         ACTIVE_REPLICAS=( $(echo "$CLUSTER_STATUS" | jq -r ".cluster.collections.${COLLECTION}.shards.${SHARD}.replicas[] | select(.state == \"active\") | .node_name | sub(\":8983_solr\";\"\")" | sort) )
-        if [[ -z "${ACTIVE_REPLICAS[*]}" ]]; then
+        if [[ ${#ACTIVE_REPLICAS[@]}  -eq 0 ]]; then
             echo "CRITICAL: No active replicas for ${COLLECTION}.${SHARD}"
             exit 1
         elif [[ "${ACTIVE_REPLICAS[*]}" != "${SOLR_NODES[*]}" ]]; then

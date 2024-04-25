@@ -11,7 +11,7 @@ ROOT
 
 ### Create ansible user
 sudo useradd -m -u 4444 -s /bin/bash ansible
-sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
+echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
 sudo -Hsu ansible -- <<-ANSIBLE
       cd
       umask 077
