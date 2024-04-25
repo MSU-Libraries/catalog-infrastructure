@@ -18,6 +18,9 @@ services:
         published: 443
         protocol: tcp
         mode: host
+    cap_drop:
+      - NET_ADMIN
+      - SYS_ADMIN
     environment:
       # XXX: The environment will be replaced by traefik-env.yml during deploy
     command:
@@ -73,6 +76,10 @@ services:
         failure_action: rollback
       restart_policy:
         window: 15s
+      resources:
+        limits:
+          cpus: '1'
+          memory: 300M
       labels:
         - "traefik.enable=true"
         - "traefik.http.services.traefik-public-traefik.loadbalancer.server.port=9999"

@@ -109,6 +109,7 @@ resource "aws_security_group" "security_group_public_net" {
 
 
   egress {
+    description      = "Allow all outgoing traffic"
     from_port        = 0
     to_port          = 0
     protocol         = "-1"

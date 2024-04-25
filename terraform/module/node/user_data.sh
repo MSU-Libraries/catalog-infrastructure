@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2154
+
 ### Setup root user
 sudo -Hsu root -- <<-ROOT
     install -d -m 0700 /root/.ssh
@@ -9,7 +11,7 @@ ROOT
 
 ### Create ansible user
 sudo useradd -m -u 4444 -s /bin/bash ansible
-sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
 sudo -Hsu ansible -- <<-ANSIBLE
       cd
       umask 077

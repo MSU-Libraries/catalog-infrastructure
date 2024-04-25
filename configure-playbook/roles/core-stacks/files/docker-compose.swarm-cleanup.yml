@@ -7,6 +7,9 @@ services:
     # Need the sleep so Docker has enough time to add networking to the container
     # to not consider this a failed task and roll back deploys
     command: ["sh", "-c", "docker system prune -a -f --filter until=30m; sleep 10;"]
+    cap_drop:
+      - NET_ADMIN
+      - SYS_ADMIN
     networks:
       - public
     volumes:
@@ -18,6 +21,10 @@ services:
         delay: 30m
       update_config:
         failure_action: rollback
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
 
 networks:
   public:
