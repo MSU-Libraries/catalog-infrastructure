@@ -157,7 +157,7 @@ set_compose() {
     fi
 
     FULL_MATCH="$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" 2>/dev/null)"
-    if [[ $(wc -l <<< $FULL_MATCH) -eq 1 ]]; then
+    if [[ $(wc -l <<< "$FULL_MATCH") -eq 1 ]]; then
         debug "set_compose match on *{1}*"
         ARGS[COMPOSE]="$FULL_MATCH"
     fi
