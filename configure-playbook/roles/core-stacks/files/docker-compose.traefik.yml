@@ -18,9 +18,6 @@ services:
         published: 443
         protocol: tcp
         mode: host
-    cap_drop:
-      - NET_ADMIN
-      - SYS_ADMIN
     environment:
       # XXX: The environment will be replaced by traefik-env.yml during deploy
     command:
