@@ -9,8 +9,11 @@ services:
     networks:
       - public
     cap_drop:
-      - NET_ADMIN
-      - SYS_ADMIN
+      - CAP_KILL
+      - CAP_CHOWN
+      - CAP_FSETID
+      - CAP_SETGID
+      - CAP_SETUID
     deploy:
       mode: replicated
       replicas: 1
