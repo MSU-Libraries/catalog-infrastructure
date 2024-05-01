@@ -6,7 +6,7 @@ services:
     image: docker
     # Need the sleep so Docker has enough time to add networking to the container
     # to not consider this a failed task and roll back deploys
-    command: ["sh", "-c", "docker system prune -a -f --filter until=30m; sleep 10;"]
+    command: ["sh", "-c", "docker container prune -f --filter until=30m; sleep 10;"]
     cap_drop:
       - CAP_NET_BIND_SERVICE
       - CAP_KILL
@@ -22,7 +22,7 @@ services:
     deploy:
       mode: global
       restart_policy:
-        delay: 30m
+        delay: 6h
       update_config:
         failure_action: rollback
       resources:
