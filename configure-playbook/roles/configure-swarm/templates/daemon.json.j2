@@ -1,3 +1,12 @@
 {
-  "shutdown-timeout": 180
+    "shutdown-timeout": 180,
+    "registry-mirrors": [
+        "http://registry.lib.msu.edu:6000"
+    ],
+    "log-driver": "local",
+    "log-opts": {
+        "max-size": "10m",
+        "max-file": "3"
+    }
+
 }
