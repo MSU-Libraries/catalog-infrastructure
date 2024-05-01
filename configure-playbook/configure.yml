@@ -1,7 +1,7 @@
 ---
 
 - name: Configure catalog servers
-  hosts: catalog_nodes
+  hosts: docker
   gather_facts: true
   
   vars_files:

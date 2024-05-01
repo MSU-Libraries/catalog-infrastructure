@@ -23,7 +23,7 @@
   copy:
     dest: "../configure-playbook/hosts"
     content: |
-      catalog_nodes:
+      docker:
         vars:
           aws_region: {{ tf.outputs.aws_region.value }}
           dnschallenge_key_id: {{ tf.outputs.dnschallenge_key_id.value }}
