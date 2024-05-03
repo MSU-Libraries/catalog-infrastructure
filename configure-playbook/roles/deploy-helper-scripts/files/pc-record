@@ -533,7 +533,7 @@ main() {
         script_path=./
     fi
     # shellcheck source=/dev/null
-    source "${script_path}${0}-${action}"
+    source "${script_path}${script_name}-${action}"
 
     user_confirmation
 
