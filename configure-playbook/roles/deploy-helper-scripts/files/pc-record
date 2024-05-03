@@ -1,0 +1,545 @@
+#!/bin/bash
+
+# Define error codes
+readonly ERR_USAGE=1
+readonly ERR_INVALID_PARAM=2
+readonly ERR_INVALID_VALUE=3
+readonly ERR_MISSING_ARGUMENT=4
+readonly ERR_FILE_INVALID=5
+readonly ERR_FILE_EMPTY=6
+readonly ERR_STACK_UNREACHABLE=7
+# Used in sub script
+# shellcheck disable=SC2034
+readonly ERR_MAIN_COMMAND_FAILED=8
+# shellcheck disable=SC2034
+readonly ERR_AUX_COMMAND_FAILED=9
+
+# Parameters options
+readonly AVAILABLE_ACTIONS="(delete)"
+readonly VALID_PREFIX="(hlm|folio)"
+readonly VALID_TARGET="(Solr)"
+readonly DEFAULT_TARGET="Solr"
+#readonly VALID_TARGET="(sql|database|solr|both)"
+#readonly DEFAULT_TARGET="both"
+
+# print_text levels
+readonly MSG_ERROR=-1
+readonly MSG_QUIET=0
+readonly MSG_NORMAL=1
+readonly MSG_LOW=2
+readonly MSG_VERBOSE=3
+readonly DEFAULT_MSG_PARSING=0
+readonly DEFAULT_MSG_NEWLINE=0
+# Whether to add a new line after printf in print_text command
+MSG_NEWLINE=${DEFAULT_MSG_NEWLINE}
+# Whether to parse the string for printf in print_text command
+MSG_PARSING=${DEFAULT_MSG_PARSING}
+
+readonly AVAILABLE_STACKS_DIRECTORY="/mnt/shared/local/"
+
+## Text colors and decoration
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_BLACK=$(tput setaf 0)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_RED=$(tput setaf 1)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_GREEN=$(tput setaf 2)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_YELLOW=$(tput setaf 3)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_LIME_YELLOW=$(tput setaf 190)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_POWDER_BLUE=$(tput setaf 153)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_BLUE=$(tput setaf 4)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_MAGENTA=$(tput setaf 5)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_CYAN=$(tput setaf 6)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_WHITE=$(tput setaf 7)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_BRIGHT=$(tput bold)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_NORMAL=$(tput sgr0)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_BLINK=$(tput blink)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_REVERSE=$(tput smso)
+# shellcheck disable=SC2034,SC2155
+readonly TEXT_UNDERLINE=$(tput smul)
+
+readonly COMMAND_FORMAT="${TEXT_BLUE}"
+
+current_stack="$STACK_NAME"
+script_name="$(basename "$0")"
+execution_datetime=$(date "+%Y-%m-%d-%H-%M-%S")
+docker_container=""
+tmp_file_inline_records_ids=""
+# Define default values for function parameters
+verbose_level=$MSG_NORMAL
+dry_run=1
+pass_yes=1
+target=$DEFAULT_TARGET
+input_files=()
+prefix=""
+execution_stack="$current_stack"
+action=""
+records_ids=()
+
+# Function to display usage
+usage() {
+    printf "Usage: %s [OPTIONS] [STACK] ACTION [records_ids,]\n" "${script_name}"
+    printf "The order of options / stack / action / records_ids does not matter\n"
+    printf "\n"
+    printf "Stack:\n"
+    printf "        VALUE                 The stack to execute on, default : \$STACK_NAME (currently : \"%s\")\n" "${STACK_NAME}"
+    printf "\n"
+    printf "Actions:\n"
+    printf "        VALUE                 delete : Delete a record from the target\n"
+    printf "\n"
+    printf "Options:\n"
+    printf "  -h, --help                  Display this help and exit\n"
+    printf "  -n, --dry-run               Perform a dry run\n"
+    printf "  -t, --target VALUE          Set target %s, default : %s, Solr delete from change_tracker too\n" "${VALID_TARGET}" "${DEFAULT_TARGET}"
+    printf "  -v, -vv, -vvv, --verbose    Enable verbose mode, --verbose is an alias for -vv\n"
+    printf "  -d, --debug                 Enable alias for -vvv\n"
+    printf "  -q, --quiet                 Suppress output, will still prompt confirmation if yes flag not provided\n"
+    printf "  -y, --yes                   Will not ask for confirmation\n"
+    printf "  -i, --input FILE            Set input file\n"
+    printf "                              Can be use several times for multiple files\n"
+    printf "                              When executed from host machine, the filepath can be on host machine or in the container\n"
+    printf "                              If on the host machine, the file will be copied to /tmp/ in the container\n"
+    printf "      --prefix VALUE          Set prefix %s. (the dot is automatically appended)\n" "${VALID_PREFIX}"
+    printf "\n"
+    printf "Error codes:\n"
+    printf "  1 - Usage error\n"
+    printf "  2 - Invalid argument / parameter\n"
+    printf "  3 - Invalid option value\n"
+    printf "  4 - Missing argument for option\n"
+    printf "  5 - Invalid file\n"
+    printf "  6 - Empty file\n"
+    printf "  7 - Unreachable stack\n"
+    exit "$1"
+}
+
+# Function to display help
+display_help() {
+    printf "\n"
+    printf "This script works on record ids\n"
+    printf "Currently it only supports deletion record ids from solr and / or sql.\n"
+    printf "\n"
+    usage 0
+}
+
+no_print_text_parsing() {
+    MSG_PARSING=1
+}
+
+no_print_text_newline() {
+    MSG_NEWLINE=1
+}
+
+# Function to print text based on verbosity, can be used to print unparsed text (useful for colors)
+print_text() {
+    if [[ ${MSG_NEWLINE} -eq 0 ]]; then
+        local new_line="\n"
+    else
+        local new_line=""
+    fi
+    if [[ ${MSG_LEVEL} -eq ${MSG_ERROR} ]]; then
+        if [[ ${MSG_PARSING} -eq 0 ]]; then
+            # shellcheck disable=SC2059
+            printf "${TEXT_RED}Error${TEXT_NORMAL}: %s${new_line}" "$*" >&2
+        else
+            # shellcheck disable=SC2059
+            printf "${TEXT_RED}Error${TEXT_NORMAL}: $*${new_line}" >&2
+        fi
+    elif [[ ${MSG_LEVEL} -le ${verbose_level} ]]; then
+        if [[ ${MSG_PARSING} -eq 0 ]]; then
+            # shellcheck disable=SC2059
+            printf "%s${new_line}" "$*"
+        else
+            # shellcheck disable=SC2059
+            printf "$*${new_line}"
+        fi
+    fi
+    # Reset to defaults
+    MSG_NEWLINE=${DEFAULT_MSG_NEWLINE}
+    MSG_PARSING=${DEFAULT_MSG_PARSING}
+}
+
+print_low() {
+    MSG_LEVEL="$MSG_LOW" print_text "$@"
+}
+
+print_normal() {
+    MSG_LEVEL="$MSG_NORMAL" print_text "$@"
+}
+
+print_verbose() {
+    MSG_LEVEL="$MSG_VERBOSE" print_text "$@"
+}
+
+print_error() {
+    MSG_LEVEL="$MSG_ERROR" print_text "$@"
+}
+
+print_command() {
+    print_function="print_${1}"
+    shift
+    no_print_text_parsing
+    no_print_text_newline
+    $print_function "${COMMAND_FORMAT}"
+    no_print_text_newline
+    $print_function "$@"
+    no_print_text_parsing
+    $print_function "${TEXT_NORMAL}"
+}
+
+indent_and_color_output() {
+    local indent
+    if [[ -z "$1" ]]; then
+        indent="    "
+    else
+        indent="$1"
+    fi
+    exec > >(trap "" INT TERM; while IFS= read -r line; do printf "${indent}%s\n" "$line"; done;)
+    exec 2> >(trap "" INT TERM; while IFS= read -r line; do printf "${indent}${TEXT_RED}[STDERR] ${TEXT_NORMAL} %s\n" "$line" >&2; done;)
+}
+
+reset_output() {
+    exec > /dev/tty
+    exec 2> /dev/tty
+}
+
+clean_target() {
+    if [[ "$1" =~ ^$VALID_TARGET$ ]]; then
+        target="$1"
+    else
+        case "${1,,}" in
+        solr)
+            target="Solr"
+            ;;
+        *)
+            print_error "Invalid value '$1' for option -t or --target, available values: $VALID_TARGET, default : $DEFAULT_TARGET"
+            exit "$ERR_INVALID_VALUE"
+            ;;
+        esac
+    fi
+}
+
+# Function to handle arguments
+handle_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+        -h | --help)
+            display_help
+            ;;
+        -n | --dry-run)
+            dry_run=0
+            shift
+            ;;
+        -t | --target)
+            shift
+            if [[ $# -eq 0 ]]; then
+                print_error "Missing value for option -t or --target"
+                exit "$ERR_MISSING_ARGUMENT"
+            fi
+            clean_target "$1"
+            shift
+            ;;
+        -v)
+            verbose_level="$MSG_NORMAL"
+            shift
+            ;;
+        -vv | --verbose)
+            verbose_level="$MSG_LOW"
+            shift
+            ;;
+        -vvv | -d | --debug)
+            verbose_level="$MSG_VERBOSE"
+            shift
+            ;;
+        -q | --quiet)
+            verbose_level="$MSG_QUIET"
+            shift
+            ;;
+        -y | --yes)
+            pass_yes=0
+            shift
+            ;;
+        -i | --input)
+            shift
+            if [[ $# -eq 0 ]]; then
+                print_error "Missing value for option -i or --input"
+                usage "$ERR_MISSING_ARGUMENT"
+            fi
+            input_files+=("$1")
+            shift
+            ;;
+        --prefix)
+            shift
+            if [[ -z "$1" ]]; then
+                print_error "Missing value for --prefix option, possible values: $VALID_PREFIX"
+                exit "$ERR_MISSING_ARGUMENT"
+            fi
+            prefix="${1,,}"
+            if [[ ! "${prefix}" =~ ^$VALID_PREFIX$ ]]; then
+                print_error "Invalid value for --prefix option, possible values: $VALID_PREFIX"
+                exit "$ERR_INVALID_VALUE"
+            fi
+            shift
+            ;;
+        delete)
+            if [[ -n "${action}" ]]; then
+                print_error "It seems you are passing the action several times."
+                print_error "Current : \"${action}\", passed parameter : \"$1\"."
+                exit "$ERR_INVALID_PARAM"
+            fi
+            action="$1"
+            shift
+            ;;
+        devel-* | catalog-*)
+            if [[ -n "${execution_stack}" ]]; then
+                print_error "It seems the stack is already defined or you are passing the parameter several times."
+                print_error "Current : \"${execution_stack}\", passed parameter : \"$1\"."
+                exit "$ERR_INVALID_PARAM"
+            fi
+            if [[ ! -d "${AVAILABLE_STACKS_DIRECTORY}$1" ]]; then
+                print_error "The provided stack, seems not to exist : \"$1\"."
+                exit "$ERR_INVALID_VALUE"
+            fi
+            execution_stack="$1"
+            shift
+            ;;
+        *)
+            records_ids+=("$1")
+            shift
+            ;;
+        esac
+    done
+}
+
+uuidgen_string() {
+    # if uuidgen command is available return a unique string
+    if which uuidgen > /dev/null 2>&1; then
+        uuidgen
+    else
+        printf "\n"
+    fi
+}
+
+inline_records_ids_to_tmp_file() {
+    # return if no records id passed inline
+    if [[ ${#records_ids[@]} -eq 0 ]]; then
+        return 1
+    fi
+
+    tmp_file_inline_records_ids="/tmp/${script_name}-tmp_file_inline_records_ids-${execution_datetime}-$(uuidgen_string)"
+    # Appending all the inline ids to the tmp file
+    for record in "${records_ids[@]}"; do
+        [[ -z $record ]] && continue
+
+        # The whole command has to be in quotes because of the >>
+        run_command "echo \"${record}\" >> \"$tmp_file_inline_records_ids\""
+    done
+    return 0
+}
+
+confirmation_text() {
+    print_text "Starting execution of ${action} on ${execution_stack} on ${target}"
+    display_parameters
+    print_text "Files for execution :"
+    for file in "${input_files[@]}"; do
+        print_text "    - ${file}"
+    done
+    if [[ ${#records_ids[@]} -gt 0 ]]; then
+        print_text "Inline ids :"
+        for id in "${records_ids[@]}"; do
+            [[ -z $id ]] && continue
+
+            print_text "    - ${id}"
+        done
+        print_text "Inline ids tmp file : ${tmp_file_inline_records_ids}"
+    fi
+}
+
+bool_to_string() {
+    [[ $1 -eq 0 ]] && echo 'true' || echo 'false'
+}
+
+display_parameters() {
+    print_verbose "Parameters / options :"
+    print_verbose "    - Verbose level: ${verbose_level}"
+    print_verbose "    - Dry Run: $(bool_to_string ${dry_run})"
+    print_verbose "    - Yes: $(bool_to_string ${pass_yes})"
+    print_verbose "    - Target: ${target}"
+    print_verbose "    - Prefix: ${prefix}"
+    print_verbose "    - Action: ${action}"
+    print_verbose "    - Stack: ${execution_stack}"
+    print_verbose ""
+}
+
+# Check to be on right stack
+check_stack() {
+    # We assume the container is started
+    if [[ -z $current_stack ]]; then
+        # If on host machine try to connect to the right container
+        print_low "Not on the correct stack, trying to connect"
+        if ! command -v docker &>/dev/null; then
+            print_error "Docker is not available, are you sure to be on the right server to execute the current command?"
+            exit "$ERR_STACK_UNREACHABLE"
+        fi
+        if [[ "${execution_stack}" =~ "devel-" ]]; then
+            print_low "Development instance required"
+            devel_instance_hostname=$(docker service ps "${execution_stack}-catalog_catalog" -f desired-state=running --format "{{.Node}}")
+            if [[ "$devel_instance_hostname" != "$(hostname)" ]]; then
+                print_error "This development instance is hosted on $devel_instance_hostname"
+                exit "$ERR_STACK_UNREACHABLE"
+            fi
+        fi
+        docker_container=$(docker ps -f name="${execution_stack}-catalog_catalog" --format "{{.Names}}")
+        if [[ -n $docker_container ]]; then
+            print_verbose "Commands will be run using docker exec"
+        else
+            print_verbose "Commands will be run as is (already within the docker container)"
+        fi
+    elif [[ "$current_stack" = "${execution_stack}" ]]; then
+        print_low "Already on the correct stack"
+    else
+        print_error "Currently on stack ${current_stack}, can't handle connection to ${execution_stack}"
+        exit "$ERR_STACK_UNREACHABLE"
+    fi
+}
+
+# Execute the passed command; adapting the behaviour to run it in the container if needed
+run_command() {
+    if [[ -n $docker_container ]]; then
+        docker exec "$docker_container" bash -c "$@"
+    else
+        # shellcheck disable=SC2294
+        eval "$@"
+    fi
+}
+
+is_command_available() {
+    run_command "which $1" > /dev/null 2>&1
+}
+
+str_repeat() {
+    local string="$1"
+    local repetitions="$2"
+    local result=""
+    for ((i = 0; i < repetitions; i++)); do
+        result="$result$string"
+    done
+
+    printf "%s\n" "$result"
+}
+
+assert_action() {
+    if [[ -z "${action}" ]]; then
+        print_error "No action requested, please provide one, possible values: $AVAILABLE_ACTIONS"
+        exit "$ERR_MISSING_ARGUMENT"
+    fi
+    if [[ ! "${action}" =~ ^$AVAILABLE_ACTIONS$ ]]; then
+        print_error "Invalid action requested, possible values: $AVAILABLE_ACTIONS"
+        exit "$ERR_INVALID_PARAM"
+    fi
+}
+
+assert_records_ids() {
+    # If no record id provided, display usage
+    if [[ ${#records_ids[@]} -eq 0 ]] && [[ ${#input_files[@]} -eq 0 ]]; then
+        usage "$ERR_USAGE"
+    fi
+}
+
+assert_files_quality() {
+#    length=${#mahabharata[@]}
+    # use C style for loop syntax to read all values and indexes
+#    for (( j=0; j<length; j++ ));
+    if [[ -n $docker_container ]]; then
+        # If we are executing the script from the host machine, we move the files within
+        copy_files_from_host_machine_to_container
+    fi
+
+    for i in "${!input_files[@]}"; do
+        # We are executing the script from the host machine
+        if ! run_command "test -f \"${input_files[$i]}\""; then
+            print_error "Invalid / non-existing file '${input_files[$i]}'" "$MSG_ERROR"
+            exit "$ERR_FILE_INVALID"
+        fi
+        if ! run_command "test -s \"${input_files[$i]}"\"; then
+            print_error "Empty file '${input_files[$i]}'" "$MSG_ERROR"
+            exit "$ERR_FILE_EMPTY"
+        fi
+    done
+}
+
+# Fails on empty files
+copy_files_from_host_machine_to_container() {
+    local new_name
+    for i in "${!input_files[@]}"; do
+        if [[ -f "${input_files[$i]}" ]]; then
+            # The file exists on the host machine
+            if [[ ! -s "${input_files[$i]}" ]]; then
+                print_error "Empty file '${input_files[$i]}' on host machine" "$MSG_ERROR"
+                exit "$ERR_FILE_EMPTY"
+            fi
+            new_name="/tmp/$(basename "${input_files[$i]}")-${script_name}-${execution_datetime}-$(uuidgen_string)"
+            # Copy the file to the container
+            docker cp "${input_files[$i]}" "${docker_container}":"${new_name}"
+            # Update array
+            # shellcheck disable=SC2004
+            input_files[$i]="${new_name}"
+        fi
+    done
+}
+
+user_confirmation() {
+    # Prompting the user for confirmation if needed
+    if [[ ${pass_yes} = 0 ]]; then
+        MSG_LEVEL="$MSG_LOW" confirmation_text
+    else
+        MSG_LEVEL="$MSG_NORMAL" confirmation_text
+        read -rp "Confirm (y/N): " confirmation
+        if [[ $confirmation != "y" ]]; then
+            printf "Aborted by user\n"
+            exit 0
+        fi
+    fi
+}
+
+dry_run() {
+    return ${dry_run}
+}
+
+# Main function
+main() {
+    assert_records_ids
+    assert_action
+    check_stack
+    assert_files_quality
+    if inline_records_ids_to_tmp_file; then
+        input_files+=("$tmp_file_inline_records_ids")
+    fi
+    # Sourcing other file needed for the requested action
+    # shellcheck disable=SC2128
+    if [[ $BASH_SOURCE = */* ]]; then
+        script_path=${BASH_SOURCE%/*}/
+    else
+        script_path=./
+    fi
+    # shellcheck source=/dev/null
+    source "${script_path}${0}-${action}"
+
+    user_confirmation
+
+    # Execution of the action from sourced file (ie: delete action in pc-record-delete)
+    ${action}
+}
+
+handle_arguments "$@"
+main "$@"

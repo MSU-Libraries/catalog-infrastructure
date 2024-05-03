@@ -39,3 +39,19 @@
     mode: '0644'
     owner: root
     group: root
+
+- name: Deploy pc-record script
+  ansible.builtin.copy:
+    src: pc-record
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-record autocomplete script
+  ansible.builtin.copy:
+    src: auto_pc-record.bash
+    dest: /etc/bash_completion.d/pc-record
+    mode: '0644'
+    owner: root
+    group: root
