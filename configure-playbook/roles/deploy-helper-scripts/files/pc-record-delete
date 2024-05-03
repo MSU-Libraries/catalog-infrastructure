@@ -59,12 +59,15 @@ reload_solr() {
             fi
         fi
     done
-    if [[ ${return_code} -ne 0 ]]; then
-        return "$ERR_AUX_COMMAND_FAILED"
-    else
-        print_low "Solr reloaded successfully, all curl calls were successful"
-        return 0
+    if ! dry_run; then
+        if [[ ${return_code} -ne 0 ]]; then
+            return "$ERR_AUX_COMMAND_FAILED"
+        else
+            no_print_text_parsing
+            print_low "${TEXT_GREEN}Solr reloaded successfully, all curl calls were successful${TEXT_NORMAL}"
+        fi
     fi
+    return 0
 }
 
 # variables declared in the main script (pc-record)
