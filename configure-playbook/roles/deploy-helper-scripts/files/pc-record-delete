@@ -1,0 +1,75 @@
+#!/bin/bash
+
+readonly solr_collections=("biblio1" "biblio2")
+
+delete() {
+    local verbose_transfer
+    verbose_transfer="$(str_repeat 'v' "${verbose_level}")"
+    if [[ -n "$verbose_transfer" ]]; then
+        verbose_transfer="-$verbose_transfer"
+    fi
+    print_verbose "Running php delete command on files :"
+    [[ -n ${prefix} ]] && prefix="${prefix}."
+
+    for file in "${input_files[@]}"; do
+        [[ -z $file ]] && break
+        print_low "Executing the command for file \"${file}\""
+        local command="php /usr/local/vufind/util/deletes.php ${file} flat ${target} ${verbose_transfer} --id-prefix=\"${prefix}\""
+        #              php deletes.php $file flat $index --id-prefix=$PREFIX
+        if dry_run; then
+            print_low "[DRY-RUN] ${command}"
+        else
+            print_command "low" "${command}"
+            indent_and_color_output
+            run_command "${command}"
+            command_result=$?
+            reset_output
+            if [[ $command_result -ne 0 ]]; then
+                print_error "The main command did not exited with 0 code"
+                return "$ERR_MAIN_COMMAND_FAILED"
+            else
+                no_print_text_parsing
+                print_low "${TEXT_GREEN}The main command executed successfully${TEXT_NORMAL}"
+            fi
+        fi
+    done
+
+    reload_solr
+}
+
+reload_solr() {
+    if ! is_command_available curl; then
+        no_print_text_parsing
+        print_normal "${TEXT_ORANGE}WARNING${TEXT_NORMAL} : curl is unavailable, could not reload solr collections"
+        return 1
+    fi
+    local return_code
+    return_code=0
+    for collection in "${solr_collections[@]}"; do
+        local command="curl --write-out \"%{http_code}\" --output /dev/null  --silent 'http://solr:8983/solr/admin/collections?action=RELOAD&name=${collection}'"
+        if dry_run; then
+            print_low "[DRY-RUN] ${command}"
+        else
+            print_command "low" "${command}"
+
+            curl_http_response_code=$(run_command "${command}")
+            if [[ ${curl_http_response_code} -ne 200 ]]; then
+                return_code=1
+                print_error "curl call to reload collection \"${collection}\" returned http code : ${curl_http_response_code}"
+            fi
+        fi
+    done
+    if [[ ${return_code} -ne 0 ]]; then
+        return "$ERR_AUX_COMMAND_FAILED"
+    else
+        print_low "Solr reloaded successfully, all curl calls were successful"
+        return 0
+    fi
+}
+
+# variables declared in the main script (pc-record)
+if [[ -z ${verbose_level+x}  ||  -z ${input_files+x}  ||  -z ${target+x}  || -z ${prefix+x} ]]; then
+    printf "This script aims not to be called directly\n";
+    printf "Use the script pc-record with delete action instead\n";
+    exit 1
+fi
