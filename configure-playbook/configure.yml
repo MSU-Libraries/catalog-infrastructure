@@ -12,6 +12,7 @@
     - configure-conreboot
     - configure-updates
     - configure-ssh
+    - configure-host
     - mount-shared-storage
     - configure-swarm
     - configure-email
