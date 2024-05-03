@@ -1,0 +1,11 @@
+---
+
+# Recommended by solr production guide
+- name: Increase vm.max_map_count
+  ansible.posix.sysctl:
+    name: vm.max_map_count
+    value: '1048576'
+    state: present
+    reload: true
+  tags:
+    - configure-host
