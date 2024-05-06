@@ -32,6 +32,14 @@
     owner: deploy
     group: deploy
 
+- name: Copy badbots docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.badbots.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
 - name: Run envsubst on traefik docker-compose
   ansible.builtin.shell:
     cmd: |
@@ -76,6 +84,13 @@
 - name: Deploy traefik stack
   ansible.builtin.command:
     cmd: docker stack deploy --prune -c docker-compose.traefik.yml traefik
+  args:
+    chdir: /home/deploy/core-stacks/
+  run_once: true
+
+- name: Deploy badbots stack
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.badbots.yml badbots
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true

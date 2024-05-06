@@ -1,0 +1,40 @@
+---
+version: "3.8"
+services:
+  dummy:
+    image: busybox:latest
+    command: sleep inf
+    networks:
+      - public
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        failure_action: rollback
+      restart_policy:
+        window: 15s
+      labels:
+        - "traefik.enable=true"
+        # Avoid processing requests with a breaker
+        - "traefik.http.middlewares.badbot-breaker.circuitbreaker.expression=NetworkErrorRatio() > 0.50"
+        - "traefik.http.middlewares.badbot-breaker.circuitbreaker.fallbackduration=60s"
+        # Badbot bouncer dummy service
+        - "traefik.http.services.badbot-bouncer.loadbalancer.server.port=9999"
+        # Badbot HTTP
+        - "traefik.http.routers.badbot-http-router.entrypoints=msul-http-ent"
+        - "traefik.http.routers.badbot-http-router.middlewares=badbot-breaker"
+        # >> Tencent IP range with bots throughout: 43.128.0.0/10
+        # >> User-Agent bot matching: (?i) means case-insensitive match
+        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
+        - "traefik.http.routers.badbot-http-router.service=badbot-bouncer"
+        # Badbot HTTPS
+        - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
+        - "traefik.http.routers.badbot-https-router.middlewares=badbot-breaker"
+        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
+        - "traefik.http.routers.badbot-https-router.tls=true"
+        - "traefik.http.routers.badbot-https-router.service=badbot-bouncer"
+
+networks:
+  public:
+    name: public
+    external: true
