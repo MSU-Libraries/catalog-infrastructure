@@ -2,7 +2,7 @@
 # Value is a range of times, e.g. 1am-4:30am
 # Multiple ranges can be specified using a comma delimited list.
 # Default: never
-REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 4 }}am-{{ (ansible_play_hosts_all.index(inventory_hostname)+ 1) * 2 + 5 }}am
+REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 4 }}:03am-{{ (ansible_play_hosts_all.index(inventory_hostname)+ 1) * 2 + 5 }}:03am
 
 # Remove any /etc/nologin or /var/run/nologin files which preventing logins
 # when about to reboot. The nologin file is set when SHUTDOWN_TIME is set
