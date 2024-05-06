@@ -1,5 +1,5 @@
 /var/lib/docker/volumes/*_logs/_data/*/*.log /var/lib/docker/volumes/traefik_logs/_data/*.log {
-  rotate 7
+  rotate 14
   daily
   compress
   missingok

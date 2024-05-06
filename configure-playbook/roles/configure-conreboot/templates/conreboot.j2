@@ -4,7 +4,6 @@
 # Default: never
 REBOOT_TIMES={{ (ansible_play_hosts_all.index(inventory_hostname) + 1 ) * 2 + 4 }}am-{{ (ansible_play_hosts_all.index(inventory_hostname)+ 1) * 2 + 5 }}am
 
-
 # Remove any /etc/nologin or /var/run/nologin files which preventing logins
 # when about to reboot. The nologin file is set when SHUTDOWN_TIME is set
 # greater than 0, and even then it normally exists only for the last 5 minutes
@@ -49,3 +48,6 @@ PREVENT_IF_SCRIPT_FAILS=
 # Default: (nothing)
 PRE_SHUTDOWN_COMMAND=
 
+# Enable Debug mode
+# Default: none
+#DEBUG=1
