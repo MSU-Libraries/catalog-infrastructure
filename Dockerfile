@@ -22,7 +22,7 @@ RUN add-apt-repository --yes --update ppa:ansible/ansible && \
     # https://bugs.gentoo.org/795933 (see also: https://github.com/ansible-collections/community.digitalocean/issues/132)
     pip install --no-cache-dir -Iv 'resolvelib<0.6.0' && \
     # Dependency of Ansible module community.crypto.openssl_privatekey
-    pip install --no-cache-dir-v cryptography && \
+    pip install --no-cache-dir -Iv cryptography && \
     ansible-galaxy collection install community.general ansible.posix community.docker && \
     # Install Terraform
     curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
