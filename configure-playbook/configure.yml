@@ -3,7 +3,8 @@
 - name: Configure catalog servers
   hosts: docker
   gather_facts: true
-  
+  any_errors_fatal: true
+
   vars_files:
     - variables.yml
 
@@ -12,6 +13,7 @@
     - configure-conreboot
     - configure-updates
     - configure-ssh
+    - root-node-access
     - configure-host
     - mount-shared-storage
     - configure-swarm
