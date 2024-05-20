@@ -20,7 +20,7 @@ fi
 DEPLOYMENT="$1"
 MARIADB_USER="${2:-root}"
 MARIADB_PASS="${3:-12345}"
-# MARIADB_PASS of 12345 will be overriden by MARIADB_ROOT_PASSWORD env variable within the container
+# MARIADB_PASS of 12345 will be overridden by MARIADB_ROOT_PASSWORD_FILE env variable content within the container
 GALERA_NODES=(galera1 galera2 galera3)
 
 # Find local MariaDB container
@@ -39,7 +39,8 @@ fi
 
 # Override default password with DB container root password if available
 if [[ $MARIADB_PASS == "12345" ]]; then
-    CNTNR_MARIADB_PASS=$( docker_sudo docker exec "$MARIADB_NAME" printenv MARIADB_ROOT_PASSWORD )
+    # shellcheck disable=SC2016
+    CNTNR_MARIADB_PASS=$( docker_sudo docker exec "$MARIADB_NAME" sh -c 'cat "${MARIADB_ROOT_PASSWORD_FILE}"' )
     if [[ -n "$CNTNR_MARIADB_PASS" ]]; then
         MARIADB_PASS="$CNTNR_MARIADB_PASS"
     fi
