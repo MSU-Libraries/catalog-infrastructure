@@ -24,13 +24,14 @@ services:
         - "traefik.http.routers.badbot-http-router.entrypoints=msul-http-ent"
         - "traefik.http.routers.badbot-http-router.middlewares=badbot-breaker"
         # >> Tencent IP range with bots throughout: 43.128.0.0/10
+        # >> chinamobile.com 117.48.148.0/22
         # >> User-Agent bot matching: (?i) means case-insensitive match
-        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
+        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
         - "traefik.http.routers.badbot-http-router.service=badbot-bouncer"
         # Badbot HTTPS
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.middlewares=badbot-breaker"
-        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
+        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot)`)"
         - "traefik.http.routers.badbot-https-router.tls=true"
         - "traefik.http.routers.badbot-https-router.service=badbot-bouncer"
 
