@@ -1,0 +1,201 @@
+#! /bin/bash
+#! /usr/local/bin/pc-connect SERVICE HOST
+
+# Set defaults
+default_args() {
+    declare -g -A ARGS
+    ARGS[SERVICE]=
+    ARGS[HOST]=
+    ARGS[CMD]=bash
+    ARGS[DB]=0
+    ARGS[ZK]=0
+    ARGS[DRYRUN]=0
+    ARGS[VERBOSE]=0
+    ARGS[DEBUG]=0
+}
+default_args
+
+runhelp() {
+    echo ""
+    echo "Connect to a container"
+    echo ""
+    echo "Usage:"
+    echo "   pc-connect [FLAGS] SERVICE [HOST]"
+    echo ""
+    echo "Examples: "
+    echo "   pc-connect catalog-prod-catalog_catalog"
+    echo "     Connects to the catalog-prod-catalog_catalog container on the running host"
+    echo "   pc-connect catalog-prod-catalog_catalog 3"
+    echo "     Connects to the catalog-prod-catalog_catalog container on the given host"
+    echo "   pc-connect catalog-prod-catalog_catalog -n"
+    echo "     Display what connection commands would be run for the service"
+    echo ""
+    echo "ARGS:"
+    echo "  SERVICE"
+    echo "      Required. Name of the service to connect to"
+    echo "  HOST"
+    echo "      Optional. Host node to connect to. Valid values are 1-3"
+    echo "  -d|--db"
+    echo "      Connect to the mysql service in the container. SHOULD ONLY BE USED ON *mariadb_galera SERVICES"
+    echo "  -z|--zk"
+    echo "      Connect to the zkshell service in the container. SHOULD ONLY BE USED ON *solr_solr SERVICES"
+    echo "  -c|--cmd"
+    echo "      Command to run inside the container. Default: bash"
+    echo "  -n|--dry-run"
+    echo "      Do not perform any actions, just dry-run the output."
+    echo "  -v|--verbose"
+    echo "      Show verbose output."
+    echo "  --debug"
+    echo "      Display debugging messages (should be set before passing command arguments)."
+    echo ""
+}
+
+message() {
+    LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+    1>&2 echo "[${LOG_TS}] $*"
+}
+verbose() {
+    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
+}
+error() {
+    message "ERROR: $*"
+}
+debug() {
+    [[ ${ARGS[DEBUG]} -eq 1 ]] && message "Debug: $*"
+}
+die() {
+    error "$*"
+    exit 1
+}
+
+# Print help message
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    runhelp
+    exit 0
+fi
+
+# Parse command arguments
+parse_args() {
+    local POSITION=0
+    # Parse flag arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            ;;
+        -n|--dry-run)
+            ARGS[DRYRUN]=1
+            ARGS[VERBOSE]=1
+            shift;;
+        -v|--verbose)
+            ARGS[VERBOSE]=1
+            shift;;
+        --debug)
+            ARGS[DEBUG]=1
+            ARGS[VERBOSE]=1
+            [[ -n "${ARGS[SERVICE]}" ]] && \
+                die "The --debug flag must be set before SERVICE."
+            shift;;
+        -d|--db)
+            ARGS[DB]=1
+            shift;;
+        -z|--zk)
+            ARGS[ZK]=1
+            shift;;
+        *)
+            case "${POSITION}" in
+            0)
+                ARGS[SERVICE]=$1
+                POSITION=1
+                shift ;;
+            1)
+                ARGS[HOST]=$1
+                # If it doesn't end in .aws.lib.msu.edu, add it
+                if [[ ${ARGS[HOST]} =~ ^[1-3]$ ]]; then
+                    ARGS[HOST]=catalog-${ARGS[HOST]}.aws.lib.msu.edu
+                else
+                    die "ERROR: Must provide a value node. Valid nodes are 1-3"
+                fi
+                POSITION=2
+                shift ;;
+            2)
+                echo "ERROR: Unknown argument: $1"
+                runhelp
+                exit 1
+            esac
+        esac
+    done
+}
+
+# Does additional validation of the values in the command parameters
+# and will exit if not met
+catch_invalid_args() {
+    # Check for missing arguments
+    [[ -z "${ARGS[SERVICE]}" ]] \
+        && die "SERVICE is a required argument"
+    [[ -z "${ARGS[CMD]}" ]] \
+        && die "COMMAND is a required argument"
+
+    # Checks if ZK or DB if set, then the required service must be set
+    if [[ ${ARGS[DB]} -eq 1 ]] && [[ ${ARGS[SERVICE]} != *"mariadb_galera" ]]; then
+        die "When --db is provided, the SERVICE must be *mariadb_galera"
+    fi
+    if [[ ${ARGS[ZK]} -eq 1 ]] && [[ ${ARGS[SERVICE]} != *"solr_solr" ]]; then
+        die "When --zk is provided, the SERVICE must be *solr_solr"
+    fi
+}
+
+get_host() {
+    verbose "docker service ps \"${ARGS[SERVICE]}\" -f desired-state=running --format \"{{.Node}}\""
+    if ! HOST=$(docker service ps "${ARGS[SERVICE]}" -f desired-state=running --format "{{.Node}}"); then
+        die "Failed to locate service ${ARGS[SERVICE]}"
+    fi
+    echo "${HOST}" | sort | head -1
+}
+
+get_container() {
+    verbose "ssh $1 docker ps -f name=${ARGS[SERVICE]} --format \"{{.Names}}\""
+    ssh "$1" docker ps -f name="${ARGS[SERVICE]}" --format "{{.Names}}"
+}
+
+run_command() {
+    # Find the host for the service (or use the one provided)
+    if [[ -n "${ARGS[HOST]}" ]]; then
+        HOST=${ARGS[HOST]}
+    elif ! HOST=$(get_host); then
+        exit 1
+    fi
+
+    debug "Attempting to connect to service ${ARGS[SERVICE]} on host ${HOST}"
+    if ! CONTAINER=$(get_container "${HOST}"); then
+        die "Failed to locate container for ${ARGS[SERVICE]} on ${HOST}"
+    fi
+
+    # Update command if needed
+    if [[ ${ARGS[DB]} -eq 1 ]]; then
+        ARGS[CMD]=connect
+    elif [[ ${ARGS[ZK]} -eq 1 ]]; then
+        ARGS[CMD]=solr-zk-shell
+    fi
+
+    # Connect to the container to run the command
+    verbose "ssh -tt ${HOST} \"docker exec -it $CONTAINER ${ARGS[CMD]}\""
+    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+        ssh -tt "${HOST}" "docker exec -it $CONTAINER ${ARGS[CMD]}"
+    fi
+}
+
+# Deploy the Docker stack, exiting unsuccessfully if the deploy fails
+main() {
+    verbose "Service:     ${ARGS[SERVICE]}"
+
+    run_command
+}
+
+# Parse and start running
+parse_args "$@"
+catch_invalid_args
+main
+
