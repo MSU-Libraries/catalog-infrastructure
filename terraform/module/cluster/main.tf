@@ -107,7 +107,6 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
 
-
   egress {
     description      = "Allow all outgoing traffic"
     from_port        = 0
@@ -304,6 +303,8 @@ module "nodes" {
 }
 
 # Create round robin hostname records
+# Only required for prod cluster, as it is the only location where we
+# reference domain names without a Route53 controlled domain (e.g. catalog-beta.lib.msu.edu)
 resource "aws_route53_record" "roundrobin_dnsrec" {
   # Zone: aws.lib.msu.edu
   zone_id = "Z0159018169CCNUQINNQG"
