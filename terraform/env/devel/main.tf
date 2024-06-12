@@ -12,23 +12,18 @@ module "shared" {
   mail_instance = "catalog-prod"
 }
 
-moved {
-    from = module.mail
-    to   = module.shared
-}
-
 module "cluster" {
   source = "../../module/cluster"
-  cluster_name = "catalog"
+  cluster_name = "catalog-devel"
   aws_region = "us-east-1"
   vpc_id = var.vpc_id
   efs_id = var.efs_id
-  cluster_cidr = "10.1.0.0/20"
+  cluster_cidr = "10.1.16.0/20"
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
-  smtp_host = module.shared.smtp_host
-  smtp_user = module.shared.smtp_username
-  smtp_password = module.shared.smtp_password
+  smtp_host = var.smtp_host
+  smtp_user = var.smtp_username
+  smtp_password = var.smtp_password
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]
@@ -36,45 +31,38 @@ module "cluster" {
     "35.8.220.0/22",
   ]
   net_allow_inbound_web = [
-    "0.0.0.0/0",
+    "35.8.220.0/22",
   ]
-  roundrobin_hostnames = [
-    "catalog",
-  ]
+  roundrobin_hostnames = []
   nodes = {
     "a" = {
-      server_name = "catalog-1"
+      server_name = "catalog-1-dev"
       aws_availability_zone = "a"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.1.10"
-      subnet_cidr = "10.1.1.0/24"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.17.10"
+      subnet_cidr = "10.1.17.0/24"
     }
     "b" = {
-      server_name = "catalog-2"
+      server_name = "catalog-2-dev"
       aws_availability_zone = "b"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.2.10"
-      subnet_cidr = "10.1.2.0/24"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.18.10"
+      subnet_cidr = "10.1.18.0/24"
     }
     "c" = {
-      server_name = "catalog-3"
+      server_name = "catalog-3-dev"
       aws_availability_zone = "c"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.3.10"
-      subnet_cidr = "10.1.3.0/24"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.19.10"
+      subnet_cidr = "10.1.19.0/24"
     }
   }
-}
-
-moved {
-    from = module.catalog
-    to   = module.cluster
 }
 
 output "aws_region" {

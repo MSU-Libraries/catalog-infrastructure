@@ -1,0 +1,5 @@
+vpc_id = "${VPC_ID}"
+efs_id = "${EFS_ID}"
+smtp_host = "${SMTP_HOST}"
+smtp_user = "${SMTP_USERNAME}"
+smtp_password = "${SMTP_PASSWORD}"
