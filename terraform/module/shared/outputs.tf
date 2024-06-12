@@ -16,3 +16,12 @@ output "smtp_password" {
   sensitive   = true
 }
 
+output "vpc_id" {
+  description = "The created vpc.id"
+  value       = aws_vpc.shared_vpc.id
+}
+
+output "efs_id" {
+  description = "The created efs.id for the EFS storage"
+  value       = aws_efs_file_system.shared_efs.id
+}

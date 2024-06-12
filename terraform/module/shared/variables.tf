@@ -8,3 +8,12 @@ variable "aws_region" {
   type = string
 }
 
+variable "shared_name" {
+  description = "Name prefix used in resource names and tags"
+  type = string
+}
+
+variable "vpc_cidr" {
+  description = "CIDR range to be used for AWS VPC"
+  type = string
+}
