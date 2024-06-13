@@ -1,34 +1,60 @@
 terraform {
     backend "s3" {
-        bucket = "msulib-catalog-terraform-states"
-        key    = "catalog/catalog-prod.tfstate"
+        bucket = "msulib-terraform-states"
+        key    = "catalog/cluster-prod.tfstate"
         region = "us-east-2"
     }
 }
 
-module "shared" {
-  source = "../../module/shared"
-  aws_region = "us-east-1"
-  mail_instance = "catalog-prod"
+variable "vpc_cidr" {
+  description = "CIDR range to be used for AWS VPC"
+  type = string
 }
 
-moved {
-    from = module.mail
-    to   = module.shared
+variable "vpc_id" {
+  description = "The vpc.id where to place the cluster"
+  type = string
+}
+
+variable "route_table_id" {
+  description = "The route table id for the VPC"
+  type = string
+}
+
+variable "efs_id" {
+  description = "The efs.id for the mounted shared storage within the servers"
+  type = string
+}
+
+variable "smtp_host" {
+  description = "SMTP hostname"
+  type = string
+}
+
+variable "smtp_username" {
+  description = "SMTP username"
+  type = string
+}
+
+variable "smtp_password" {
+  description = "SMTP password"
+  type = string
 }
 
 module "cluster" {
   source = "../../module/cluster"
   cluster_name = "catalog"
   aws_region = "us-east-1"
+  vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
+  route_table_id = var.route_table_id
   efs_id = var.efs_id
   cluster_cidr = "10.1.0.0/20"
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
-  smtp_host = module.shared.smtp_host
-  smtp_user = module.shared.smtp_username
-  smtp_password = module.shared.smtp_password
+  smtp_host = var.smtp_host
+  smtp_user = var.smtp_username
+  smtp_password = var.smtp_password
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]
@@ -70,11 +96,6 @@ module "cluster" {
       subnet_cidr = "10.1.3.0/24"
     }
   }
-}
-
-moved {
-    from = module.catalog
-    to   = module.cluster
 }
 
 output "aws_region" {

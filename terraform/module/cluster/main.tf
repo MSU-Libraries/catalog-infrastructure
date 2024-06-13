@@ -19,7 +19,7 @@ provider "aws" {
 resource "aws_security_group" "security_group_public_net" {
   name        = "${var.cluster_name}-public-net"
   description = "Allow inbound traffic from public network"
-  vpc_id      = aws_vpc.catalog_vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description      = "SSH"
@@ -89,14 +89,14 @@ resource "aws_security_group" "security_group_public_net" {
 resource "aws_security_group" "security_group_private_net" {
   name        = "${var.cluster_name}-private-net"
   description = "Allow inbound traffic from private network"
-  vpc_id      = aws_vpc.catalog_vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description      = "Docker Swarm Cluster Management"
     from_port        = 2377
     to_port          = 2377
     protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr]
+    cidr_blocks      = [var.cluster_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -104,7 +104,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "tcp"
-    cidr_blocks      = [var.vpc_cidr]
+    cidr_blocks      = [var.cluster_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -112,7 +112,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "udp"
-    cidr_blocks      = [var.vpc_cidr]
+    cidr_blocks      = [var.cluster_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -120,7 +120,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 4789
     to_port          = 4789
     protocol         = "udp"
-    cidr_blocks      = [var.vpc_cidr]
+    cidr_blocks      = [var.cluster_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -209,8 +209,7 @@ module "nodes" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
-  catalog_gateway = aws_internet_gateway.catalog_gateway
-  catalog_route_table_id = aws_route_table.catalog_route_table.id
+  catalog_route_table_id = var.route_table_id
   vpc_id = var.vpc_id
   efs_id = var.efs_id
 }

@@ -58,13 +58,6 @@ variable "smtp_password" {
   type = string
 }
 
-variable "catalog_gateway" {
-  description = "Terraform gateway resource definition"
-  type = object({
-    id = string
-  })
-}
-
 variable "catalog_route_table_id" {
   description = "AWS Route table to associate with this node's subnet"
   type = string
