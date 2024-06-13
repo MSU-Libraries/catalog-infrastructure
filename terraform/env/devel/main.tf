@@ -1,22 +1,53 @@
 terraform {
     backend "s3" {
-        bucket = "msulib-catalog-terraform-states"
-        key    = "catalog/catalog-prod.tfstate"
+        bucket = "msulib-terraform-states"
+        key    = "catalog/cluster-devel.tfstate"
         region = "us-east-2"
     }
 }
 
-module "shared" {
-  source = "../../module/shared"
-  aws_region = "us-east-1"
-  mail_instance = "catalog-prod"
+variable "vpc_cidr" {
+  description = "CIDR range to be used for AWS VPC"
+  type = string
+}
+
+variable "vpc_id" {
+  description = "The vpc.id where to place the cluster"
+  type = string
+}
+
+variable "route_table_id" {
+  description = "The route table id for the VPC"
+  type = string
+}
+
+variable "efs_id" {
+  description = "The efs.id for the mounted shared storage within the servers"
+  type = string
+}
+
+variable "smtp_host" {
+  description = "SMTP hostname"
+  type = string
+}
+
+variable "smtp_username" {
+  description = "SMTP username"
+  type = string
+}
+
+variable "smtp_password" {
+  description = "SMTP password"
+  type = string
 }
 
 module "cluster" {
   source = "../../module/cluster"
   cluster_name = "catalog-devel"
   aws_region = "us-east-1"
+  vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
+  route_table_id = var.route_table_id
   efs_id = var.efs_id
   cluster_cidr = "10.1.16.0/20"
   domain = "aws.lib.msu.edu"
@@ -33,7 +64,9 @@ module "cluster" {
   net_allow_inbound_web = [
     "35.8.220.0/22",
   ]
-  roundrobin_hostnames = []
+  roundrobin_hostnames = [
+    "catalog-dev",
+  ]
   nodes = {
     "a" = {
       server_name = "catalog-1-dev"

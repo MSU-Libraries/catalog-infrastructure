@@ -3,8 +3,18 @@ variable "aws_region" {
   type = string
 }
 
+variable "vpc_cidr" {
+  description = "CIDR range to be used for AWS VPC"
+  type = string
+}
+
 variable "vpc_id" {
   description = "The vpc.id where to place the cluster"
+  type = string
+}
+
+variable "route_table_id" {
+  description = "The route table id for the VPC"
   type = string
 }
 

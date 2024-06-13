@@ -27,11 +27,12 @@ output "smtp_username" {
 output "smtp_password" {
   description = "Password for SES SMTP access"
   value       = module.shared.smtp_password
+  sensitive   = true
 }
 
 output "vpc_cidr" {
   description = "The CIDR for the VPC, the same as passed variable input"
-  value       = var.vpc_cidr
+  value       = module.shared.vpc_cidr
 }
 
 output "vpc_id" {
@@ -42,4 +43,9 @@ output "vpc_id" {
 output "efs_id" {
   description = "The created efs.id for the EFS storage"
   value       = module.shared.efs_id
+}
+
+output "route_table_id" {
+  description = "The route table id for the VPC"
+  value       = module.shared.route_table_id
 }

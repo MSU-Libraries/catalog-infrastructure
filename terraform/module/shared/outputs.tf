@@ -16,6 +16,11 @@ output "smtp_password" {
   sensitive   = true
 }
 
+output "vpc_cidr" {
+  description = "Returning the VPC CIDR that was passed in"
+  value       = var.vpc_cidr
+}
+
 output "vpc_id" {
   description = "The created vpc.id"
   value       = aws_vpc.shared_vpc.id
@@ -24,4 +29,9 @@ output "vpc_id" {
 output "efs_id" {
   description = "The created efs.id for the EFS storage"
   value       = aws_efs_file_system.shared_efs.id
+}
+
+output "route_table_id" {
+  description = "The route table id for the VPC"
+  value       = aws_route_table.shared_route_table.id
 }

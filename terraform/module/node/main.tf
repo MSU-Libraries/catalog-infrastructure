@@ -54,7 +54,6 @@ resource "aws_eip" "node_eip" {
   associate_with_private_ip = var.private_ip
   # Special case: Recommends explicitly indicating EIP dependencies for gateway and instance
   depends_on = [
-    var.catalog_gateway,
     aws_instance.node_instance
   ]
 
