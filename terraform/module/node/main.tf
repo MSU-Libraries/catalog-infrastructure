@@ -27,15 +27,6 @@ resource "aws_route_table_association" "catalog_rta" {
   route_table_id = var.catalog_route_table_id
 }
 
-# Create the EFS mount target in our subnet
-resource "aws_efs_mount_target" "catalog_efs_mt" {
-  file_system_id  = var.efs_id
-  subnet_id       = aws_subnet.node_subnet.id
-  security_groups = [
-    var.security_group_ids[1]       # Index 1 is the private security group
-  ]
-}
-
 # Add a network device with IP to subnet and security group
 resource "aws_network_interface" "node_nic" {
   subnet_id       = aws_subnet.node_subnet.id
@@ -53,6 +44,7 @@ resource "aws_eip" "node_eip" {
   network_interface         = aws_network_interface.node_nic.id
   associate_with_private_ip = var.private_ip
   # Special case: Recommends explicitly indicating EIP dependencies for gateway and instance
+  # - As our gateway is defined in the shared module, we are no longer including it here
   depends_on = [
     aws_instance.node_instance
   ]
