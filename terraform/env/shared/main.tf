@@ -7,11 +7,12 @@ terraform {
 }
 
 module "shared" {
-  source        = "../../module/shared"
-  aws_region    = "us-east-1"
-  mail_instance = "catalog-prod"
-  shared_name   = "catalog"
-  vpc_cidr      = "10.1.0.0/16"
+  source          = "../../module/shared"
+  aws_region      = "us-east-1"
+  mail_instance   = "catalog-prod"
+  shared_name     = "catalog"
+  vpc_cidr        = "10.1.0.0/16"
+  efs_mount_zones = ["a", "b", "c"]
 }
 
 output "smtp_host" {
@@ -40,9 +41,14 @@ output "vpc_id" {
   value       = module.shared.vpc_id
 }
 
-output "efs_id" {
-  description = "The created efs.id for the EFS storage"
-  value       = module.shared.efs_id
+output "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
+  value       = module.shared.efs_security_group_id
+}
+
+output "efs_mount_hostnames" {
+  description = "EFS mount target hostnames for each availability zone"
+  value       = module.shared.efs_mount_hostnames
 }
 
 output "route_table_id" {

@@ -35,3 +35,15 @@ output "route_table_id" {
   description = "The route table id for the VPC"
   value       = aws_route_table.shared_route_table.id
 }
+
+output "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
+  value       = aws_security_group.security_group_efs_net.id
+}
+
+output "efs_mount_hostnames" {
+  description = "Mount target hostnames for EFS use in each availability zone"
+  value       = [
+    for t in aws_efs_mount_target.shared_efs_mt : t.mount_target_dns_name
+  ]
+}

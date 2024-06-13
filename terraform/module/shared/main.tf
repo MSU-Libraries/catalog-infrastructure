@@ -140,3 +140,51 @@ resource "aws_efs_file_system_policy" "shared_efs_policy" {
 }
 POLICY
 }
+
+resource "aws_subnet" "shared_efs_subnet" {
+  for_each   = toset(var.efs_mount_zones)
+  vpc_id     = aws_vpc.shared_vpc.id
+  cidr_block = var.vpc_cidr
+  availability_zone = "${var.aws_region}${each.value}"
+
+  tags = {
+    Name = "${var.shared_name}-efs-subnet"
+  }
+}
+
+resource "aws_security_group" "security_group_efs_net" {
+  name        = "${var.shared_name}-efs-net"
+  description = "Allow inbound traffic for EFS mounts"
+  vpc_id      = aws_vpc.shared_vpc.id
+
+  ingress {
+    description      = "NFS allow inbound for EFS mount (tcp)"
+    from_port        = 2049
+    to_port          = 2049
+    protocol         = "tcp"
+    cidr_blocks      = [var.vpc_cidr]
+    ipv6_cidr_blocks = []
+  }
+  ingress {
+    description      = "NFS allow inbound for EFS mount (udp)"
+    from_port        = 2049
+    to_port          = 2049
+    protocol         = "udp"
+    cidr_blocks      = [var.vpc_cidr]
+    ipv6_cidr_blocks = []
+  }
+
+  tags = {
+    Name = "${var.shared_name}-sg-efs-net"
+  }
+}
+
+# Create the EFS mount target in our subnet
+resource "aws_efs_mount_target" "shared_efs_mt" {
+  for_each        = toset(aws_subnet.shared_efs_subnet)
+  file_system_id  = aws_efs_file_system.shared_efs.id
+  subnet_id       = each.value.id
+  security_groups = [
+    aws_security_group.security_group_efs_net.id
+  ]
+}

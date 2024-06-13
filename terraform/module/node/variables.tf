@@ -67,8 +67,3 @@ variable "vpc_id" {
   description = "AWS VPC to assign subnet to"
   type = string
 }
-
-variable "efs_id" {
-  description = "The EFS id used for shared storage"
-  type = string
-}

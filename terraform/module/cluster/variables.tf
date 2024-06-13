@@ -18,8 +18,8 @@ variable "route_table_id" {
   type = string
 }
 
-variable "efs_id" {
-  description = "The efs.id for the mounted shared storage within the servers"
+variable "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
   type = string
 }
 

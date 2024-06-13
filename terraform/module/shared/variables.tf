@@ -17,3 +17,8 @@ variable "vpc_cidr" {
   description = "CIDR range to be used for AWS VPC"
   type = string
 }
+
+variable "efs_mount_zones" {
+  description = "Availability zones where the EFS mount target should be available"
+  type = list(string)
+}

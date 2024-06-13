@@ -196,7 +196,8 @@ module "nodes" {
   source   = "../node"
   security_group_ids = [
     aws_security_group.security_group_public_net.id,
-    aws_security_group.security_group_private_net.id    # If private moves from index 1, then need to update EFS mount target resource definition
+    aws_security_group.security_group_private_net.id,
+    var.efs_security_group_id
   ]
   server_name = each.value.server_name
   aws_instance_type = each.value.aws_instance_type
@@ -211,7 +212,6 @@ module "nodes" {
   smtp_password = var.smtp_password
   catalog_route_table_id = var.route_table_id
   vpc_id = var.vpc_id
-  efs_id = var.efs_id
 }
 
 # Create round robin hostname records

@@ -21,9 +21,14 @@ variable "route_table_id" {
   type = string
 }
 
-variable "efs_id" {
-  description = "The efs.id for the mounted shared storage within the servers"
+variable "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
   type = string
+}
+
+variable "efs_mount_hostnames" {
+  description = "EFS mount target hostnames for each availability zone"
+  type = list(string)
 }
 
 variable "smtp_host" {
@@ -48,7 +53,6 @@ module "cluster" {
   vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
   route_table_id = var.route_table_id
-  efs_id = var.efs_id
   cluster_cidr = "10.1.0.0/20"
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
@@ -131,7 +135,7 @@ output "catalog_a_public_ip" {
 
 output "catalog_a_efs_hostname" {
   description = "AWS EFS hostname (catalog-1)"
-  value = module.cluster.efs_hostnames[0]
+  value = var.efs_mount_hostnames[0]
 }
 
 output "catalog_b_instance_id" {
@@ -151,7 +155,7 @@ output "catalog_b_public_ip" {
 
 output "catalog_b_efs_hostname" {
   description = "AWS EFS hostname (catalog-2)"
-  value = module.cluster.efs_hostnames[1]
+  value = var.efs_mount_hostnames[1]
 }
 
 output "catalog_c_instance_id" {
@@ -171,6 +175,6 @@ output "catalog_c_public_ip" {
 
 output "catalog_c_efs_hostname" {
   description = "AWS EFS hostname (catalog-3)"
-  value = module.cluster.efs_hostnames[2]
+  value = var.efs_mount_hostnames[2]
 }
 
