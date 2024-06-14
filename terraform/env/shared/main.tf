@@ -12,7 +12,11 @@ module "shared" {
   mail_instance   = "catalog-prod"
   shared_name     = "catalog"
   vpc_cidr        = "10.1.0.0/16"
-  efs_mount_zones = ["a", "b", "c"]
+  zone_subnets    = {
+    "a" = "10.1.1.0/24"
+    "b" = "10.1.2.0/24"
+    "c" = "10.1.3.0/24"
+  }
 }
 
 output "smtp_host" {
@@ -51,7 +55,7 @@ output "efs_mount_hostnames" {
   value       = module.shared.efs_mount_hostnames
 }
 
-output "route_table_id" {
-  description = "The route table id for the VPC"
-  value       = module.shared.route_table_id
+output "zone_subnet_ids" {
+  description = "Subnet IDs for each availability zone"
+  value       = module.shared.zone_subnet_ids
 }

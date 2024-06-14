@@ -18,7 +18,7 @@ variable "vpc_cidr" {
   type = string
 }
 
-variable "efs_mount_zones" {
-  description = "Availability zones where the EFS mount target should be available"
-  type = list(string)
+variable "zone_subnets" {
+  description = "Subnet for each availability zone"
+  type = map(string)
 }

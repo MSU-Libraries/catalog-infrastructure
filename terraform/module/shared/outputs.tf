@@ -26,14 +26,11 @@ output "vpc_id" {
   value       = aws_vpc.shared_vpc.id
 }
 
-output "efs_id" {
-  description = "The created efs.id for the EFS storage"
-  value       = aws_efs_file_system.shared_efs.id
-}
-
-output "route_table_id" {
-  description = "The route table id for the VPC"
-  value       = aws_route_table.shared_route_table.id
+output "zone_subnet_ids" {
+  description = "Subnet IDs for each availability zone"
+  value       = [
+    for s in aws_subnet.zone_subnets : s.id
+  ]
 }
 
 output "efs_security_group_id" {
@@ -44,6 +41,6 @@ output "efs_security_group_id" {
 output "efs_mount_hostnames" {
   description = "Mount target hostnames for EFS use in each availability zone"
   value       = [
-    for t in aws_efs_mount_target.shared_efs_mt : t.mount_target_dns_name
+    for t in aws_efs_mount_target.shared_efs_mts : t.mount_target_dns_name
   ]
 }
