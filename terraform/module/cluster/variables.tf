@@ -13,11 +13,6 @@ variable "vpc_id" {
   type = string
 }
 
-variable "route_table_id" {
-  description = "The route table id for the VPC"
-  type = string
-}
-
 variable "efs_security_group_id" {
   description = "The security group id to allow access to EFS mount"
   type = string
@@ -91,6 +86,6 @@ variable "nodes" {
     aws_instance_type = string
     aws_root_block_size = number
     private_ip = string
-    subnet_cidr = string
+    subnet_id = string
   }))
 }

@@ -141,15 +141,22 @@ resource "aws_efs_file_system_policy" "shared_efs_policy" {
 POLICY
 }
 
-resource "aws_subnet" "shared_efs_subnet" {
-  for_each   = toset(var.efs_mount_zones)
-  vpc_id     = aws_vpc.shared_vpc.id
-  cidr_block = var.vpc_cidr
-  availability_zone = "${var.aws_region}${each.value}"
+resource "aws_subnet" "zone_subnets" {
+  for_each          = var.zone_subnets
+  vpc_id            = aws_vpc.shared_vpc.id
+  cidr_block        = each.value
+  availability_zone = "${var.aws_region}${each.key}"
 
   tags = {
-    Name = "${var.shared_name}-efs-subnet"
+    Name = "${var.shared_name}-az-subnet"
   }
+}
+
+# Associate the subnet with the route table
+resource "aws_route_table_association" "shared_rtas" {
+  for_each       = aws_subnet.zone_subnets
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.shared_route_table.id
 }
 
 resource "aws_security_group" "security_group_efs_net" {
@@ -180,8 +187,8 @@ resource "aws_security_group" "security_group_efs_net" {
 }
 
 # Create the EFS mount target in our subnet
-resource "aws_efs_mount_target" "shared_efs_mt" {
-  for_each        = toset(aws_subnet.shared_efs_subnet)
+resource "aws_efs_mount_target" "shared_efs_mts" {
+  for_each        = aws_subnet.zone_subnets
   file_system_id  = aws_efs_file_system.shared_efs.id
   subnet_id       = each.value.id
   security_groups = [

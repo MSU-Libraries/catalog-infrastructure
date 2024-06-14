@@ -206,11 +206,10 @@ module "nodes" {
   aws_availability_zone = each.value.aws_availability_zone
   aws_ami = each.value.aws_ami
   private_ip = each.value.private_ip
-  subnet_cidr = each.value.subnet_cidr
+  subnet_id = each.value.subnet_id
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
-  catalog_route_table_id = var.route_table_id
   vpc_id = var.vpc_id
 }
 

@@ -49,7 +49,6 @@ module "cluster" {
   vpc_id = var.vpc_id
   route_table_id = var.route_table_id
   efs_id = var.efs_id
-  cluster_cidr = "10.1.16.0/20"
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
   smtp_host = var.smtp_host
@@ -74,8 +73,7 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
-      private_ip = "10.1.17.10"
-      subnet_cidr = "10.1.17.0/24"
+      private_ip = "10.1.1.138"
     }
     "b" = {
       server_name = "catalog-2-dev"
@@ -83,8 +81,7 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
-      private_ip = "10.1.18.10"
-      subnet_cidr = "10.1.18.0/24"
+      private_ip = "10.1.2.138"
     }
     "c" = {
       server_name = "catalog-3-dev"
@@ -92,8 +89,7 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
-      private_ip = "10.1.19.10"
-      subnet_cidr = "10.1.19.0/24"
+      private_ip = "10.1.3.138"
     }
   }
 }

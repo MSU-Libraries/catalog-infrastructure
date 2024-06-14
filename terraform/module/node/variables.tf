@@ -33,8 +33,8 @@ variable "private_ip" {
   type = string
 }
 
-variable "subnet_cidr" {
-  description = "CIDR to use for subnet within this availability zone"
+variable "subnet_id" {
+  description = "Subnet ID to use for node"
   type = string
 }
 

@@ -10,26 +10,9 @@ terraform {
   }
 }
 
-# Define a subnet within the VPC
-resource "aws_subnet" "node_subnet" {
-  vpc_id     = var.vpc_id
-  cidr_block = var.subnet_cidr
-  availability_zone = "${var.aws_region}${var.aws_availability_zone}"
-
-  tags = {
-    Name = "${var.server_name}-subnet"
-  }
-}
-
-# Assign the subnet with the route table
-resource "aws_route_table_association" "catalog_rta" {
-  subnet_id      = aws_subnet.node_subnet.id
-  route_table_id = var.catalog_route_table_id
-}
-
 # Add a network device with IP to subnet and security group
 resource "aws_network_interface" "node_nic" {
-  subnet_id       = aws_subnet.node_subnet.id
+  subnet_id       = var.subnet_id
   private_ips     = [var.private_ip]
   security_groups = var.security_group_ids
 

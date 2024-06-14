@@ -16,14 +16,14 @@ variable "vpc_id" {
   type = string
 }
 
-variable "route_table_id" {
-  description = "The route table id for the VPC"
-  type = string
-}
-
 variable "efs_security_group_id" {
   description = "The security group id to allow access to EFS mount"
   type = string
+}
+
+variable "zone_subnet_ids" {
+  description = "Subnet IDs for each availability zone"
+  value = list(string)
 }
 
 variable "efs_mount_hostnames" {
@@ -52,8 +52,6 @@ module "cluster" {
   aws_region = "us-east-1"
   vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
-  route_table_id = var.route_table_id
-  cluster_cidr = "10.1.0.0/20"
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
   smtp_host = var.smtp_host
@@ -79,7 +77,7 @@ module "cluster" {
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
       private_ip = "10.1.1.10"
-      subnet_cidr = "10.1.1.0/24"
+      subnet_id = var.zone_subnet_ids[0]
     }
     "b" = {
       server_name = "catalog-2"
@@ -88,7 +86,7 @@ module "cluster" {
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
       private_ip = "10.1.2.10"
-      subnet_cidr = "10.1.2.0/24"
+      subnet_id = var.zone_subnet_ids[1]
     }
     "c" = {
       server_name = "catalog-3"
@@ -97,7 +95,7 @@ module "cluster" {
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
       private_ip = "10.1.3.10"
-      subnet_cidr = "10.1.3.0/24"
+      subnet_id = var.zone_subnet_ids[2]
     }
   }
 }
