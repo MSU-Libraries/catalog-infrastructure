@@ -97,6 +97,10 @@ resource "aws_efs_file_system" "shared_efs" {
     # transition_to_primary_storage_class = "AFTER_1_ACCESS"
   }
 
+  lifecycle {
+    prevent_destroy = true # Avoid accidentally destroying the EFS share
+  }
+
   tags = {
     Name = "${var.shared_name}-shared-storage"
   }
