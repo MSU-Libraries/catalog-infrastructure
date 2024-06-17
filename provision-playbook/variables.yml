@@ -6,3 +6,5 @@ aws_credential_template: |
   [default]
   aws_access_key_id=$AWS_KEY
   aws_secret_access_key=$AWS_SECRET
+
+terraform_env: $TERRAFORM_ENV

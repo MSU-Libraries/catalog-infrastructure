@@ -1,7 +1,9 @@
 stages:
   - test
   - build
-  - provision
+  - shared
+  - devel
+  - prod
 
 Shellcheck:
   stage: test
@@ -40,15 +42,43 @@ Build Base Image:
     - docker build  -t $CI_REGISTRY_IMAGE/ansible:latest --cache-from $CI_REGISTRY_IMAGE/ansible:latest .
     - docker push $CI_REGISTRY_IMAGE/ansible:latest
 
-Provision:
-  stage: provision
+Provision Shared Resources:
+  extends: .provision_template
+  stage: shared
+  variables:
+    TERRAFORM_ENV: shared
+    TZ: America/Detroit
+  artifacts:
+    paths:
+      - terraform.tfvars.json
+
+Provision Devel Cluster:
+  extends: .provision_template
+  stage: devel
+  variables:
+    TERRAFORM_ENV: devel
+    TZ: America/Detroit
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+
+Provision Prod Cluster:
+  extends: .provision_template
+  stage: prod
+  variables:
+    TERRAFORM_ENV: prod
+    TZ: America/Detroit
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+
+.provision_template:
   tags:
     - msul-shared
   image: $CI_REGISTRY_IMAGE/ansible:latest
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
-  variables:
-    TZ: America/Detroit
+      when: manual
   before_script:
     # Setting up ssh key
     - eval $( ssh-agent -s )
@@ -57,17 +87,22 @@ Provision:
     - ( umask 022; touch ~/.ssh/known_hosts )
     - ssh-keyscan ansible.lib.msu.edu >> ~/.ssh/known_hosts
   script:
-    # Run the playbook to provision
-    - cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml
-    - ansible-playbook provision-playbook/provision.yml
-    # Run the Ubuntu setup playbook
-    - scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts
-    - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts"
-    - ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml"
-    # Run the configure playbook
-    - cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml
-    - ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts
-    - echo "Success! Servers are now accessible."
+    - |
+      # Run the playbook to provision
+      cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml;
+      [[ -f terraform.tfvars.json ]] && mv terraform.tfvars.json terraform/env/${TERRAFORM_ENV}/
+      ansible-playbook provision-playbook/provision.yml;
+      echo "Provisioning for $TERRAFORM_ENV completed.";
+      # Run the Ubuntu setup playbook
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
+        scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
+        ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts";
+        ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml";
+        # Run the configure playbook
+        cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
+        ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts;
+        echo "Success! Servers for $TERRAFORM_ENV are now accessible.";
+      fi
 
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
