@@ -38,11 +38,3 @@ output "public_ips" {
     for n in module.nodes : n.public_ip
   ]
 }
-
-# Shared EFS mount target hostnames
-output "efs_hostnames" {
-  description = "AWS EFS Mount Target Hostnames"
-  value       = [
-    for n in module.nodes : n.efs_hostname
-  ]
-}

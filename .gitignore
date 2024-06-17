@@ -1,5 +1,7 @@
 *.swp
 .terraform.lock.hcl
 .terraform
+*.tfvars
+*.tfvars.json
 # PHPStorm folder
 .idea/

@@ -15,47 +15,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Define a virtual private cloud (VPC, essentially a private network)
-resource "aws_vpc" "catalog_vpc" {
-  cidr_block = var.vpc_cidr
-  enable_dns_hostnames = true       # Required for EFS mount targets DNS resolution
-  tags = {
-    Name = "${var.cluster_name}-vpc"
-  }
-}
-
-# Define a gateway for the VPC
-resource "aws_internet_gateway" "catalog_gateway" {
-  vpc_id = aws_vpc.catalog_vpc.id
-
-  tags = {
-    Name = "${var.cluster_name}-gateway"
-  }
-}
-
-# Define a route table to have external traffic routed out
-resource "aws_route_table" "catalog_route_table" {
-  vpc_id = aws_vpc.catalog_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.catalog_gateway.id
-  }
-  route {
-    ipv6_cidr_block = "::/0"
-    gateway_id      = aws_internet_gateway.catalog_gateway.id
-  }
-
-  tags = {
-    Name = "${var.cluster_name}-route-table"
-  }
-}
-
 # Set security rules to allow for inbound traffic (and allow outbound)
 resource "aws_security_group" "security_group_public_net" {
   name        = "${var.cluster_name}-public-net"
   description = "Allow inbound traffic from public network"
-  vpc_id      = aws_vpc.catalog_vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description      = "SSH"
@@ -107,7 +71,6 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
 
-
   egress {
     description      = "Allow all outgoing traffic"
     from_port        = 0
@@ -126,7 +89,7 @@ resource "aws_security_group" "security_group_public_net" {
 resource "aws_security_group" "security_group_private_net" {
   name        = "${var.cluster_name}-private-net"
   description = "Allow inbound traffic from private network"
-  vpc_id      = aws_vpc.catalog_vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description      = "Docker Swarm Cluster Management"
@@ -182,57 +145,6 @@ resource "aws_security_group" "security_group_private_net" {
   }
 }
 
-# Create EFS resource for shared storage
-resource "aws_efs_file_system" "catalog_efs" {
-  lifecycle_policy {
-    transition_to_ia = "AFTER_30_DAYS"
-    # transition_to_primary_storage_class = "AFTER_1_ACCESS"
-  }
-
-  tags = {
-    Name = "${var.cluster_name}-shared-storage"
-  }
-}
-
-# Creating access point for EFS
-resource "aws_efs_access_point" "catalog_efs_ap" {
-  file_system_id = aws_efs_file_system.catalog_efs.id
-}
-
-# Creating the EFS system policy to handle file transitions
-resource "aws_efs_file_system_policy" "catalog_efs_policy" {
-  file_system_id = aws_efs_file_system.catalog_efs.id
-
-  # bypass_policy_lockout_safety_check = true
-
-  policy = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Id": "Policy01",
-    "Statement": [
-        {
-            "Sid": "Statement",
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "*"
-            },
-            "Resource": "${aws_efs_file_system.catalog_efs.arn}",
-            "Action": [
-                "elasticfilesystem:ClientMount",
-                "elasticfilesystem:ClientRootAccess",
-                "elasticfilesystem:ClientWrite"
-            ],
-            "Condition": {
-                "Bool": {
-                    "aws:SecureTransport": "false"
-                }
-            }
-        }
-    ]
-}
-POLICY
-}
-
 # Create user with permissions to verify Let's Encrypt DNS challenge
 resource "aws_iam_user" "dnschallenge_user" {
   name = "${var.cluster_name}-dnschallenge"
@@ -271,7 +183,7 @@ resource "aws_iam_user_policy" "dnschallenge_policy" {
                 "route53:ListResourceRecordSets"
             ],
             "Resource": [
-                "arn:aws:route53:::hostedzone/Z0159018169CCNUQINNQG"
+                "arn:aws:route53:::hostedzone/${ var.zone_id }"
             ]
         }
     ]
@@ -284,7 +196,8 @@ module "nodes" {
   source   = "../node"
   security_group_ids = [
     aws_security_group.security_group_public_net.id,
-    aws_security_group.security_group_private_net.id    # If private moves from index 1, then need to update EFS mount target
+    aws_security_group.security_group_private_net.id,
+    var.efs_security_group_id
   ]
   server_name = each.value.server_name
   aws_instance_type = each.value.aws_instance_type
@@ -293,22 +206,20 @@ module "nodes" {
   aws_availability_zone = each.value.aws_availability_zone
   aws_ami = each.value.aws_ami
   private_ip = each.value.private_ip
-  subnet_cidr = each.value.subnet_cidr
+  subnet_id = each.value.subnet_id
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
-  catalog_gateway = aws_internet_gateway.catalog_gateway
-  catalog_route_table_id = aws_route_table.catalog_route_table.id
-  vpc_id = aws_vpc.catalog_vpc.id
-  efs_id = aws_efs_file_system.catalog_efs.id
 }
 
 # Create round robin hostname records
+# Only required for prod cluster, as it is the only location where we
+# reference domain names without a Route53 controlled domain (e.g. catalog-beta.lib.msu.edu)
 resource "aws_route53_record" "roundrobin_dnsrec" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "catalog.aws.lib.msu.edu"
-  type    = "A"
-  ttl     = "300"
-  records = [for node in module.nodes:"${node.public_ip}"]
+  for_each = toset(var.roundrobin_hostnames)
+  zone_id  = "${var.zone_id}"
+  name     = "${each.value}.${var.domain}"
+  type     = "A"
+  ttl      = "300"
+  records  = [for node in module.nodes:"${node.public_ip}"]
 }

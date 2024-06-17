@@ -1,7 +1,7 @@
 terraform {
     backend "s3" {
         bucket = "msulib-terraform-states"
-        key    = "catalog/cluster-prod.tfstate"
+        key    = "catalog/cluster-devel.tfstate"
         region = "us-east-2"
     }
 }
@@ -48,7 +48,7 @@ variable "smtp_password" {
 
 module "cluster" {
   source = "../../module/cluster"
-  cluster_name = "catalog"
+  cluster_name = "catalog-devel"
   aws_region = "us-east-1"
   vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
@@ -65,37 +65,37 @@ module "cluster" {
     "35.8.220.0/22",
   ]
   net_allow_inbound_web = [
-    "0.0.0.0/0",
+    "35.8.220.0/22",
   ]
   roundrobin_hostnames = [
-    "catalog",
+    "catalog-dev",
   ]
   nodes = {
     "a" = {
-      server_name = "catalog-1"
+      server_name = "catalog-1-dev"
       aws_availability_zone = "a"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.1.10"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.1.138"
       subnet_id = var.zone_subnet_ids[0]
     }
     "b" = {
-      server_name = "catalog-2"
+      server_name = "catalog-2-dev"
       aws_availability_zone = "b"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.2.10"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.2.138"
       subnet_id = var.zone_subnet_ids[1]
     }
     "c" = {
-      server_name = "catalog-3"
+      server_name = "catalog-3-dev"
       aws_availability_zone = "c"
       aws_ami = "ami-052efd3df9dad4825"
-      aws_instance_type = "t3a.2xlarge"
-      aws_root_block_size = 384
-      private_ip = "10.1.3.10"
+      aws_instance_type = "t3a.xlarge"
+      aws_root_block_size = 100
+      private_ip = "10.1.3.138"
       subnet_id = var.zone_subnet_ids[2]
     }
   }

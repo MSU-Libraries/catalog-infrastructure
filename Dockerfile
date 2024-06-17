@@ -7,7 +7,7 @@ USER root
 
 # Perform updates
 RUN apt-get update && \
-    apt-get install software-properties-common curl gnupg openssh-client git python3-netaddr python3-dnspython -y --no-install-recommends
+    apt-get install software-properties-common curl gnupg openssh-client git python3-netaddr python3-dnspython jq -y --no-install-recommends
 
 # Setup Timezone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \

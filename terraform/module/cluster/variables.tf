@@ -4,12 +4,35 @@ variable "aws_region" {
 }
 
 variable "vpc_cidr" {
-  description = "CIDR rangeto be used for AWS VPC"
+  description = "CIDR range to be used for AWS VPC"
+  type = string
+}
+
+variable "vpc_id" {
+  description = "The vpc.id where to place the cluster"
+  type = string
+}
+
+variable "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
+  type = string
+}
+
+variable "domain" {
+  # TODO Can we pull this value from AWS given the zone_id below instead of passing it?
+  # example: aws.lib.msu.edu
+  description = "The domain within which the servers will reside"
+  type = string
+}
+
+variable "zone_id" {
+  # example: Z01234567890ABCDEFGHI
+  description = "The zone_id in AWS Route53 for which the domain is associated"
   type = string
 }
 
 variable "cluster_name" {
-  description = "Name of cluster to be used in vars"
+  description = "Name of cluster to be used in vars and tags"
   type = string
 }
 
@@ -25,6 +48,12 @@ variable "net_allow_inbound_ncpa" {
 
 variable "net_allow_inbound_web" {
   description = "Allow inbound to web ports these CIDRs"
+  type = list(string)
+}
+
+variable "roundrobin_hostnames" {
+  # E.g. "catalog" with domain set to "aws.example.edu" would make RR DNS for "catalog.aws.example.edu"
+  description = "Hostnames to create within the domain with round robin DNS to node IPs"
   type = list(string)
 }
 
@@ -52,6 +81,6 @@ variable "nodes" {
     aws_instance_type = string
     aws_root_block_size = number
     private_ip = string
-    subnet_cidr = string
+    subnet_id = string
   }))
 }
