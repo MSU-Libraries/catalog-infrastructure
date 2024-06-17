@@ -7,25 +7,25 @@
   vars_files:
     - variables.yml
 
-  roles:
-    - install-dependencies
-    - configure-conreboot
-    - configure-updates
-    - configure-ssh
-    - configure-host
-    - mount-shared-storage
-    - configure-swarm
-    - configure-email
-    - saml-setup
-    - deploy-variables
-    - restrict-ubuntu-user
-    - ncpa-plugins
-    - configure-logrotate
-    - grant-permissions
-    - deploy-helper-scripts
-    - clone-vufind
-
   tasks:
+    - include_role:
+        name: install-dependencies
+    - include_role:
+        name: configure-conreboot
+    - include_role:
+        name: configure-updates
+    - include_role:
+        name: configure-ssh
+    - include_role:
+        name: configure-host
+    - include_role:
+        name: mount-shared-storage
+    - include_role:
+        name: configure-swarm
+    - include_role:
+        name: configure-email
+    - include_role:
+        name: saml-setup
     - name: Create users
       include_role:
         name: setup-users
@@ -33,7 +33,21 @@
       loop_control:
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
+      # Below must occur after create users
     - name: Deploy docker core stacks
-      # Must occur after create users
       include_role:
         name: core-stacks
+    - include_role:
+        name: deploy-variables
+    - include_role:
+        name: restrict-ubuntu-user
+    - include_role:
+        name: ncpa-plugins
+    - include_role:
+        name: configure-logrotate
+    - include_role:
+        name: grant-permissions
+    - include_role:
+        name: deploy-helper-scripts
+    - include_role:
+        name: clone-vufind
