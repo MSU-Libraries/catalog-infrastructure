@@ -54,9 +54,15 @@
 - name: Pause for 30 seconds for servers to start and DNS propagate
   ansible.builtin.pause:
     seconds: 30
+  when:
+   - terraform_env is defined
+   - terraform_env == "devel" or terraform_env == "prod"
 
 - name: Add to known hosts file
   ansible.builtin.shell: >
       ssh-keyscan {{ tf.outputs.catalog_a_fqdn.value }} >> ~/.ssh/known_hosts &&
       ssh-keyscan {{ tf.outputs.catalog_b_fqdn.value }} >> ~/.ssh/known_hosts &&
       ssh-keyscan {{ tf.outputs.catalog_c_fqdn.value }} >> ~/.ssh/known_hosts
+  when:
+   - terraform_env is defined
+   - terraform_env == "devel" or terraform_env == "prod"
