@@ -16,14 +16,19 @@ variable "vpc_id" {
   type = string
 }
 
-variable "route_table_id" {
-  description = "The route table id for the VPC"
+variable "zone_subnet_ids" {
+  description = "Subnet IDs for each availability zone"
+  type = list(string)
+}
+
+variable "efs_security_group_id" {
+  description = "The security group id to allow access to EFS mount"
   type = string
 }
 
-variable "efs_id" {
-  description = "The efs.id for the mounted shared storage within the servers"
-  type = string
+variable "efs_mount_hostnames" {
+  description = "EFS mount target hostnames for each availability zone"
+  type = list(string)
 }
 
 variable "smtp_host" {
@@ -47,10 +52,9 @@ module "cluster" {
   aws_region = "us-east-1"
   vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
-  route_table_id = var.route_table_id
-  efs_id = var.efs_id
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
+  efs_security_group_id = var.efs_security_group_id
   smtp_host = var.smtp_host
   smtp_user = var.smtp_username
   smtp_password = var.smtp_password
@@ -74,6 +78,7 @@ module "cluster" {
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
       private_ip = "10.1.1.138"
+      subnet_id = var.zone_subnet_ids[0]
     }
     "b" = {
       server_name = "catalog-2-dev"
@@ -82,6 +87,7 @@ module "cluster" {
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
       private_ip = "10.1.2.138"
+      subnet_id = var.zone_subnet_ids[1]
     }
     "c" = {
       server_name = "catalog-3-dev"
@@ -90,6 +96,7 @@ module "cluster" {
       aws_instance_type = "t3a.xlarge"
       aws_root_block_size = 100
       private_ip = "10.1.3.138"
+      subnet_id = var.zone_subnet_ids[2]
     }
   }
 }
@@ -127,7 +134,7 @@ output "catalog_a_public_ip" {
 
 output "catalog_a_efs_hostname" {
   description = "AWS EFS hostname (catalog-1)"
-  value = module.cluster.efs_hostnames[0]
+  value = var.efs_mount_hostnames[0]
 }
 
 output "catalog_b_instance_id" {
@@ -147,7 +154,7 @@ output "catalog_b_public_ip" {
 
 output "catalog_b_efs_hostname" {
   description = "AWS EFS hostname (catalog-2)"
-  value = module.cluster.efs_hostnames[1]
+  value = var.efs_mount_hostnames[1]
 }
 
 output "catalog_c_instance_id" {
@@ -167,6 +174,6 @@ output "catalog_c_public_ip" {
 
 output "catalog_c_efs_hostname" {
   description = "AWS EFS hostname (catalog-3)"
-  value = module.cluster.efs_hostnames[2]
+  value = var.efs_mount_hostnames[2]
 }
 
