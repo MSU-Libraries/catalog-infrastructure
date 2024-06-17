@@ -33,8 +33,8 @@ variable "private_ip" {
   type = string
 }
 
-variable "subnet_cidr" {
-  description = "CIDR to use for subnet within this availability zone"
+variable "subnet_id" {
+  description = "Subnet ID to use for node"
   type = string
 }
 
@@ -55,27 +55,5 @@ variable "smtp_user" {
 
 variable "smtp_password" {
   description = "SMTP password"
-  type = string
-}
-
-variable "catalog_gateway" {
-  description = "Terraform gateway resource definition"
-  type = object({
-    id = string
-  })
-}
-
-variable "catalog_route_table_id" {
-  description = "AWS Route table to associate with this node's subnet"
-  type = string
-}
-
-variable "vpc_id" {
-  description = "AWS VPC to assign subnet to"
-  type = string
-}
-
-variable "efs_id" {
-  description = "The EFS id used for shared storage"
   type = string
 }
