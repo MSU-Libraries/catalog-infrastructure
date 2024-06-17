@@ -18,11 +18,6 @@ variable "efs_security_group_id" {
   type = string
 }
 
-variable "cluster_cidr" {
-  description = "CIDR range for the cluster within the VPC"
-  type = string
-}
-
 variable "domain" {
   # TODO Can we pull this value from AWS given the zone_id below instead of passing it?
   # example: aws.lib.msu.edu

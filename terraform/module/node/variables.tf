@@ -57,13 +57,3 @@ variable "smtp_password" {
   description = "SMTP password"
   type = string
 }
-
-variable "catalog_route_table_id" {
-  description = "AWS Route table to associate with this node's subnet"
-  type = string
-}
-
-variable "vpc_id" {
-  description = "AWS VPC to assign subnet to"
-  type = string
-}

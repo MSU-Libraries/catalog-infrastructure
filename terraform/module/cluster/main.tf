@@ -96,7 +96,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 2377
     to_port          = 2377
     protocol         = "tcp"
-    cidr_blocks      = [var.cluster_cidr]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -104,7 +104,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "tcp"
-    cidr_blocks      = [var.cluster_cidr]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -112,7 +112,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 7946
     to_port          = 7946
     protocol         = "udp"
-    cidr_blocks      = [var.cluster_cidr]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -120,7 +120,7 @@ resource "aws_security_group" "security_group_private_net" {
     from_port        = 4789
     to_port          = 4789
     protocol         = "udp"
-    cidr_blocks      = [var.cluster_cidr]
+    cidr_blocks      = [var.vpc_cidr]
     ipv6_cidr_blocks = []
   }
   ingress {
@@ -210,7 +210,6 @@ module "nodes" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
-  vpc_id = var.vpc_id
 }
 
 # Create round robin hostname records
