@@ -16,14 +16,14 @@ variable "vpc_id" {
   type = string
 }
 
+variable "zone_subnet_ids" {
+  description = "Subnet IDs for each availability zone"
+  type = list(string)
+}
+
 variable "efs_security_group_id" {
   description = "The security group id to allow access to EFS mount"
   type = string
-}
-
-variable "zone_subnet_ids" {
-  description = "Subnet IDs for each availability zone"
-  value = list(string)
 }
 
 variable "efs_mount_hostnames" {
@@ -54,6 +54,7 @@ module "cluster" {
   vpc_id = var.vpc_id
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
+  efs_security_group_id = var.efs_security_group_id
   smtp_host = var.smtp_host
   smtp_user = var.smtp_username
   smtp_password = var.smtp_password
