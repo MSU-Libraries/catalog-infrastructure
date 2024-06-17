@@ -14,6 +14,7 @@
     project_path: "../terraform/env/{{ terraform_env }}/"
     #state: present
     state: planned
+    plan_file: "../shared.tfplan"
     provider_upgrade: yes
     # focing init because state file exists in s3 and need provider
     # installed locally before we can detect it
