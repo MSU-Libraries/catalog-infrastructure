@@ -23,7 +23,7 @@
 
 - name: Set correct ownership of home directory
   ansible.builtin.file:
-    path: "/home/{{ user_dict.name }}" 
+    path: "/home/{{ user_dict.name }}"
     state: directory
     owner: "{{ user_dict.name }}"
     group: "{{ user_dict.name }}"

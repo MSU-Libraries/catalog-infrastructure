@@ -12,17 +12,12 @@
 - name: Provision catalog server cluster
   community.general.terraform:
     project_path: "../terraform/env/{{ terraform_env }}/"
-    #state: present
-    state: planned
-    plan_file: "../shared.tfplan"
+    state: present
     provider_upgrade: yes
     # focing init because state file exists in s3 and need provider
     # installed locally before we can detect it
     force_init: yes 
   register: tf
-
-- ansible.builtin.debug:
-    var: tf
 
 - name: Create ansible inventory file from terraform outputs
   copy:
