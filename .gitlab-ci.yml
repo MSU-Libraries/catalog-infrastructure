@@ -55,6 +55,8 @@ Provision Shared Resources:
 Provision Devel Cluster:
   extends: .provision_template
   stage: devel
+  environment:
+    name: devel
   variables:
     TERRAFORM_ENV: devel
     TZ: America/Detroit
@@ -65,6 +67,8 @@ Provision Devel Cluster:
 Provision Prod Cluster:
   extends: .provision_template
   stage: prod
+  environment:
+    name: prod
   variables:
     TERRAFORM_ENV: prod
     TZ: America/Detroit

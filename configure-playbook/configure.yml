@@ -24,8 +24,6 @@
         name: configure-swarm
     - include_role:
         name: configure-email
-    - include_role:
-        name: saml-setup
     - name: Create users
       include_role:
         name: setup-users
@@ -34,8 +32,9 @@
         loop_var: user_dict
         label: "{{ user_dict.comment }}"
       # Below must occur after create users
-    - name: Deploy docker core stacks
-      include_role:
+    - include_role:
+        name: saml-setup
+    - include_role:
         name: core-stacks
     - include_role:
         name: deploy-variables
