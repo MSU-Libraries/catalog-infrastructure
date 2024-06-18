@@ -44,6 +44,9 @@
   ansible.builtin.shell:
     cmd: |
       export BASICAUTH_FOR_RESOURCES='{{ lookup('ansible.builtin.env', 'BASICAUTH_FOR_RESOURCES') }}'
+      export DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
+      export DEPLOY_HOST_2='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_2') }}'
+      export DEPLOY_HOST_3='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_3') }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
       chown deploy:deploy docker-compose.traefik.yml
   args:
