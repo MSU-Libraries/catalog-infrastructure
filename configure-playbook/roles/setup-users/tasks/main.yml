@@ -27,6 +27,8 @@
     state: directory
     owner: "{{ user_dict.name }}"
     group: "{{ user_dict.name }}"
+  when:
+  - user_dict.name is defined
 
 - name: Remove the blank password for the user
   command: "passwd -d {{ user_dict.name }}"
