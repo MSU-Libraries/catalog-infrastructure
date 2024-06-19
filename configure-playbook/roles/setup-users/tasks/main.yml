@@ -67,5 +67,7 @@
   become: true
   become_user: "{{ user_dict.name }}"
   command: "chezmoi init --apply {{ user_dict.chezmoi_repository }} --guess-repo-url=false"
+  timeout: 30
+  ignore_errors: true
   when:
   - user_dict.chezmoi_repository is defined
