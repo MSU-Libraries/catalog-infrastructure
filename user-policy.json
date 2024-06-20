@@ -88,11 +88,10 @@
             "Effect": "Allow",
             "Action": "s3:*",
             "Resource": [
-                "arn:aws:s3:::msulib-catalog-terraform-states",
                 "arn:aws:s3:::msulib-catalog-shared",
                 "arn:aws:s3:::msulib-catalog-shared/*",
-                "arn:aws:s3:::msulib-terraform-states/*",
-                "arn:aws:s3:::msulib-catalog-terraform-states/*"
+                "arn:aws:s3:::msulib-terraform-states",
+                "arn:aws:s3:::msulib-terraform-states/*"
             ]
         }
     ]
