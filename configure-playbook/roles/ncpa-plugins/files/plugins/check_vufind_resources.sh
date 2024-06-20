@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# disable shellcheck=SC2317 # Incorrect warning the commands are unreachable
+# shellcheck disable=SC2317 # Incorrect warning the commands are unreachable
 
 ## Script to check the Memory and CPU usage of the VuFind container
 ## which helps identify when bot attacks are occurring.
