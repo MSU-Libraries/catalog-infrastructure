@@ -14,10 +14,13 @@ a server cluster on AWS.
 ### AWS User Setup
 An AWS user is required and will need to have multiple access roles granted to it in IAM
 to perform the tasks required in Terraform. Below outline the permissions required on the group
-the AWS user is attached to:
+the AWS user is attached to:  
 
 Policy: `AmazonEC2FullAccess`
 [Custom Policy](user-policy.json)
+
+If you are using the above IAM policy as a template for yourself, be sure to modify any IDs
+or resource names as needed.  
 
 ### GitLab Setup
 The user running the pipeline needs to have access to read from the following repositories:  
