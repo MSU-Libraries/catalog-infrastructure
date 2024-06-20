@@ -27,7 +27,7 @@ verify_resource() {
     WARN="$2" # Numerical cut off when a warning should be triggered (i.e. 10)
     CRIT="$3" # Numerical cut off when a critical error should be triggered (i.e. 15)
 
-    STAT=$( docker stats --no-stream --format "{{.${RESOURCE}}}" "$(docker ps -q -f name="${DEPLOYMENT}"-catalog_catalog)")
+    STAT=$( docker_sudo docker stats --no-stream --format "{{.${RESOURCE}}}" "$(docker_sudo docker ps -q -f name="${DEPLOYMENT}"-catalog_catalog)")
 
     if [[ -z "$STAT" ]]; then
         echo "UNKNOWN: Could not get ${RESOURCE} in VuFind container for ${DEPLOYMENT}"
