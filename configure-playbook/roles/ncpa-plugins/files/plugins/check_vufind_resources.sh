@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# disable shellcheck=SC2317 # Incorrect warning the commands are unreachable
+
 ## Script to check the Memory and CPU usage of the VuFind container
 ## which helps identify when bot attacks are occurring.
 
@@ -16,11 +18,6 @@ fi
 
 # Stack deployment name (e.g. catalog-beta, devel-nathan)
 DEPLOYMENT="$1"
-
-is_main() {
-    [[ "$DEPLOYMENT" == "catalog"* ]]
-    return $?
-}
 
 # Verify that the numerical stat output for the given resource is less than the
 # provided warning and critical values and exit with the appropriate code.
