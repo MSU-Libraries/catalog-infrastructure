@@ -16,6 +16,7 @@ create_users:
  - name: colli372
    comment: 'Nathan Collins'
    groups: sudo,adm,docker,deploy,ubuntu
+   chezmoi_repository: https://github.com/natecollins/dotfiles.git
 #   public_keys:
 #     - 
 
