@@ -54,6 +54,22 @@ resource "aws_iam_user_policy_attachment" "catalog_ses_policy_attach" {
   policy_arn = aws_iam_policy.catalog_ses_policy.arn
 }
 
+# Topic and subscription for CloudWatch alerts
+resource "aws_sns_topic" "shared_sns_alerts" {
+  name = "${var.shared_name}-alerts"
+
+  tags = {
+    Name = "${var.shared_name}-sns-alerts"
+  }
+}
+
+resource "aws_sns_topic_subscription" "shared_sns_alert_subs" {
+  for_each  = toset(var.alert_emails)
+  topic_arn = aws_sns_topic.shared_sns_alerts.arn
+  protocol  = "email"
+  endpoint  = "${each.value}"
+}
+
 # Define a virtual private cloud (VPC, essentially a private network)
 resource "aws_vpc" "shared_vpc" {
   cidr_block = var.vpc_cidr

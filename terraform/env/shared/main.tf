@@ -11,6 +11,9 @@ module "shared" {
   aws_region      = "us-east-1"
   mail_instance   = "catalog-prod"
   shared_name     = "catalog"
+  alert_emails    = [
+    "colli372@msu.edu"
+  ]
   vpc_cidr        = "10.1.0.0/16"
   zone_subnets    = {
     "a" = "10.1.1.0/24"

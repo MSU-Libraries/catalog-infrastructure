@@ -13,6 +13,11 @@ variable "shared_name" {
   type = string
 }
 
+variable "alert_emails" {
+  description = "Send CloudWatch alerts to these email addresses"
+  type = list(string)
+}
+
 variable "vpc_cidr" {
   description = "CIDR range to be used for AWS VPC"
   type = string

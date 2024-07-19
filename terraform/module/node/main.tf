@@ -82,3 +82,37 @@ resource "aws_instance" "node_instance" {
     prevent_destroy = true # Avoid accidentally destroying the catalog
   }
 }
+
+resource "aws_cloudwatch_metric_alarm" "cpu_credits" {
+  for_each            = toset(var.cpu_balance_threshold == null ? [] : [1])
+  alarm_name          = "${var.server_name}-cpu-credit-alarm"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUCreditBalance"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = var.cpu_balance_threshold
+  alarm_description   = "Alarm when EC2 CPU credits drop below the given value"
+  alarm_actions       = [var.alert_topic_arn]
+  dimensions = {
+    InstanceId = aws_instance.node_instance.id
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ebs_burst" {
+  for_each            = toset(var.ebs_balance_threshold == null ? [] : [1])
+  alarm_name          = "${var.server_name}-ebs-burst-alarm"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "EBSBurstBalance"
+  namespace           = "AWS/EBS"
+  period              = 120
+  statistic           = "Average"
+  threshold           = var.ebs_balance_threshold
+  alarm_description   = "Alarm when EBS burst balance drops below the given value"
+  alarm_actions       = [var.alert_topic_arn]
+  dimensions = {
+    VolumeId = aws_instance.node_instance.root_block_device[0].volume_id
+  }
+}
