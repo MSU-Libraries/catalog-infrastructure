@@ -38,6 +38,25 @@ variable "subnet_id" {
   type = string
 }
 
+variable "alert_topic_arn" {
+  description = "SNS topic ARN to send alerts to"
+  type = string
+}
+
+variable "cpu_balance_threshold" {
+  description = "CPU Credit balance below which alarm is raised"
+  type = number
+  nullable = true
+  default = null
+}
+
+variable "ebs_balance_threshold" {
+  description = "EBS Burst balance below which alarm is raised"
+  type = number
+  nullable = true
+  default = null
+}
+
 variable "security_group_ids" {
   description = "Predefined security groups to assign to NIC"
   type = list(string)

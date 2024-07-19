@@ -77,6 +77,8 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
+      cpu_balance_threshold = 3456      # max of 4608 for t3a.2xlarge
+      ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.1.10"
       subnet_id = var.zone_subnet_ids[0]
     }

@@ -194,6 +194,7 @@ POLICY
 module "nodes" {
   for_each = var.nodes
   source   = "../node"
+  alert_topic_arn = var.alert_topic_arn
   security_group_ids = [
     aws_security_group.security_group_public_net.id,
     aws_security_group.security_group_private_net.id,
@@ -210,6 +211,8 @@ module "nodes" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
+  cpu_balance_threshold = each.value.cpu_balance_threshold
+  ebs_balance_threshold = each.value.ebs_balance_threshold
 }
 
 # Create round robin hostname records
