@@ -13,6 +13,11 @@ variable "vpc_id" {
   type = string
 }
 
+variable "alert_topic_arn" {
+  description = "SNS topic ARN to send alerts to"
+  type = string
+}
+
 variable "efs_security_group_id" {
   description = "The security group id to allow access to EFS mount"
   type = string
@@ -82,5 +87,7 @@ variable "nodes" {
     aws_root_block_size = number
     private_ip = string
     subnet_id = string
+    cpu_balance_threshold = optional(number)    # CPU Credit balance below which alarm is raised
+    ebs_balance_threshold = optional(number)    # EBS Burst balance below which alarm is raised
   }))
 }

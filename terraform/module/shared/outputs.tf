@@ -16,6 +16,11 @@ output "smtp_password" {
   sensitive   = true
 }
 
+output "alert_topic_arn" {
+  description = "SNS topic ARN to send alerts to"
+  value       = aws_sns_topic.shared_sns_alerts.arn
+}
+
 output "vpc_cidr" {
   description = "Returning the VPC CIDR that was passed in"
   value       = var.vpc_cidr
