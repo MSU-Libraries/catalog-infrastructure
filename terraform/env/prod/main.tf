@@ -21,6 +21,11 @@ variable "zone_subnet_ids" {
   type = list(string)
 }
 
+variable "alert_topic_arn" {
+  description = "SNS topic ARN to send alerts to"
+  type = string
+}
+
 variable "efs_security_group_id" {
   description = "The security group id to allow access to EFS mount"
   type = string
@@ -54,6 +59,7 @@ module "cluster" {
   vpc_id = var.vpc_id
   domain = "aws.lib.msu.edu"
   zone_id = "Z0159018169CCNUQINNQG"
+  alert_topic_arn = var.alert_topic_arn
   efs_security_group_id = var.efs_security_group_id
   smtp_host = var.smtp_host
   smtp_user = var.smtp_username
@@ -77,6 +83,8 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
+      cpu_balance_threshold = 3456      # max of 4608 for t3a.2xlarge
+      ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.1.10"
       subnet_id = var.zone_subnet_ids[0]
     }
@@ -86,6 +94,8 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
+      cpu_balance_threshold = 3456      # max of 4608 for t3a.2xlarge
+      ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.2.10"
       subnet_id = var.zone_subnet_ids[1]
     }
@@ -95,6 +105,8 @@ module "cluster" {
       aws_ami = "ami-052efd3df9dad4825"
       aws_instance_type = "t3a.2xlarge"
       aws_root_block_size = 384
+      cpu_balance_threshold = 3456      # max of 4608 for t3a.2xlarge
+      ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.3.10"
       subnet_id = var.zone_subnet_ids[2]
     }

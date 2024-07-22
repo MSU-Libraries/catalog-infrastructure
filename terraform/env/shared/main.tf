@@ -11,6 +11,9 @@ module "shared" {
   aws_region      = "us-east-1"
   mail_instance   = "catalog-prod"
   shared_name     = "catalog"
+  alert_emails    = [
+    "LIB.DL.pubcat@msu.edu"
+  ]
   vpc_cidr        = "10.1.0.0/16"
   zone_subnets    = {
     "a" = "10.1.1.0/24"
@@ -33,6 +36,11 @@ output "smtp_password" {
   description = "Password for SES SMTP access"
   value       = module.shared.smtp_password
   sensitive   = true
+}
+
+output "alert_topic_arn" {
+  description = "SNS topic ARN to send alerts to"
+  value       = module.shared.alert_topic_arn
 }
 
 output "vpc_cidr" {
