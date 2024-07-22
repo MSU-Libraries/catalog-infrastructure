@@ -93,6 +93,16 @@
                 "arn:aws:s3:::msulib-terraform-states",
                 "arn:aws:s3:::msulib-terraform-states/*"
             ]
+        },
+        {
+            "Sid": "VisualEditor4",
+            "Effect": "Allow",
+            "Action": [
+                "SNS:*"
+            ],
+            "Resource": [
+                "arn:aws:sns:us-east-1:810208858748:catalog-alerts"
+            ]
         }
     ]
 }

@@ -84,7 +84,7 @@ resource "aws_instance" "node_instance" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cpu_credits" {
-  for_each            = toset(var.cpu_balance_threshold == null ? [] : [1])
+  for_each            = toset(var.cpu_balance_threshold == null ? [] : ["0"])
   alarm_name          = "${var.server_name}-cpu-credit-alarm"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 2
@@ -101,11 +101,11 @@ resource "aws_cloudwatch_metric_alarm" "cpu_credits" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "ebs_burst" {
-  for_each            = toset(var.ebs_balance_threshold == null ? [] : [1])
+  for_each            = toset(var.ebs_balance_threshold == null ? [] : ["0"])
   alarm_name          = "${var.server_name}-ebs-burst-alarm"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 2
-  metric_name         = "EBSBurstBalance"
+  metric_name         = "BurstBalance"
   namespace           = "AWS/EBS"
   period              = 120
   statistic           = "Average"
