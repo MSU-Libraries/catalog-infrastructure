@@ -49,7 +49,7 @@ verify_resource() {
     fi
 }
 
-verify_resource "MemPerc" 70 85
-verify_resource "CPUPerc" 70 85
+verify_resource "CPUPerc" 85 95
+verify_resource "MemPerc" 85 95
 
 exit 0
