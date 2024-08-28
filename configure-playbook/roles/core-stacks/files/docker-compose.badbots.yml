@@ -26,14 +26,14 @@ services:
         # >> Tencent IP range with bots throughout: 43.128.0.0/10, 101.32.0.0/14, 123.206.0.0/15
         # >> chinamobile.com 117.48.148.0/22
         # >> China-based Alibaba Cloud Bot 47.76.0.0/16
-        # >> some other bot from Singapore: 119.8.160.0/19
+        # >> some other bot from Singapore: 119.8.160.0/19, 124.243.128.0/18
         # >> User-Agent bot matching: (?i) means case-insensitive match
-        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
+        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
         - "traefik.http.routers.badbot-http-router.service=badbot-bouncer"
         # Badbot HTTPS
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.middlewares=badbot-breaker"
-        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
+        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
         - "traefik.http.routers.badbot-https-router.tls=true"
         - "traefik.http.routers.badbot-https-router.service=badbot-bouncer"
 
