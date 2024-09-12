@@ -16,7 +16,6 @@
     owner: root
     group: root
     mode: '0600'
-    regenerate: never
   run_once: true
   register: root_pair
 
@@ -28,7 +27,7 @@
 
 - name: Sync root user SSH Key across nodes
   ansible.builtin.copy:
-    content: '{{ root_keyfile.content }}'
+    content: '{{ root_keyfile.content | b64decode }}'
     dest: /root/.ssh/id_ed25519
     owner: root
     group: root
