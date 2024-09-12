@@ -7,6 +7,14 @@
     line: "ClientAliveInterval 60"
   notify: restart sshd
 
+- name: Root user only permitted via key
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?\s*PermitRootLogin '
+    line: "PermitRootLogin prohibit-password"
+  notify: restart sshd
+
 - name: Allow SSH communication through UFW (22/tcp)
   ufw:
     rule: allow
