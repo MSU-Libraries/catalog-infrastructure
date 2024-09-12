@@ -38,4 +38,4 @@
     user: root
     state: present
     key: "{{ root_pair.public_key }}"
-    key_options: "from=\"{{ ansible_play_hosts_all | map('extract', hostvars, 'ansible_facts.default_ipv4.address') | join(',') }}\""
+    key_options: "from=\"{{ ansible_play_hosts_all | map('extract', hostvars, ['ansible_facts', 'default_ipv4', 'address']) | join(',') }}\""
