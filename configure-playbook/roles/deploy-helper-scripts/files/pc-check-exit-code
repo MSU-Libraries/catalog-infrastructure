@@ -1,0 +1,151 @@
+#! /bin/bash
+#! /usr/local/bin/pc-check-exit-code
+
+# Set defaults
+default_args() {
+    declare -g -A ARGS
+    ARGS[FILE]=
+    ARGS[LOG]=
+    ARGS[LINES]=20
+    ARGS[VERBOSE]=0
+}
+default_args
+
+runhelp() {
+    echo ""
+    echo "Check the given exit code file and exit with that code"
+    echo ""
+    echo "Usage:"
+    echo "   pc-check-exit-code [FLAGS]"
+    echo ""
+    echo "Examples: "
+    echo "   pc-check-exit-code \\"
+    echo "      -f /home/nagios/catalog-prod/logs/harvests/hlm_exit_code \\"
+    echo "      -l /home/nagios/catalog-prod/logs/harvests/hlm.log -n 30"
+    echo "     Exit with the code in hlm_exit_code and print the last 30 lines in hlm.log"
+    echo ""
+    echo "ARGS:"
+    echo "  -f|--file"
+    echo "      Required. Full path to the exit code file."
+    echo "  -l|--log"
+    echo "      Optional. Full path to the log file."
+    echo "  -m|--num-lines"
+    echo "      Optional. Number of lines to show from the log file. Requires --log to be specified."
+    echo "      Default: 20."
+    echo "  -v|--verbose"
+    echo "      Show verbose output."
+    echo ""
+}
+
+message() {
+    LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+    1>&2 echo "[${LOG_TS}] $*"
+}
+verbose() {
+    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
+}
+error() {
+    message "ERROR: $*"
+}
+die() {
+    error "$*"
+    exit 1
+}
+
+# Print help message
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    runhelp
+    exit 0
+fi
+
+# Parse command arguments
+parse_args() {
+    # Parse flag arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            ;;
+        -v|--verbose)
+            ARGS[VERBOSE]=1
+            shift;;
+        --debug)
+            ARGS[DEBUG]=1
+            ARGS[VERBOSE]=1
+            [[ -n "${ARGS[STACK]}${ARGS[ENV]}${ARGS[COMPOSE]}" ]] && \
+                die "The --debug flag must be set before STACK_NAME or TARGET_DIR."
+            shift;;
+        -f|--file)
+            shift
+            if [[ $# -eq 0 ]]; then
+                die "Missing value for option -f/--file"
+            fi
+            ARGS[FILE]="$1"
+            shift;;
+        -l|--log)
+            shift
+            if [[ $# -eq 0 ]]; then
+                die "Missing value for option -l/--log"
+            fi
+            ARGS[LOG]="$1"
+            if [[ ! -f "${ARGS[LOG]}" ]]; then
+                die "${ARGS[LOG]} is not a valid file"
+            fi
+            shift;;
+        -m|--num-lines)
+            shift
+            if [[ $# -eq 0 ]]; then
+                die "Missing value for option -m/--num-lines"
+            fi
+            ARGS[LINES]="$1"
+            NUM='^[0-9]+$'
+            if ! [[ "${ARGS[LINES]}" =~ ${NUM} ]] ; then
+                die "${ARGS[LINES]} is not a valid integer"
+            fi
+            shift;;
+        esac
+    done
+}
+
+# Does additional validation of the values in the command parameters
+# and will exit if not met
+catch_invalid_args() {
+    # Check for missing arguments
+    [[ -z "${ARGS[FILE]}" ]] \
+        && die "STACK_NAME is a required argument"
+}
+
+# Exit with the code from the given file
+main() {
+    verbose "Exit Code File:    ${ARGS[FILE]}"
+    verbose "Log File:          ${ARGS[LOG]}"
+    verbose "Number of Lines:   ${ARGS[LINES]}"
+
+    # Get the contents of the exit code file
+    if ! CODE=$(cat "${ARGS[FILE]}"); then
+        die "Failed to read contents of ${ARGS[FILE]}. ${CODE}"
+    fi
+    verbose "Exit code: ${CODE}"
+
+    # Get the specified number of lines from the log file
+    if [[ -f ${ARGS[LOG]} ]]; then
+        if ! LOG=$(tail -n "${ARGS[LINES]}" "${ARGS[LOG]}"); then
+            die "Failed to read log contents of ${ARGS[LOG]}. ${LOG}"
+        fi
+        message "Last ${ARGS[LINES]} line(s) from ${ARGS[LOG]}:"
+        echo "${LOG}"
+    fi
+
+    # Exit with the code from the file
+    verbose "Processing complete."
+    exit "${CODE}"
+}
+
+# Parse and start running
+parse_args "$@"
+catch_invalid_args
+main
+
+

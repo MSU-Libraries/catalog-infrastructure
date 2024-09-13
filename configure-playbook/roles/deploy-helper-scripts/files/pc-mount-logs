@@ -1,0 +1,174 @@
+#! /bin/bash
+#! /usr/local/bin/pc-mount-logs STACK_NAME TARGET_DIR
+
+# Set defaults
+default_args() {
+    declare -g -A ARGS
+    ARGS[STACK_NAME]=
+    ARGS[SOURCE_DIR]=
+    ARGS[TARGET_DIR]=
+    ARGS[REMOVE]=0
+    ARGS[DRYRUN]=0
+    ARGS[VERBOSE]=0
+    ARGS[DEBUG]=0
+}
+default_args
+
+runhelp() {
+    echo ""
+    echo "Make the bind mounts for the log volumes"
+    echo ""
+    echo "Usage:"
+    echo "   pc-mount-logs [FLAGS] STACK_NAME TARGET_DIR"
+    echo ""
+    echo "Examples: "
+    echo "   pc-mount-logs catalog-prod /home/nagios"
+    echo "     Make a read-only bind mount at /home/nagios/logs for the catalog-prod_log volume"
+    echo ""
+    echo "ARGS:"
+    echo "  STACK_NAME"
+    echo "      Required. Name of the stack to get the log volume for."
+    echo "  TARGET_DIR"
+    echo "      Required. Path to where a /logs directory should be created."
+    echo "  -r|--remove"
+    echo "      Remove the mount point instead of creating it."
+    echo "  -n|--dry-run"
+    echo "      Do not perform any actions, just dry-run the output."
+    echo "  -v|--verbose"
+    echo "      Show verbose output."
+    echo "  --debug"
+    echo "      Display debugging messages (should be set before passing command arguments)."
+    echo ""
+}
+
+message() {
+    LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+    1>&2 echo "[${LOG_TS}] $*"
+}
+verbose() {
+    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
+}
+error() {
+    message "ERROR: $*"
+}
+debug() {
+    [[ ${ARGS[DEBUG]} -eq 1 ]] && message "Debug: $*"
+}
+die() {
+    error "$*"
+    exit 1
+}
+
+# Print help message
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    runhelp
+    exit 0
+fi
+
+# Check if run as root
+if [[ $EUID -ne 0 ]]; then
+    die "The script must be run with sudo (unless using --help)."
+fi
+
+# Parse command arguments
+parse_args() {
+    local POSITION=0
+    # Parse flag arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            ;;
+        -n|--dry-run)
+            ARGS[DRYRUN]=1
+            ARGS[VERBOSE]=1
+            shift;;
+        -v|--verbose)
+            ARGS[VERBOSE]=1
+            shift;;
+        --debug)
+            ARGS[DEBUG]=1
+            ARGS[VERBOSE]=1
+            [[ -n "${ARGS[STACK]}${ARGS[ENV]}${ARGS[COMPOSE]}" ]] && \
+                die "The --debug flag must be set before STACK_NAME or TARGET_DIR."
+            shift;;
+        -r|--remove)
+            ARGS[REMOVE]=1
+            shift;;
+        *)
+            case "${POSITION}" in
+            0)
+                ARGS[STACK_NAME]=$1
+                ARGS[SOURCE_DIR]="/var/lib/docker/volumes/${ARGS[STACK_NAME]}_logs"
+                if [[ ! -d "${ARGS[SOURCE_DIR]}" ]]; then
+                    echo "ERROR: a log volume for the given stack does not exit. ${ARGS[SOURCE_DIR]}"
+                    exit 1
+                fi
+                POSITION=1
+                shift ;;
+            1)
+                ARGS[TARGET_DIR]=$1
+                shift ;;
+            2)
+                echo "ERROR: Unknown argument: $1"
+                runhelp
+                exit 1
+            esac
+        esac
+    done
+}
+
+# Does additional validation of the values in the command parameters
+# and will exit if not met
+catch_invalid_args() {
+    # Check for missing arguments
+    [[ -z "${ARGS[STACK_NAME]}" ]] \
+        && die "STACK_NAME is a required argument"
+    [[ -z "${ARGS[TARGET_DIR]}" ]] \
+        && die "TARGET_DIR is a required arugment"
+}
+
+create_mount() {
+    CMD="mkdir -p ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs &&
+    mount --bind ${ARGS[SOURCE_DIR]}/_data/ ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
+    mount -o remount,ro,bind ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/"
+    verbose "Command:  bash -c '$CMD'"
+    ([[ ${ARGS[DRYRUN]} -eq 0 ]] && sh -c "$CMD") || true
+}
+
+remove_mount() {
+    CMD="umount ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
+    rmdir ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
+    rmdir ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}"
+    verbose "Command:  bash -c '$CMD'"
+    ([[ ${ARGS[DRYRUN]} -eq 0 ]] && sh -c "$CMD") || true
+}
+
+# Make the bind mount for the log dir
+main() {
+    verbose "Stack:     ${ARGS[STACK_NAME]}"
+    verbose "Target Dir:   ${ARGS[TARGET_DIR]}"
+    verbose "Source Dir:   ${ARGS[SOURCE_DIR]}"
+
+    if [[ ${ARGS[REMOVE]} -eq 1 ]]; then
+        if ! OUTPUT=$(remove_mount); then
+            die "Failed to remove log volume mount. ${OUTPUT}"
+        fi
+    else
+        if ! OUTPUT=$(create_mount); then
+            die "Failed to create log volume mount. ${OUTPUT}"
+        fi
+    fi
+    # Show output of the deploy command if verbose enabled
+    [[ -n ${OUTPUT} ]] && verbose "${OUTPUT}"
+    verbose "Processing complete."
+}
+
+# Parse and start running
+parse_args "$@"
+catch_invalid_args
+main
+
+
