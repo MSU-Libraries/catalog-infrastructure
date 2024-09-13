@@ -39,3 +39,26 @@
     state: present
     key: "{{ root_pair.public_key }}"
     key_options: "from=\"{{ ansible_play_hosts_all | map('extract', hostvars, ['ansible_facts', 'default_ipv4', 'address']) | join(',') }}\""
+
+- name: Add .internal hostnames for cluster
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.split('.')[0] if '.' in item else item }}.internal {{ hostvars[item].ansible_facts.default_ipv4.address }}"
+    state: present
+  loop: "{{ ansible_play_hosts }}"
+
+- name: Add host fingerprints to known_hosts
+  ansible.posix.known_hosts:
+    name: "{{ item.split('.')[0] if '.' in item else item }}.internal"
+    key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 ' + (item.split('.')[0] if '.' in item else item) + '.internal') }}"
+    path: /root/.ssh/known_hosts
+    state: present
+  loop: "{{ ansible_play_hosts }}"
+
+- name: Add .internal domain search to resolved
+  lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: '^Domains='
+    line: 'Domains=internal'
+    state: present
+  notify: restart resolved
