@@ -43,7 +43,7 @@
 - name: Add .internal hostnames for cluster
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    line: "{{ item.split('.')[0] if '.' in item else item }}.internal {{ hostvars[item].ansible_facts.default_ipv4.address }}"
+    line: "{{ hostvars[item].ansible_facts.default_ipv4.address }} {{ item.split('.')[0] if '.' in item else item }}.internal"
     state: present
   loop: "{{ ansible_play_hosts }}"
 
