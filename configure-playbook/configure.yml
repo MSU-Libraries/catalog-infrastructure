@@ -19,6 +19,11 @@
         name: configure-ssh
     - include_role:
         name: root-node-access
+        apply:
+          tags:
+            - root-node-access
+      tags:
+        - root-node-access
     - include_role:
         name: configure-host
     - include_role:
