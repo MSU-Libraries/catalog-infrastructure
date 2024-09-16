@@ -2,13 +2,6 @@
 
 # shellcheck disable=SC2154
 
-### Setup root user
-sudo -Hsu root -- <<-ROOT
-    install -d -m 0700 /root/.ssh
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPEqI2N91B6/W5RA5OsgDmfn0OWBUSLUcRPQhZhuU/Ex root @ catalog nodes" >> /root/.ssh/authorized_keys
-    chmod 0600 /root/.ssh/authorized_keys
-ROOT
-
 ### Create ansible user
 sudo useradd -m -u 4444 -s /bin/bash ansible
 echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
