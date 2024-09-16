@@ -47,13 +47,20 @@
     state: present
   loop: "{{ ansible_play_hosts }}"
 
+- name: Lookup keyscans of hosts
+  # This would be easier done with a lookup('pipe', ...) but ansible is incapable of dealing with that
+  ansible.builtin.command:
+    cmd: ssh-keyscan -t ed25519 {{ item.split('.')[0] if '.' in item else item }}.internal
+  loop: "{{ ansible_play_hosts }}"
+  register: keyscans
+
 - name: Add host fingerprints to known_hosts
   ansible.builtin.known_hosts:
-    name: "{{ item.split('.')[0] if '.' in item else item }}.internal"
-    key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 ' + (item.split('.')[0] if '.' in item else item) + '.internal') }}"
+    name: "{{ item.cmd | last }}"
+    key: "{{ item.stdout }}"
     path: /root/.ssh/known_hosts
     state: present
-  loop: "{{ ansible_play_hosts }}"
+  loop: "{{ keyscans.results }}"
 
 - name: Add .internal domain search to resolved
   ansible.builtin.lineinfile:
@@ -61,4 +68,22 @@
     regexp: '^Domains='
     line: 'Domains=internal'
     state: present
-  notify: restart resolved
+
+- name: Restart resolved immediately
+  ansible.builtin.service:
+    name: systemd-resolved
+    state: restarted
+
+- name: Lookup keyscans of short hostnames
+  ansible.builtin.command:
+    cmd: ssh-keyscan -t ed25519 {{ item.split('.')[0] if '.' in item else item }}
+  loop: "{{ ansible_play_hosts }}"
+  register: keyscans2
+
+- name: Add host short hostname fingerprints to known_hosts
+  ansible.builtin.known_hosts:
+    name: "{{ item.cmd | last }}"
+    key: "{{ item.stdout }}"
+    path: /root/.ssh/known_hosts
+    state: present
+  loop: "{{ keyscans2.results }}"
