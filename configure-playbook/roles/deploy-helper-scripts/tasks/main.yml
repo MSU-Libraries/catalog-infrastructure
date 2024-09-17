@@ -79,3 +79,19 @@
     mode: '0644'
     owner: root
     group: root
+
+- name: Deploy pc-check-exit-code script
+  ansible.builtin.copy:
+    src: pc-check-exit-code
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-mount-logs script
+  ansible.builtin.copy:
+    src: pc-mount-logs
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
