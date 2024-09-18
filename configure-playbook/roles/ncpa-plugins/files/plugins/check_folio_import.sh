@@ -15,10 +15,12 @@ fi
 # Stack deployment name (e.g. catalog-beta, devel-nathan)
 DEPLOYMENT="$1"
 
-if ! OUTPUT=$(pc-check-exit-code -f /home/nagios/"${DEPLOYMENT}"/logs/harvests/folio_exit_code -l /home/nagios/"${DEPLOYMENT}"/logs/harvests/folio.log -v); then
-    echo "CRITICAL: ${OUTPUT}"
+if ! OUTPUT=$(pc-check-exit-code -f /home/nagios/"${DEPLOYMENT}"/logs/harvests/folio_exit_code -l /home/nagios/"${DEPLOYMENT}"/logs/harvests/folio.log -v 2>&1); then
+    echo "CRITICAL"
+    echo "${OUTPUT}"
     exit 2
 else
-    echo "OK: ${OUTPUT}"
+    echo "OK"
+    echo "${OUTPUT}"
     exit 0
 fi
