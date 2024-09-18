@@ -90,9 +90,6 @@ parse_args() {
                 die "Missing value for option -l/--log"
             fi
             ARGS[LOG]="$1"
-            if [[ ! -f "${ARGS[LOG]}" ]]; then
-                die "${ARGS[LOG]} is not a valid file"
-            fi
             shift;;
         -m|--num-lines)
             shift
