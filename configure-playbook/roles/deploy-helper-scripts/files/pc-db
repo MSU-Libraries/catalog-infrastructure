@@ -1,0 +1,65 @@
+#!/bin/bash
+
+SCRIPT_NAME=$( basename "$0" )
+SCRIPT_DIR=$( dirname "$0" )
+
+source "${SCRIPT_DIR}/pc-common"
+source "${SCRIPT_DIR}/pc-db-cluster"
+init_log_level
+
+run_help() {
+    echo ""
+    echo "Usage: Helper script to perform catalog database operations"
+    echo "  ./$SCRIPT_NAME STACK [PARAMS]"
+    EXAMPLE_FUNCS=($(list_funcs_startswith help_examples_))
+    if [[ ${#EXAMPLE_FUNCS} -gt 0 ]]; then
+        echo ""
+        echo "Examples:"
+    fi
+    # Display example lines from sourced files
+    # - Calls functions starting with `help_examples_`
+    # - Displays them line by line, auto-indenting as appropriate
+    for EXAMPLE_FUNC in "${EXAMPLE_FUNCS[@]}"; do
+        while IFS= read -r LINE; do
+            echo "  ${LINE#"${LINE%%[![:space:]]*}"}"
+        done < <($EXAMPLE_FUNC)
+    done
+    echo ""
+    echo "Parameters:"
+    echo "  STACK"
+    echo "      The name of the stack to operate on. Required."
+    while IFS= read -r LINE; do
+        # Indent lines not starting with hyphen
+        if [[ $LINE != "-"* ]]; then
+            echo -n "    "
+        fi
+        # Trim leading whitespace, as we're handling indentation
+        echo "  ${LINE#"${LINE%%[![:space:]]*}"}"
+    done < <(printf '%s\n' "${FLAG_HELP[@]}")
+    echo "  -q|--quiet"
+    echo "      Don't output any messages unless an error is encountered."
+    echo "  -v|--verbose"
+    echo "      Show verbose output. Can be specified multiple times."
+    echo "  --debug"
+    echo "      Show debug output. Identical to passing -vvv flags."
+    echo ""
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help
+    exit 0
+fi
+
+declare -g ARG_STACK
+parse_args $(split_flags "$@")
+require_root
+HOOK_FUNCS=($(list_funcs_startswith pc_hook_))
+for HOOK_FUNC in "${HOOK_FUNCS[@]}"; do
+    ${HOOK_FUNC}
+    RC=$?
+    if [[ $RC -ne 255 ]]; then exit $RC; fi
+done
+die "Nothing to run. Exiting."
