@@ -1,5 +1,5 @@
-#! /bin/bash
-#! /usr/local/bin/pc-mount-logs STACK_NAME TARGET_DIR
+#!/bin/bash
+# /usr/local/bin/pc-mount-logs STACK_NAME TARGET_DIR
 
 # Set defaults
 default_args() {
@@ -23,13 +23,13 @@ runhelp() {
     echo ""
     echo "Examples: "
     echo "   pc-mount-logs catalog-prod /home/nagios"
-    echo "     Make a read-only bind mount at /home/nagios/logs for the catalog-prod_log volume"
+    echo "     Make a read-only bind mount at /home/nagios/STACK_NAME/logs for the catalog-prod_log volume"
     echo ""
     echo "ARGS:"
     echo "  STACK_NAME"
     echo "      Required. Name of the stack to get the log volume for."
     echo "  TARGET_DIR"
-    echo "      Required. Path to where a /logs directory should be created."
+    echo "      Required. Directory where STACK_NAME/logs mount will be created; will create if missing."
     echo "  -r|--remove"
     echo "      Remove the mount point instead of creating it."
     echo "  -n|--dry-run"
@@ -109,7 +109,7 @@ parse_args() {
                 POSITION=1
                 shift ;;
             1)
-                ARGS[TARGET_DIR]=$1
+                ARGS[TARGET_DIR]="${1%/}"
                 shift ;;
             2)
                 echo "ERROR: Unknown argument: $1"
