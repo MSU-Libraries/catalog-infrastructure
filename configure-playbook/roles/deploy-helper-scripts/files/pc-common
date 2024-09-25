@@ -1,10 +1,12 @@
 #!/bin/bash
 
+# shellcheck disable=SC2155,SC2029
+
 please_do_not_run_me() {
     # This script is a place to stored shared variables and functions used by other scripts.
     # Do not run this script directly; it does nothing.
-    if [[ $0 == ${BASH_SOURCE[0]} ]]; then
-        SCRIPT_NAME=$( basename "$0" )
+    if [[ $0 == "${BASH_SOURCE[0]}" ]]; then
+        declare SCRIPT_NAME=$( basename "$0" )
         echo "The $SCRIPT_NAME script is not intended to be run directly. Rather it contains"
         echo "shared code sourced by other pc-* scripts."
         exit 1
@@ -17,6 +19,7 @@ please_do_not_run_me
 init_log_level() {
     declare -g LOG_LEVEL=${1:-1}
     declare -g -r MSG_ERROR=-1
+    # shellcheck disable=SC2034
     declare -g -r MSG_QUIET=0
     declare -g -r MSG_WARNING=1
     declare -g -r MSG_INFO=2
@@ -27,7 +30,8 @@ init_log_level() {
 # Call all other functions starting with `init_args_` with intent
 # to declare and initialize defaults for argument variables
 init_args() {
-    declare -a INIT_ARGS_FUNCS=($(list_funcs_startswith init_args_))
+    declare -a INIT_ARGS_FUNCS
+    readarray -t INIT_ARGS_FUNCS < <(list_funcs_startswith init_args_)
     for INIT_ARGS_FUNC in "${INIT_ARGS_FUNCS[@]}"; do
         $INIT_ARGS_FUNC
     done
@@ -36,9 +40,10 @@ init_args() {
 # Print script messages to stderr, requires var MSG_LEVEL be set
 # Not to be called directly; use other print_* function instead.
 _print_text() {
-    if [[ $LOG_LEVEL -gt $MSG_LEVEL || $LOG_LEVEL -lt 0 ]]; then
-        LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
-        MSG="[${LOG_TS}] $*"
+    # shellcheck disable=SC2153
+    if [[ $LOG_LEVEL -ge $MSG_LEVEL || $LOG_LEVEL -lt 0 ]]; then
+        declare LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
+        declare MSG="[${LOG_TS}] $*"
         1>&2 echo "$MSG"
     fi
 }
@@ -62,7 +67,7 @@ print_error() {
 #   $2 : The exit code to use (default: 1)
 die() {
     print_error "$1"
-    exit ${2:-1}
+    exit "${2:-1}"
 }
 
 require_root() {
@@ -71,21 +76,59 @@ require_root() {
     fi
 }
 
+run_help() {
+    echo "Usage: $1"
+    echo "  ./$SCRIPT_NAME STACK [PARAMS]"
+    declare -a EXAMPLE_FUNCS
+    readarray -t EXAMPLE_FUNCS < <(list_funcs_startswith help_examples_)
+    if [[ ${#EXAMPLE_FUNCS[@]} -gt 0 ]]; then
+        echo ""
+        echo "Examples:"
+    fi
+    # Display example lines from sourced files
+    # - Calls functions starting with `help_examples_`
+    # - Displays them line by line, auto-indenting as appropriate
+    for EXAMPLE_FUNC in "${EXAMPLE_FUNCS[@]}"; do
+        while IFS= read -r LINE; do
+            echo "  ${LINE#"${LINE%%[![:space:]]*}"}"
+        done < <($EXAMPLE_FUNC)
+    done
+    echo ""
+    echo "Parameters:"
+    echo "  STACK"
+    echo "      The name of the stack to operate on. Required."
+    while IFS= read -r LINE; do
+        # Indent lines not starting with hyphen
+        if [[ $LINE != "-"* ]]; then
+            echo -n "    "
+        fi
+        # Trim leading whitespace, as we're handling indentation
+        echo "  ${LINE#"${LINE%%[![:space:]]*}"}"
+    done < <(printf '%s\n' "${FLAG_HELP[@]}")
+    echo "  -q|--quiet"
+    echo "      Don't output any messages unless an error is encountered."
+    echo "  -v|--verbose"
+    echo "      Show verbose output. Can be specified multiple times."
+    echo "  --debug"
+    echo "      Show debug output. Identical to passing -vvv flags."
+    echo ""
+}
+
 node_hostname() {
     hostname -s | sed -e "s/-[1-3]/-${1}/"
 }
 
 node_list() {
     for NODE in {1..3}; do
-        node_hostname $NODE
+        node_hostname "$NODE"
     done
 }
 
 # Given a set of arguments, split single char flags apart
 # E.g. "-vv -glt -- -bt --read-only myfile.txt" => "-v -v -g -l -t -bt --read-only myfile.txt"
 split_flags() {
-    local STOPFLAG=0
-    local -a NEWARGS
+    declare STOPFLAG=0
+    declare -a NEWARGS
     while [[ $# -gt 0 ]]; do
         if [[ $1 == '--' ]]; then
             STOPFLAG=1
@@ -104,9 +147,10 @@ split_flags() {
 }
 
 list_funcs_startswith() {
-    local -a FUNCS
+    declare -a FUNCS
     while IFS= read -r LINE; do
         if [[ $LINE == "$1"* ]]; then
+            # shellcheck disable=SC2206
             FUNCS+=($LINE)
         fi
     done < <(declare -F | sed -E 's/^declare -f //')
@@ -125,7 +169,8 @@ load_flags() {
     declare -g -A FLAG_DEFAULT_REGISTRY
     declare -g -A FLAG_PATTERN_REGISTRY
     declare -g -a FLAG_HELP
-    declare -a FLAG_ARGS_FUNCS=($(list_funcs_startswith parse_flags_))
+    declare -a FLAG_ARGS_FUNCS
+    readarray -t FLAG_ARGS_FUNCS < <(list_funcs_startswith parse_flags_)
     for FLAG_ARGS_FUNC in "${FLAG_ARGS_FUNCS[@]}"; do
         while IFS=$'\t' read -r VAR_NAME FLAG_PATTERN HELP_TEXT VAR_DEFAULT VAR_IS_BOOL; do
             declare NOT_BOOL_SUFFIX=
@@ -146,7 +191,7 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         for VAR_NAME in "${!FLAG_PATTERN_REGISTRY[@]}"; do
             case "$1" in
-            ${FLAG_PATTERN_REGISTRY[$VAR_NAME]})
+            "${FLAG_PATTERN_REGISTRY[$VAR_NAME]}")
                 if [[ ${FLAG_BOOL_REGISTRY[$VAR_NAME]} -eq 1 ]]; then
                     declare -g "$VAR_NAME=$(( ! FLAG_DEFAULT_REGISTRY[$VAR_NAME] ))"
                     shift
@@ -161,10 +206,6 @@ parse_args() {
         done
 
         case "$1" in
-        -h|--help)
-            run_help
-            exit 0
-            ;;
         -q|--quiet)
             (( LOG_LEVEL = 0 ))
             shift
@@ -181,6 +222,7 @@ parse_args() {
             # TODO: handle dynamic positional arguments (might be a tough problem)
             case "${POSITION}" in
             0)
+                # shellcheck disable=SC2034
                 ARG_STACK=$1
                 shift
                 ;;
@@ -194,9 +236,9 @@ parse_args() {
 }
 
 get_local_container() {
-    DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
-    SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
-    CONTAINER_NAME=
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
+    declare CONTAINER_NAME=
     while read -r LINE; do
         if [[ "$LINE" == "${DEPLOYMENT}-${SERVICE}"* ]]; then
             CONTAINER_NAME="$LINE"
@@ -207,56 +249,67 @@ get_local_container() {
 }
 
 get_node_container() {
-    NODE_HOSTNAME=$(node_hostname "$1")
-    DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
-    SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
-    CONTAINER_NAME=
+    declare NODE_HOSTNAME=$(node_hostname "$1")
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
+    declare CONTAINER_NAME=
     while read -r LINE; do
         if [[ "$LINE" == "${DEPLOYMENT}-${SERVICE}"* ]]; then
             CONTAINER_NAME="$LINE"
             break;
         fi
-    done < <( ssh $NODE_HOSTNAME "docker container ls -f 'status=running' -f 'name=${DEPLOYMENT}-' --format '{{ .Names }}'" )
+    done < <( ssh "$NODE_HOSTNAME" "docker container ls -f 'status=running' -f 'name=${DEPLOYMENT}-' --format '{{ .Names }}'" )
     printf '%s' "$CONTAINER_NAME"
 }
 
 run_on_node() {
-    NODE_HOSTNAME=$(node_hostname "$1")
-    CMD="$2"
+    declare NODE_HOSTNAME=$(node_hostname "$1")
+    declare CMD="$2"
 
-    ssh $NODE_HOSTNAME "$CMD"
+    ssh "$NODE_HOSTNAME" "$CMD"
 }
 
 run_in_local_service() {
-    DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
-    SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
-    CMD="$3"
-    CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" "$SERVICE")
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
+    declare CMD="$3"
+    declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" "$SERVICE")
 
-    docker exec -i "$CONTAINER_NAME" bash -c "$CMD"
+    docker exec -i "$CONTAINER_NAME" bash <<< "$CMD"
 }
 
 run_in_node_service() {
-    NODE_HOSTNAME=$(node_hostname "$1")
-    DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
-    SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
-    CMD="$4"
-    CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
+    declare NODE_HOSTNAME=$(node_hostname "$1")
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
+    declare CMD="$4"
+    declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
 
-    ssh $NODE_HOSTNAME "docker exec -i \"${CONTAINER_NAME}\" bash -c \"${CMD}\""
+    printf '%s\n' "$CMD" | ssh "$NODE_HOSTNAME" "docker exec -i $CONTAINER_NAME bash -"
 }
 
 mariadb_defaults_file() {
-    declare -g MARIADB_DEFAULTS_PATH
+    declare -g MARIADB_DEFAULTS_PATH;
     if [[ -z $MARIADB_DEFAULTS_PATH || ! -f $MARIADB_DEFAULTS_PATH ]]; then
-        MARIADB_DEFAULTS_PATH="$(mktemp -d)/.my.cnf"
-        echo "[client]"                                         > "$MARIADB_DEFAULTS_PATH"
-        chmod 600 "$MARIADB_DEFAULTS_PATH"
-        echo "user = root"                                     >> "$MARIADB_DEFAULTS_PATH"
-        echo "password = $(cat "$MARIADB_ROOT_PASSWORD_FILE")" >> "$MARIADB_DEFAULTS_PATH"
-        echo "database = vufind"                               >> "$MARIADB_DEFAULTS_PATH"
-    fi
-    printf '%s' "$MARIADB_DEFAULTS_PATH"
+        MARIADB_DEFAULTS_PATH="$(mktemp -d)/.my.cnf";
+        # shellcheck disable=SC2094
+        {
+            echo "[client]";
+            chmod 600 "$MARIADB_DEFAULTS_PATH";
+            echo "user = root";
+            echo "password = $(cat "$MARIADB_ROOT_PASSWORD_FILE")";
+            echo "database = vufind";
+        } > "$MARIADB_DEFAULTS_PATH";
+    fi;
+    printf '%s' "$MARIADB_DEFAULTS_PATH";
+}
+
+run_local_sql() {
+    declare DEPLOYMENT="$1"
+    declare QUERY="$2"
+    declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" mariadb_galera)
+
+    run_in_local_service "$DEPLOYMENT" mariadb_galera "$(declare -f mariadb_defaults_file); mariadb --defaults-file=\$(mariadb_defaults_file) -N -e $(printf '%q' "$QUERY")"
 }
 
 # Run a SQL query and set results as global variables
@@ -265,17 +318,17 @@ mariadb_defaults_file() {
 #   ROW_CNT (int): Number of rows returned. Always set.
 #   ROW_0 (array): The first row of values returned. Always set.
 #   ROW_N (where N is int, array): More rows of values returned. Only set if a row exists.
-run_local_sql() {
-    DEPLOYMENT="$1"
-    QUERY="$2"
-    CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" mariadb_galera)
+run_local_sql_to_rows() {
+    declare DEPLOYMENT="$1"
+    declare QUERY="$2"
+    declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" mariadb_galera)
 
     declare -g ROW_CNT=0
     declare -g -a ROW_$ROW_CNT=
     while read -r -a ROW_$ROW_CNT; do
         (( ROW_CNT+=1 ))
         declare -g -a ROW_$ROW_CNT
-    done < <( docker exec -i "${CONTAINER_NAME}" bash -c "$(declare -f mariadb_defaults_file); mariadb --defaults-file=\$(mariadb_defaults_file) -N -e $(printf '%q' "$QUERY")" )
+    done < <( run_local_sql "$DEPLOYMENT" "$QUERY" )
     ECODE=$?
     # For some added safety, remove the unused last row var
     unset ROW_$ROW_CNT
@@ -283,17 +336,25 @@ run_local_sql() {
 }
 
 run_sql_on_node() {
-    NODE_HOSTNAME=$(node_hostname "$1")
-    DEPLOYMENT="$2"
-    QUERY="$3"
-    CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" mariadb_galera)
+    declare NODE="$1"
+    declare DEPLOYMENT="$2"
+    declare QUERY="$3"
+
+    run_in_node_service "$NODE" "$DEPLOYMENT" mariadb_galera "$(declare -f mariadb_defaults_file); mariadb --defaults-file=\$(mariadb_defaults_file) -N -e $(printf '%q' "$QUERY")"
+}
+
+run_sql_on_node_to_rows() {
+    declare NODE="$1"
+    declare DEPLOYMENT="$2"
+    declare QUERY="$3"
+    declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" mariadb_galera)
 
     declare -g ROW_CNT=0
     declare -g -a ROW_$ROW_CNT=
-    while read -r -a ROW_$ROW_CNT; do
+    while IFS=$' \t' read -r -a ROW_$ROW_CNT; do
         (( ROW_CNT+=1 ))
         declare -g -a ROW_$ROW_CNT
-    done < <( ssh $NODE_HOSTNAME "$(declare -f mariadb_defaults_file); docker exec -i \"${CONTAINER_NAME}\" bash -c \"\$(declare -f mariadb_defaults_file); mariadb --defaults-file=\\\$(mariadb_defaults_file) -N -e $(sed -e 's/"/\\\\"/g' <<< $(printf '%q' "$QUERY"))\"" )
+    done < <( run_in_node_service "$NODE" "$DEPLOYMENT" mariadb_galera "$(declare -f mariadb_defaults_file); mariadb --defaults-file=\$(mariadb_defaults_file) -N -e $(printf '%q' "$QUERY")" )
     ECODE=$?
     # For some added safety, remove the unused last row var
     unset ROW_$ROW_CNT
