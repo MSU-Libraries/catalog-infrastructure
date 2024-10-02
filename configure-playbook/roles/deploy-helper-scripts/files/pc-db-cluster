@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# shellcheck disable=SC2155
+# shellcheck disable=SC2155,SC1091
 
 SCRIPT_DIR=$( dirname "$0" )
 source "${SCRIPT_DIR}/pc-common"
@@ -10,6 +10,8 @@ help_examples_db_cluster() {
     echo "# Provide instructions on recovering a broken Galera cluster for the devel-feature environment"
     echo "./$SCRIPT_NAME  devel-feature --recover-cluster"
 }
+
+# shellcheck disable=SC2034
 parse_flags_db_recover_cluster() {
     VAR_NAME=RECOVER_CLUSTER
     FLAG_PATTERN="--recover-cluster"
@@ -126,32 +128,32 @@ find_if_any_happy_galera_instance() {
     for NODE in {1..3}; do
         declare HAPPY=1
 
-        WSREP_CLUSTER_STATUS[$NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_status')
+        WSREP_CLUSTER_STATUS[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_status')
         if [[ ${WSREP_CLUSTER_STATUS[$NODE]} != "Primary" ]]; then
             print_verbose "PROBLEM: wsrep_cluster_status = ${WSREP_CLUSTER_STATUS[$NODE]}"
             HAPPY=0
         fi
-        WSREP_CLUSTER_SIZE[$NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_size')
+        WSREP_CLUSTER_SIZE[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_size')
         if [[ ${WSREP_CLUSTER_SIZE[$NODE]} != "3" ]]; then
             print_verbose "PROBLEM: wsrep_cluster_size = ${WSREP_CLUSTER_SIZE[$NODE]}"
             HAPPY=0
         fi
-        WSREP_LOCAL_STATE_COMMENT[$NODE]=$(sql_global_status "$NODE" 'wsrep_local_state_comment')
+        WSREP_LOCAL_STATE_COMMENT[NODE]=$(sql_global_status "$NODE" 'wsrep_local_state_comment')
         if [[ ${WSREP_LOCAL_STATE_COMMENT[$NODE]} != "Synced" ]]; then
             print_verbose "PROBLEM: wsrep_local_state_comment = ${WSREP_LOCAL_STATE_COMMENT[$NODE]}"
             HAPPY=0
         fi
-        WSREP_CONNECTED[$NODE]=$(sql_global_status "$NODE" 'wsrep_connected')
+        WSREP_CONNECTED[NODE]=$(sql_global_status "$NODE" 'wsrep_connected')
         if [[ ${WSREP_CONNECTED[$NODE]} != "ON" ]]; then
             print_verbose "PROBLEM: wsrep_connected = ${WSREP_CONNECTED[$NODE]}"
             HAPPY=0
         fi
-        WSREP_DESYNC[$NODE]=$(sql_global_variable "$NODE" 'wsrep_desync')
+        WSREP_DESYNC[NODE]=$(sql_global_variable "$NODE" 'wsrep_desync')
         if [[ ${WSREP_DESYNC[$NODE]} != "OFF" ]]; then
             print_verbose "PROBLEM: wsrep_desync = ${WSREP_DESYNC[$NODE]}"
             HAPPY=0
         fi
-        WSREP_CLUSTER_ADDRESS[$NODE]=$(sql_global_variable "$NODE" 'wsrep_cluster_address')
+        WSREP_CLUSTER_ADDRESS[NODE]=$(sql_global_variable "$NODE" 'wsrep_cluster_address')
         if [[ ${WSREP_CLUSTER_ADDRESS[$NODE]} != "gcomm://galera1,galera2,galera3" ]]; then
             print_verbose "PROBLEM: wsrep_cluster_address = ${WSREP_CLUSTER_ADDRESS[$NODE]}"
             HAPPY=0
@@ -167,7 +169,7 @@ find_if_any_happy_galera_instance() {
 check_cluster_state_uuid() {
     declare -g -a WSREP_CLUSTER_STATE_UUID
     for NODE in {1..3}; do
-        WSREP_CLUSTER_STATE_UUID[$NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_state_uuid')
+        WSREP_CLUSTER_STATE_UUID[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_state_uuid')
     done
     if [[ ${#WSREP_CLUSTER_STATE_UUID[@]} -ne 3 ]]; then
         print_verbose "Received clusters states from ${#WSREP_CLUSTER_STATE_UUID[@]} nodes (should be 3)"
