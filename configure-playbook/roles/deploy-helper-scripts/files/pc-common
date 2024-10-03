@@ -269,6 +269,16 @@ run_on_node() {
     ssh "$NODE_HOSTNAME" "$CMD"
 }
 
+run_on_all_nodes() {
+    declare CMD="$1"
+    declare NODE
+
+    for NODE in {1..3}; do
+        run_on_node "$NODE" "$CMD" &
+    done
+    wait
+}
+
 run_in_local_service() {
     declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
