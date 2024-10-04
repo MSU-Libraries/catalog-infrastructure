@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# shellcheck disable=SC2155,SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
+please_do_not_run_me
+
+help_examples_db_cluster() {
+    echo "# Provide instructions on recovering a broken Galera cluster for the devel-feature environment"
+    echo "./$SCRIPT_NAME  devel-feature --recover-cluster"
+}
+
+# shellcheck disable=SC2034
+parse_flags_db_recover_cluster() {
+    VAR_NAME=RECOVER_CLUSTER
+    FLAG_PATTERN="--recover-cluster"
+    HELP_TEXT="Run a diagnostic on a broken cluster and get instructions on how to fix it"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+required_params_recover_cluster() {
+    if [[ -z $ARG_STACK ]]; then
+        die "The STACK argument is required."
+    fi
+}
+
+pc_hook_recover_cluster() {
+    if [[ $ARG_RECOVER_CLUSTER -ne 1 ]]; then return 255; fi
+    required_params_recover_cluster
+    # Minimum LOG_LEVEL of 2 needed so INFO messages are displayed
+    LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+
+    print_verbose "Running DB cluster recovery helper."
+    print_info "This will attempt to verify MariaDB cluster status for $ARG_STACK and provide"
+    print_info "some guidance on helping recover the cluster if it is not optimal."
+    print_info
+    print_info "To begin, I will gather some information from the nodes and cluster..."
+
+    verify_node_connectivity
+    verify_service_exists
+    verify_sql_connection
+    find_if_any_happy_galera_instance
+    check_cluster_state_uuid
+    check_volume_content_size
+    find_nodes_which_appear_bootable
+    find_nodes_by_most_recent_changes
+
+# STEPS
+# - Check files on volume to see if there is a significant size difference
+#   - Significantly smaller meaning likely a problem
+# - Check grastate.dat to see if node appears to be bootstrappable
+# - Check files on volume to see which node appears to have the most recent changes
+# - If a node one node is running, ask user if they want instructions to force a bootstrap of another node (and then have the running node join that one)
+# - If multiple nodes are running, but not in the same cluster, select one that might be most recent but offer a selection of which node the user wants to become the data source for restored new cluster
+# - If node is bootstrappable and has a large set of data, this should be the node to start first
+# - If node is running okay, but other nodes are running and won't join, ask if user wants to wipe other nodes and have them join fresh
+# - If no node is running or bootstrappable, identify which node likely has the most recent data and ask user if they want instructions to start a new cluster from that node's data
+}
+
+verify_node_connectivity() {
+    for NODE in {1..3}; do
+        if ! run_on_node "$NODE" "true"; then
+            die "Could not connect to node ${NODEHOST}! All nodes must be online to recover a cluster."
+        fi
+    done
+    print_verbose "Verified all nodes are online and reachable."
+}
+
+verify_service_exists() {
+    declare SERVICE_JS=$( docker service ls --format json -f "name=$ARG_STACK-mariadb_galera" )
+    declare -g SERVICE_CNT=$( echo "$SERVICE_JS" | wc -l )
+    declare -g SERVICE_REP=$( jq -r .Replicas <<< "$SERVICE_JS" )
+    if [[ $SERVICE_CNT -gt 1 ]]; then
+        die "Multiple services match $ARG_STACK-mariadb_galera! I don't know how to handle this situation."
+    elif  [[ $SERVICE_CNT -lt 1 ]]; then
+        print_verbose "The docker service $ARG_STACK-mariadb_galera does not exist."
+    elif [[ $SERVICE_REP != "3/3 (max 1 per node)" ]]; then
+        print_verbose "Service not at expected 3/3 replicas: $SERVICE_REP"
+    else
+        print_verbose "Verified MariaDB service exists with replicas set to 3."
+    fi
+}
+
+verify_sql_connection() {
+    declare -g -a NODES_ONLINE
+    for NODE in {1..3}; do
+        if run_sql_on_node_to_rows "$NODE" "$ARG_STACK" "SELECT 1;" && [[ $ROW_CNT -eq 1 ]];
+        then
+            NODES_ONLINE+=("$NODE")
+        fi
+    done
+    print_verbose "Nodes which can be connected to: $(IFS=,; echo "${NODES_ONLINE[*]:-None}")"
+}
+
+_sql_global_like() {
+    declare NODE="$1"
+    declare TYPE="$2"
+    declare MATCH_LIKE="$3"
+    if run_sql_on_node_to_rows "$NODE" "$ARG_STACK" "SHOW GLOBAL ${TYPE@U} LIKE '${MATCH_LIKE}';" && [[ $ROW_CNT -eq 1 ]]
+    then
+        print_debug "${TYPE@u} '${MATCH_LIKE}' on node $NODE: ${ROW_0[1]}"
+
+        printf '%s' "${ROW_0[1]}"
+        return 0
+    fi
+    return 1
+}
+
+sql_global_variable() {
+    declare NODE="$1"
+    declare MATCH_LIKE="$2"
+    _sql_global_like "$NODE" 'variables' "$MATCH_LIKE"
+}
+
+sql_global_status() {
+    declare NODE="$1"
+    declare MATCH_LIKE="$2"
+    _sql_global_like "$NODE" 'status' "$MATCH_LIKE"
+}
+
+find_if_any_happy_galera_instance() {
+    declare -g -a WSREP_CLUSTER_STATUS WSREP_CLUSTER_SIZE WSREP_LOCAL_STATE_COMMENT
+    declare -g -a WSREP_CONNECTED WSREP_DESYNC WSREP_CLUSTER_ADDRESS
+    declare -g -a NODES_HAPPY
+    for NODE in {1..3}; do
+        declare HAPPY=1
+
+        WSREP_CLUSTER_STATUS[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_status')
+        if [[ ${WSREP_CLUSTER_STATUS[$NODE]} != "Primary" ]]; then
+            print_verbose "PROBLEM: wsrep_cluster_status = ${WSREP_CLUSTER_STATUS[$NODE]}"
+            HAPPY=0
+        fi
+        WSREP_CLUSTER_SIZE[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_size')
+        if [[ ${WSREP_CLUSTER_SIZE[$NODE]} != "3" ]]; then
+            print_verbose "PROBLEM: wsrep_cluster_size = ${WSREP_CLUSTER_SIZE[$NODE]}"
+            HAPPY=0
+        fi
+        WSREP_LOCAL_STATE_COMMENT[NODE]=$(sql_global_status "$NODE" 'wsrep_local_state_comment')
+        if [[ ${WSREP_LOCAL_STATE_COMMENT[$NODE]} != "Synced" ]]; then
+            print_verbose "PROBLEM: wsrep_local_state_comment = ${WSREP_LOCAL_STATE_COMMENT[$NODE]}"
+            HAPPY=0
+        fi
+        WSREP_CONNECTED[NODE]=$(sql_global_status "$NODE" 'wsrep_connected')
+        if [[ ${WSREP_CONNECTED[$NODE]} != "ON" ]]; then
+            print_verbose "PROBLEM: wsrep_connected = ${WSREP_CONNECTED[$NODE]}"
+            HAPPY=0
+        fi
+        WSREP_DESYNC[NODE]=$(sql_global_variable "$NODE" 'wsrep_desync')
+        if [[ ${WSREP_DESYNC[$NODE]} != "OFF" ]]; then
+            print_verbose "PROBLEM: wsrep_desync = ${WSREP_DESYNC[$NODE]}"
+            HAPPY=0
+        fi
+        WSREP_CLUSTER_ADDRESS[NODE]=$(sql_global_variable "$NODE" 'wsrep_cluster_address')
+        if [[ ${WSREP_CLUSTER_ADDRESS[$NODE]} != "gcomm://galera1,galera2,galera3" ]]; then
+            print_verbose "PROBLEM: wsrep_cluster_address = ${WSREP_CLUSTER_ADDRESS[$NODE]}"
+            HAPPY=0
+        fi
+
+        if [[ $HAPPY -eq 1 ]]; then
+            NODES_HAPPY+=("$NODE")
+        fi
+    done
+    print_verbose "Nodes which report as happy: $(IFS=,; echo "${NODES_HAPPY[*]:-None}")"
+}
+
+check_cluster_state_uuid() {
+    declare -g -a WSREP_CLUSTER_STATE_UUID
+    for NODE in {1..3}; do
+        WSREP_CLUSTER_STATE_UUID[NODE]=$(sql_global_status "$NODE" 'wsrep_cluster_state_uuid')
+    done
+    if [[ ${#WSREP_CLUSTER_STATE_UUID[@]} -ne 3 ]]; then
+        print_verbose "Received clusters states from ${#WSREP_CLUSTER_STATE_UUID[@]} nodes (should be 3)"
+    elif [[ $(printf "%s\n" "${WSREP_CLUSTER_STATE_UUID[@]}" | sort -u | wc -l) -eq 1 ]]; then
+        print_verbose "All nodes showing cluster state of: ${WSREP_CLUSTER_STATE_UUID[1]}"
+    else
+        print_verbose "Not all cluster states match. This can be normal on an actively changing cluster (but not for an idle one)."
+    fi
+}
+
+check_volume_content_size() {
+    :
+}
+
+find_nodes_which_appear_bootable() {
+    :
+}
+
+find_nodes_by_most_recent_changes() {
+    :
+}
