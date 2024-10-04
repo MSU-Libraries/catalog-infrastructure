@@ -1,5 +1,5 @@
-#! /bin/bash
-#! /usr/local/bin/pc-check-exit-code
+#!/bin/bash
+# /usr/local/bin/pc-check-exit-code
 
 # Set defaults
 default_args() {
@@ -90,9 +90,6 @@ parse_args() {
                 die "Missing value for option -l/--log"
             fi
             ARGS[LOG]="$1"
-            if [[ ! -f "${ARGS[LOG]}" ]]; then
-                die "${ARGS[LOG]} is not a valid file"
-            fi
             shift;;
         -m|--num-lines)
             shift
@@ -147,5 +144,3 @@ main() {
 parse_args "$@"
 catch_invalid_args
 main
-
-
