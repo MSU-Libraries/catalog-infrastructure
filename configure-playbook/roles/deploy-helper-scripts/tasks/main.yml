@@ -8,6 +8,14 @@
     group: deploy
     mode: '0640'
 
+- name: Deploy pc-common script functions
+  ansible.builtin.copy:
+    src: pc-common
+    dest: /usr/local/bin/
+    mode: '0644'
+    owner: root
+    group: deploy
+
 - name: Deploy pc-deploy script
   ansible.builtin.copy:
     src: pc-deploy
@@ -93,5 +101,21 @@
     src: pc-mount-logs
     dest: /usr/local/bin/
     mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-db script
+  ansible.builtin.copy:
+    src: pc-db
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-db-cluster hooks
+  ansible.builtin.copy:
+    src: pc-db-cluster
+    dest: /usr/local/bin/
+    mode: '0644'
     owner: root
     group: deploy
