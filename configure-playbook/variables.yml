@@ -1,7 +1,5 @@
 ---
 
-ansible_python_interpreter: "/usr/bin/env python3"
-
 CONREBOOT_VERSION: "0.2.5-2"
 
 # Create users config
