@@ -21,6 +21,7 @@ if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
     exit 0
 fi
 
+# shellcheck disable=SC2034
 declare -g ARG_STACK
 # shellcheck disable=SC2046
 parse_args $(split_flags "$@")
