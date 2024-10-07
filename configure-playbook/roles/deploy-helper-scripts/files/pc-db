@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# shellcheck disable=SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+
+source "${SCRIPT_DIR}/pc-common"
+source "${SCRIPT_DIR}/pc-db-cluster"
+# shellcheck disable=SC2119
+init_log_level
+
+run_help_db() {
+    run_help "Helper script to perform catalog database operations"
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_db
+    exit 0
+fi
+
+# shellcheck disable=SC2034
+declare -g ARG_STACK
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+require_root
+declare -a HOOK_FUNCS
+readarray -t HOOK_FUNCS < <(list_funcs_startswith pc_hook_)
+for HOOK_FUNC in "${HOOK_FUNCS[@]}"; do
+    ${HOOK_FUNC}
+    RC=$?
+    if [[ $RC -ne 255 ]]; then exit $RC; fi
+done
+die "Nothing to run. Exiting."
