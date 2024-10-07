@@ -1,8 +1,8 @@
 ---
 
-- name: Deploy docker_stats.sh script
+- name: Deploy pc-docker-stats script
   ansible.builtin.copy:
-    src: docker_stats.sh
+    src: pc-docker-stats
     dest: /usr/local/bin/
     mode: '0755'
     owner: root

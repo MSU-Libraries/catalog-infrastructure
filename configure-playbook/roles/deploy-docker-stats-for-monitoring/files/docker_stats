@@ -1,2 +1,2 @@
 # Run docker_stats.sh every minute
-* * * * * root /usr/local/bin/docker_stats.sh
+* * * * * root timeout 80 /usr/local/bin/pc-docker-stats
