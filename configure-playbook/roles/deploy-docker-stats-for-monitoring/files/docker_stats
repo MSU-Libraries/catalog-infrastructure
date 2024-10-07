@@ -1,0 +1,2 @@
+# Run docker_stats.sh every minute
+* * * * * root /usr/local/bin/docker_stats.sh

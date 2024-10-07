@@ -1,0 +1,17 @@
+---
+
+- name: Deploy docker_stats.sh script
+  ansible.builtin.copy:
+    src: docker_stats.sh
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Deploy docker_stats cron file
+  ansible.builtin.copy:
+    src: docker_stats
+    dest: /etc/cron.d/
+    mode: '0644'
+    owner: root
+    group: root
