@@ -7,9 +7,12 @@ default_args() {
     ARGS[STACK_NAME]=
     ARGS[SOURCE_DIR]=
     ARGS[TARGET_DIR]=
+    ARGS[UNIT_DIR]=
+    ARGS[SHARED_DIR]="/mnt/shared"
     ARGS[REMOVE]=0
     ARGS[DRYRUN]=0
     ARGS[VERBOSE]=0
+    ARGS[SERVICE]=0
     ARGS[DEBUG]=0
 }
 default_args
@@ -32,6 +35,8 @@ runhelp() {
     echo "      Required. Directory where STACK_NAME/logs mount will be created; will create if missing."
     echo "  -r|--remove"
     echo "      Remove the mount point instead of creating it."
+    echo "  -s|--create-service"
+    echo "      Create a service unit and timer to mount on reboot as well."
     echo "  -n|--dry-run"
     echo "      Do not perform any actions, just dry-run the output."
     echo "  -v|--verbose"
@@ -97,11 +102,15 @@ parse_args() {
         -r|--remove)
             ARGS[REMOVE]=1
             shift;;
+        -s|--create-service)
+            ARGS[SERVICE]=1
+            shift;;
         *)
             case "${POSITION}" in
             0)
                 ARGS[STACK_NAME]=$1
                 ARGS[SOURCE_DIR]="/var/lib/docker/volumes/${ARGS[STACK_NAME]}_logs"
+                ARGS[UNIT_DIR]="/home/deploy/${ARGS[STACK_NAME]}"
                 if [[ ! -d "${ARGS[SOURCE_DIR]}" ]]; then
                     echo "ERROR: a log volume for the given stack does not exit. ${ARGS[SOURCE_DIR]}"
                     exit 1
@@ -130,20 +139,102 @@ catch_invalid_args() {
         && die "TARGET_DIR is a required arugment"
 }
 
+# Mount the volume
 create_mount() {
+    # Remove the mount first, to avoid duplicate mount points
+    remove_mount
+
+    # Create the new mount
     CMD="mkdir -p ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs &&
-    mount --bind ${ARGS[SOURCE_DIR]}/_data/ ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
-    mount -o remount,ro,bind ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/"
+    mount --bind -o ro ${ARGS[SOURCE_DIR]}/_data/ ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/"
     verbose "Command:  bash -c '$CMD'"
-    ([[ ${ARGS[DRYRUN]} -eq 0 ]] && sh -c "$CMD") || true
+    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+        if ! OUTPUT=$(bash -c "$CMD"); then
+            die "Failed to mount into shared dir. ${OUTPUT}"
+        fi
+    fi
+
 }
 
+# Create a systemd service and timer to mount on reboot
+create_service() {
+    # Create the service unit and timer to remount on restart
+    CMD="mkdir -p ${ARGS[UNIT_DIR]} &&
+    sudo mkdir -p ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts"
+    verbose "Command:  bash -c '$CMD'"
+    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+        if ! OUTPUT=$(bash -c "$CMD"); then
+            die "Failed to create directories for service unit and timer. ${OUTPUT}"
+        fi
+    fi
+
+    cat <<EOT > "${ARGS[UNIT_DIR]}"/"${ARGS[STACK_NAME]}".service
+[Unit]
+Description=Mount logs for ${ARGS[STACK_NAME]} on startup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/pc-mount-logs ${ARGS[STACK_NAME]} /home/nagios/ -v
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOT
+
+    cat <<EOT > "${ARGS[UNIT_DIR]}"/"${ARGS[STACK_NAME]}".timer
+[Unit]
+Description=Timer to mount logs for ${ARGS[STACK_NAME]} at startup
+
+[Timer]
+OnBootSec=1min
+
+[Install]
+WantedBy=timers.target
+EOT
+
+    CMD="sudo mv ${ARGS[UNIT_DIR]}/${ARGS[STACK_NAME]}.* ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/"
+    verbose "Command:  bash -c '$CMD'"
+    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+        if ! OUTPUT=$(bash -c "$CMD"); then
+            die "Failed to move service unit and timer into shared dir. ${OUTPUT}"
+        fi
+    fi
+
+    CMD="sudo systemctl enable ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/${ARGS[STACK_NAME]}.service &&
+    sudo systemctl enable ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/${ARGS[STACK_NAME]}.timer &&
+    sudo systemctl start ${ARGS[STACK_NAME]}.timer"
+    verbose "Command:  bash -c '$CMD'"
+    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+        if ! OUTPUT=$(bash -c "$CMD"); then
+            die "Failed to enable/start the service and/or timer. ${OUTPUT}"
+        fi
+    fi
+}
+
+# Unmount the log dir
 remove_mount() {
     CMD="umount ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
     rmdir ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}/logs/ &&
     rmdir ${ARGS[TARGET_DIR]}/${ARGS[STACK_NAME]}"
     verbose "Command:  bash -c '$CMD'"
     ([[ ${ARGS[DRYRUN]} -eq 0 ]] && sh -c "$CMD") || true
+}
+
+# Remove the systemd service and timer
+remove_service() {
+    # Check if the services exist, and if so, remove them
+    if systemctl list-units --full -all | grep -q "${ARGS[STACK_NAME]}.service"; then
+        CMD="sudo systemctl stop ${ARGS[STACK_NAME]}.service &&
+        sudo systemctl stop ${ARGS[STACK_NAME]}.timer &&
+        sudo systemctl disable ${ARGS[STACK_NAME]}.service &&
+        sudo systemctl disable ${ARGS[STACK_NAME]}.timer"
+        if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
+            if ! OUTPUT=$(bash -c "$CMD"); then
+                die "Failed to disable the service and/or timer. ${OUTPUT}"
+            fi
+        fi
+    fi
+
 }
 
 # Make the bind mount for the log dir
@@ -156,9 +247,19 @@ main() {
         if ! OUTPUT=$(remove_mount); then
             die "Failed to remove log volume mount. ${OUTPUT}"
         fi
+        if ! OUTPUT=$(remove_service); then
+            die "Failed to service for volume mount. ${OUTPUT}"
+        fi
     else
-        if ! OUTPUT=$(create_mount); then
-            die "Failed to create log volume mount. ${OUTPUT}"
+
+        if [[ ${ARGS[SERVICE]} -eq 1 ]]; then
+            if ! OUTPUT=$(create_service); then
+                die "Failed to create service for log volume mount. ${OUTPUT}"
+            fi
+        else
+            if ! OUTPUT=$(create_mount); then
+                die "Failed to create log volume mount. ${OUTPUT}"
+            fi
         fi
     fi
     # Show output of the deploy command if verbose enabled

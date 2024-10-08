@@ -5,6 +5,12 @@ Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
                         !/usr/bin/mv /home/deploy/*..* /mnt/shared/*..*, \
                         /usr/bin/rm -rf /mnt/shared/local/*, \
                         !/usr/bin/rm -rf /mnt/shared/local/*..*, \
-                        /usr/local/bin/pc-mount-logs *
+                        /usr/local/bin/pc-mount-logs *, \
+                        /usr/bin/systemctl enable /mnt/shared/local/*, \
+                        !/usr/bin/systemctl enable /mnt/shared/local/*..*, \
+                        /usr/bin/systemctl start /mnt/shared/local/*, \
+                        !/usr/bin/systemctl start /mnt/shared/local/*..*, \
+                        /usr/bin/systemctl disable /mnt/shared/local/*, \
+                        !/usr/bin/systemctl disable /mnt/shared/local/*..*
 
 deploy  ALL=(root) NOPASSWD: DEPLOY_USER
