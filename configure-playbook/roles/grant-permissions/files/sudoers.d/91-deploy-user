@@ -8,6 +8,8 @@ Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
                         /usr/local/bin/pc-mount-logs *, \
                         /usr/bin/systemctl enable /mnt/shared/local/*, \
                         !/usr/bin/systemctl enable /mnt/shared/local/*..*, \
+                        /usr/bin/systemctl start /mnt/shared/local/*, \
+                        !/usr/bin/systemctl start /mnt/shared/local/*..*, \
                         /usr/bin/systemctl disable /mnt/shared/local/*, \
                         !/usr/bin/systemctl disable /mnt/shared/local/*..*
 
