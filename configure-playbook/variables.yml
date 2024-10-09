@@ -10,6 +10,7 @@ create_users:
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMx3hungOFLbay9EXucJLbI031/NTQla3f68knxyYi/o deploy@catalog
    pw_lock: true
+   node_ssh_access: true
 
  - name: colli372
    comment: 'Nathan Collins'
@@ -63,3 +64,4 @@ create_users:
    groups:
    public_keys:
      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICUeVTRB+vkwWULQQ0G04jhTGOM9HnD7+lMaYZGdskF5 root@storage-utility1
+   node_ssh_access: true

@@ -1,0 +1,20 @@
+---
+
+- name: Add .internal hostnames for cluster
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item].ansible_facts.default_ipv4.address }} {{ item.split('.')[0] if '.' in item else item }}.internal"
+    state: present
+  loop: "{{ ansible_play_hosts }}"
+
+- name: Add .internal domain search to resolved
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: '^Domains='
+    line: 'Domains=internal'
+    state: present
+
+- name: Restart resolved immediately
+  ansible.builtin.service:
+    name: systemd-resolved
+    state: restarted
