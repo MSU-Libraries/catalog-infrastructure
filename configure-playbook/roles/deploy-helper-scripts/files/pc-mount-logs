@@ -36,7 +36,7 @@ runhelp() {
     echo "  -r|--remove"
     echo "      Remove the mount point instead of creating it."
     echo "  -s|--create-service"
-    echo "      Create a service unit and timer to mount on reboot as well."
+    echo "      Create a service unit to mount on reboot as well."
     echo "  -n|--dry-run"
     echo "      Do not perform any actions, just dry-run the output."
     echo "  -v|--verbose"
@@ -156,15 +156,15 @@ create_mount() {
 
 }
 
-# Create a systemd service and timer to mount on reboot
+# Create a systemd service to mount on reboot
 create_service() {
-    # Create the service unit and timer to remount on restart
+    # Create the service unit to remount on restart
     CMD="mkdir -p ${ARGS[UNIT_DIR]} &&
-    sudo mkdir -p ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts"
+    mkdir -p ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts"
     verbose "Command:  bash -c '$CMD'"
     if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
         if ! OUTPUT=$(bash -c "$CMD"); then
-            die "Failed to create directories for service unit and timer. ${OUTPUT}"
+            die "Failed to create directories for service unit. ${OUTPUT}"
         fi
     fi
 
@@ -181,32 +181,20 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOT
 
-    cat <<EOT > "${ARGS[UNIT_DIR]}"/"${ARGS[STACK_NAME]}".timer
-[Unit]
-Description=Timer to mount logs for ${ARGS[STACK_NAME]} at startup
-
-[Timer]
-OnBootSec=1min
-
-[Install]
-WantedBy=timers.target
-EOT
-
-    CMD="sudo mv ${ARGS[UNIT_DIR]}/${ARGS[STACK_NAME]}.* ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/"
+    CMD="mv ${ARGS[UNIT_DIR]}/${ARGS[STACK_NAME]}.* ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/"
     verbose "Command:  bash -c '$CMD'"
     if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
         if ! OUTPUT=$(bash -c "$CMD"); then
-            die "Failed to move service unit and timer into shared dir. ${OUTPUT}"
+            die "Failed to move service unit into shared dir. ${OUTPUT}"
         fi
     fi
 
-    CMD="sudo systemctl enable ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/${ARGS[STACK_NAME]}.service &&
-    sudo systemctl enable ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/${ARGS[STACK_NAME]}.timer &&
-    sudo systemctl start ${ARGS[STACK_NAME]}.timer"
+    CMD="systemctl enable ${ARGS[SHARED_DIR]}/local/${ARGS[STACK_NAME]}/deploy/mounts/${ARGS[STACK_NAME]}.service &&
+    systemctl start ${ARGS[STACK_NAME]}.service"
     verbose "Command:  bash -c '$CMD'"
     if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
         if ! OUTPUT=$(bash -c "$CMD"); then
-            die "Failed to enable/start the service and/or timer. ${OUTPUT}"
+            die "Failed to enable/start the service. ${OUTPUT}"
         fi
     fi
 }
@@ -220,17 +208,15 @@ remove_mount() {
     ([[ ${ARGS[DRYRUN]} -eq 0 ]] && sh -c "$CMD") || true
 }
 
-# Remove the systemd service and timer
+# Remove the systemd service
 remove_service() {
     # Check if the services exist, and if so, remove them
     if systemctl list-units --full -all | grep -q "${ARGS[STACK_NAME]}.service"; then
-        CMD="sudo systemctl stop ${ARGS[STACK_NAME]}.service &&
-        sudo systemctl stop ${ARGS[STACK_NAME]}.timer &&
-        sudo systemctl disable ${ARGS[STACK_NAME]}.service &&
-        sudo systemctl disable ${ARGS[STACK_NAME]}.timer"
+        CMD="systemctl stop ${ARGS[STACK_NAME]}.service &&
+        systemctl disable ${ARGS[STACK_NAME]}.service"
         if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
             if ! OUTPUT=$(bash -c "$CMD"); then
-                die "Failed to disable the service and/or timer. ${OUTPUT}"
+                die "Failed to disable the service. ${OUTPUT}"
             fi
         fi
     fi
