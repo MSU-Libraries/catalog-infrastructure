@@ -18,12 +18,12 @@
     - include_role:
         name: configure-ssh
     - include_role:
-        name: root-node-access
+        name: internal-domains
         apply:
           tags:
-            - root-node-access
+            - internal-domains
       tags:
-        - root-node-access
+        - internal-domains
     - include_role:
         name: configure-host
     - include_role:
