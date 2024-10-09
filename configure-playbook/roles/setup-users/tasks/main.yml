@@ -82,10 +82,10 @@
 
 - name: User .ssh dir exists
   ansible.builtin.file:
-    path: {{ userhome.stdout }}/.ssh
+    path: "{{ userhome.stdout }}/.ssh"
     state: directory
-    owner: {{ user_dict.name }}
-    group: {{ user_dict.name }}
+    owner: "{{ user_dict.name }}"
+    group: "{{ user_dict.name }}"
     mode: '0700'
   when:
   - user_dict.name is defined
@@ -94,10 +94,10 @@
 - name: User SSH Key exists
   community.crypto.openssh_keypair:
     comment: "{{ user_dict.name }}@catalog"
-    path: {{ userhome.stdout }}/.ssh/id_ed25519
+    path: "{{ userhome.stdout }}/.ssh/id_ed25519"
     type: ed25519
-    owner: {{ user_dict.name }}
-    group: {{ user_dict.name }}
+    owner: "{{ user_dict.name }}"
+    group: "{{ user_dict.name }}"
     mode: '0600'
   run_once: true
   when:
@@ -107,7 +107,7 @@
 
 - name: Read user SSH Key
   ansible.builtin.slurp:
-    src: {{ userhome.stdout }}/.ssh/id_ed25519
+    src: "{{ userhome.stdout }}/.ssh/id_ed25519"
   run_once: true
   when:
   - user_dict.name is defined
@@ -117,9 +117,9 @@
 - name: Sync user SSH Key across nodes
   ansible.builtin.copy:
     content: '{{ user_keyfile.content | b64decode }}'
-    dest: {{ userhome.stdout }}/.ssh/id_ed25519
-    owner: {{ user_dict.name }}
-    group: {{ user_dict.name }}
+    dest: "{{ userhome.stdout }}/.ssh/id_ed25519"
+    owner: "{{ user_dict.name }}"
+    group: "{{ user_dict.name }}"
     mode: '0600'
   when:
   - user_dict.name is defined
@@ -127,7 +127,7 @@
 
 - name: Permit user SSH Key from catalog nodes only
   ansible.posix.authorized_key:
-    user: {{ user_dict.name }}
+    user: "{{ user_dict.name }}"
     state: present
     key: "{{ user_pair.public_key }}"
     key_options: "from=\"{{ ansible_play_hosts_all | map('extract', hostvars, ['ansible_facts', 'default_ipv4', 'address']) | join(',') }}\""
@@ -138,7 +138,7 @@
 - name: Lookup keyscans of hosts
   # This would be easier done with a lookup('pipe', ...) but ansible is incapable of dealing with that
   ansible.builtin.command:
-    cmd: ssh-keyscan -t ed25519 {{ item.split('.')[0] if '.' in item else item }}.internal
+    cmd: "ssh-keyscan -t ed25519 {{ item.split('.')[0] if '.' in item else item }}.internal"
   loop: "{{ ansible_play_hosts }}"
   when:
   - user_dict.name is defined
@@ -149,7 +149,7 @@
   ansible.builtin.known_hosts:
     name: "{{ item.cmd | last }}"
     key: "{{ item.stdout }}"
-    path: {{ userhome.stdout }}/.ssh/known_hosts
+    path: "{{ userhome.stdout }}/.ssh/known_hosts"
     state: present
   loop: "{{ keyscans.results }}"
   when:
@@ -169,7 +169,7 @@
   ansible.builtin.known_hosts:
     name: "{{ item.cmd | last }}"
     key: "{{ item.stdout }}"
-    path: {{ userhome.stdout }}/.ssh/known_hosts
+    path: "{{ userhome.stdout }}/.ssh/known_hosts"
     state: present
   loop: "{{ keyscans2.results }}"
   when:
