@@ -119,7 +119,7 @@ current_node() {
 }
 
 node_hostname() {
-    hostname -s | sed -e "s/-[1-3]/-${1}/"
+    echo "${DEPLOY_HOST_1:-$( hostname -s )}" | sed -e "s/-[1-3]/-${1}/"
 }
 
 node_list() {
