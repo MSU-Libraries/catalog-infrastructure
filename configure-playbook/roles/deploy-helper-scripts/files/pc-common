@@ -262,7 +262,7 @@ get_node_container() {
             CONTAINER_NAME="$LINE"
             break;
         fi
-    done < <( ssh "$NODE_HOSTNAME" "docker container ls -f 'status=running' -f 'name=${DEPLOYMENT}-' --format '{{ .Names }}'" )
+    done < <( ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker container ls -f 'status=running' -f 'name=${DEPLOYMENT}-' --format '{{ .Names }}'" )
     printf '%s' "$CONTAINER_NAME"
 }
 
@@ -270,7 +270,7 @@ run_on_node() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
     declare CMD="$2"
 
-    ssh "$NODE_HOSTNAME" "$CMD"
+    ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "$CMD"
 }
 
 run_on_all_nodes() {
@@ -299,7 +299,7 @@ run_in_node_service() {
     declare CMD="$4"
     declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
 
-    printf '%s\n' "$CMD" | ssh "$NODE_HOSTNAME" "docker exec -i $CONTAINER_NAME bash -"
+    printf '%s\n' "$CMD" | ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker exec -i $CONTAINER_NAME bash -"
 }
 
 mariadb_defaults_file() {
