@@ -119,6 +119,7 @@ current_node() {
 }
 
 node_hostname() {
+    # shellcheck disable=SC2001
     echo "${DEPLOY_HOST_1:-$( hostname -s )}" | sed -e "s/-[1-3]/-${1}/"
 }
 
