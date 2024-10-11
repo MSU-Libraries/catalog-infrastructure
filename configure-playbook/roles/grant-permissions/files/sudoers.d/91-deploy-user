@@ -4,6 +4,7 @@ Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
                         /usr/bin/mv /home/deploy/* /mnt/shared/*, \
                         !/usr/bin/mv /home/deploy/*..* /mnt/shared/*..*, \
                         /usr/bin/rm -rf /mnt/shared/local/*, \
+                        /usr/bin/rm -f /mnt/shared/docker_stats/*, \
                         !/usr/bin/rm -rf /mnt/shared/local/*..*, \
                         /usr/local/bin/pc-mount-logs *
 
