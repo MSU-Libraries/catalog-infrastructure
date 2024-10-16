@@ -181,11 +181,11 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOT
 
-    CMD="mv ${ARGS[UNIT_DIR]}/${ARGS[STACK_NAME]}.service /etc/system.d/system/"
+    CMD="mv ${ARGS[UNIT_DIR]}/${ARGS[STACK_NAME]}.service /etc/systemd/system/"
     verbose "Command:  bash -c '$CMD'"
     if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
         if ! OUTPUT=$(bash -c "$CMD"); then
-            die "Failed to move service unit into /etc/system.d/system/. ${OUTPUT}"
+            die "Failed to move service unit into /etc/systemd/system/. ${OUTPUT}"
         fi
     fi
 
@@ -214,7 +214,7 @@ remove_service() {
     if systemctl list-units --full -all | grep -q "${ARGS[STACK_NAME]}.service"; then
         CMD="systemctl stop ${ARGS[STACK_NAME]}.service &&
         systemctl disable ${ARGS[STACK_NAME]}.service &&
-        rm /etc/system.d/system/${ARGS[STACK_NAME]}.service"
+        rm /etc/systemd/system/${ARGS[STACK_NAME]}.service"
         if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
             if ! OUTPUT=$(bash -c "$CMD"); then
                 die "Failed to remove the service. ${OUTPUT}"
