@@ -27,7 +27,9 @@ services:
       - "--providers.docker.network=public"
       - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.aws.lib.msu.edu`)'
       - "--entrypoints.msul-http-ent.address=:80"
+      - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entrypoints.msul-https-ent.address=:443"
+      - "--entrypoints.msul-https-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entryPoints.msul-https-ent.forwardedHeaders.trustedIPs=10.0.0.0/16"
       - "--log"
       - "--log.level=ERROR"
