@@ -27,7 +27,9 @@ services:
       - "--providers.docker.network=public"
       - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.aws.lib.msu.edu`)'
       - "--entrypoints.msul-http-ent.address=:80"
+      - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entrypoints.msul-https-ent.address=:443"
+      - "--entrypoints.msul-https-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entryPoints.msul-https-ent.forwardedHeaders.trustedIPs=10.0.0.0/16"
       - "--log"
       - "--log.level=ERROR"
@@ -97,6 +99,13 @@ services:
         - "traefik.http.middlewares.remove-prefix.redirectregex.permanent=true"
         # IP restrictions middleware
         - "traefik.http.middlewares.ip-campus.ipallowlist.sourcerange=35.8.0.0/13,35.20.0.0/14"
+        # Emergency brakes on overload situation
+        # - median request time over 2 seconds (all requests, not just VuFind pages)
+        # - 40% or higher network failure (e.g. timeout or dropped packet)
+        # - 40% or higher ratio of 5XX HTTP responses compared to all responses
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 2000 \
+          || NetworkErrorRatio() > 0.40 \
+          || ResponseCodeRatio(500, 600, 0, 600) > 0.40"
         # Traefik Dashboard HTTP
         - "traefik.http.routers.dashboard-http-router.entrypoints=msul-http-ent"
         - "traefik.http.routers.dashboard-http-router.middlewares=http-redirect"
