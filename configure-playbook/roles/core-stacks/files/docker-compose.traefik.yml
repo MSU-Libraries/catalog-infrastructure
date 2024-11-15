@@ -100,12 +100,15 @@ services:
         # IP restrictions middleware
         - "traefik.http.middlewares.ip-campus.ipallowlist.sourcerange=35.8.0.0/13,35.20.0.0/14"
         # Emergency brakes on overload situation
-        # - median request time over 2 seconds (all requests, not just VuFind pages)
+        # - median request time over 5 seconds (all requests, not just VuFind pages)
         # - 40% or higher network failure (e.g. timeout or dropped packet)
         # - 40% or higher ratio of 5XX HTTP responses compared to all responses
-        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 4000 \
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 5000 \
           || NetworkErrorRatio() > 0.40 \
           || ResponseCodeRatio(500, 600, 0, 600) > 0.40"
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.checkperiod=15s"
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.fallbackduration=15s"
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.recoveryduration=15s"
         # Traefik Dashboard HTTP
         - "traefik.http.routers.dashboard-http-router.entrypoints=msul-http-ent"
         - "traefik.http.routers.dashboard-http-router.middlewares=http-redirect"
