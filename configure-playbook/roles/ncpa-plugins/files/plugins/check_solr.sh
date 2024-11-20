@@ -78,8 +78,10 @@ if [[ "${FIND_COLLECTIONS[*]}" != "${FOUND_COLLECTIONS[*]}" ]]; then
     exit 2
 fi
 
+NODE_INFO=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/info/system?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr&wt=json" )
 NODE_METRICS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/metrics?nodes=solr1:8983_solr,solr2:8983_solr,solr3:8983_solr\&prefix=SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs\&wt=json" )
 CLUSTER_STATUS=$( run_curl "http://\${SOLR_NODE}:8983/solr/admin/collections?action=CLUSTERSTATUS\&wt=json" )
+
 for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
     # Verify each node has one (and only one) replica for each collection
     REP_IDX=0
@@ -179,6 +181,18 @@ for COLLECTION in "${FIND_COLLECTIONS[@]}"; do
         exit 1
     fi
 done
+
+# Verify all nodes are reporting as part of the cluster
+declare -a NODE_LIST
+mapfile -t NODE_LIST < <( echo "$NODE_INFO" | jq -r ".[].node//empty" | sort)
+
+if [[ "${#NODE_LIST[@]}" -lt 2 ]]; then
+    echo "CRITICAL: Missing multiple nodes (found '${NODE_LIST[*]}')"
+    exit 2
+elif [[ "${#NODE_LIST[@]}" -lt 3 ]]; then
+    echo "WARNING: Missing node (found '${NODE_LIST[*]}')"
+    exit 1
+fi
 
 echo "Solr status OK for $DEPLOYMENT"
 exit 0
