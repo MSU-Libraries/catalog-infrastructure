@@ -1,0 +1,309 @@
+#!/bin/bash
+
+# shellcheck disable=SC2155,SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
+please_do_not_run_me
+
+init_log_level
+
+# Declare all of the full import steps
+declare -A STEP_FUNCS
+declare -a STEPS
+STEPS=(
+    "Run checks to verify the MariaDB service" \
+    "Run checks to verify the Solr service" \
+    "Verify the build container image" \
+    "Clear build container harvest directories" \
+    "Disable FOLIO cron" \
+    "Copy FOLIO harvest files"
+)
+STEP_FUNCS["Run checks to verify the MariaDB service"]="run_mariadb_checks"
+STEP_FUNCS["Run checks to verify the Solr service"]="run_solr_checks"
+STEP_FUNCS["Verify the build container image"]="verify_build_container_image"
+STEP_FUNCS["Clear build container harvest directories"]="clear_build_container_harvest_dirs"
+STEP_FUNCS["Disable FOLIO cron"]="disable_folio_cron"
+STEP_FUNCS["Copy FOLIO harvest files"]="copy_folio_harvest_files"
+
+run_help_full_import() {
+    run_help "Helper script to run a full import of the biblio collection"
+}
+
+### Script flags
+# shellcheck disable=SC2034
+parse_flags_step() {
+    VAR_NAME=STEP
+    FLAG_PATTERN="--step"
+    HELP_TEXT="Step to continue from"
+    VAR_DEFAULT=1
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_list() {
+    VAR_NAME=LIST
+    FLAG_PATTERN="--list"
+    HELP_TEXT="List all of the steps in the import"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_max_attempts() {
+    VAR_NAME=MAX_ATTEMPTS
+    FLAG_PATTERN="--max-attempts"
+    HELP_TEXT="Max attempts for any step before exiting"
+    VAR_DEFAULT=3
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+### Help examples
+help_examples_full_import() {
+    echo "# Run a full import from the first step"
+    echo "./$SCRIPT_NAME  catalog-prod"
+}
+
+help_examples_resume_import() {
+    echo "# Run a full import from the third step with verbose messages"
+    echo "./$SCRIPT_NAME  catalog-prod --step 3 -vv"
+}
+
+help_examples_list() {
+    echo "# List all of the full import steps"
+    echo "./$SCRIPT_NAME  catalog-prod --list"
+}
+
+### Import step functions
+
+## Run the NCPA checks for MariaDB services
+run_solr_checks() {
+    print_verbose "         -- Running NCPA check for Solr on all hosts"
+    run_on_all_nodes_with_retry "/usr/local/ncpa/plugins/check_solr.sh $ARG_STACK" "$ARG_MAX_ATTEMPTS"
+    return $?
+}
+
+## Run the NCPA checks for MariaDB services
+run_mariadb_checks() {
+    print_verbose "        -- Running NCPA check for MariaDB on all hosts"
+    run_on_all_nodes_with_retry "/usr/local/ncpa/plugins/check_galera.sh $ARG_STACK" "$ARG_MAX_ATTEMPTS"
+    return $?
+}
+
+## Verify the build container image matches the cron container
+verify_build_container_image() {
+    print_verbose "        -- Checking the image used on build image"
+    BUILD_IMAGE=$(get_service_image $ARG_STACK "catalog_build")
+    CRON_IMAGE=$(get_service_image $ARG_STACK "catalog_cron")
+    print_debug " -- Build Image: ${BUILD_IMAGE:=[None found]}. Cron Image: ${CRON_IMAGE:=[None found]}"
+
+    # Fail if the build image was not found
+    if [ -z "$BUILD_IMAGE" ] || [[ "$BUILD_IMAGE" == "[None found]" ]]; then
+        print_error "${RED}A build image was not found and is required for using this script${RESET}"
+        return 1
+    fi
+
+    # Ask the user to confirm if the build image doesn't match the cron image
+    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]]; then
+        print_error "${RED}Build container image does not match the cron container image!${RESET}" \
+            "\nBuild Image: ${BUILD_IMAGE}.\nCron Image: ${CRON_IMAGE}"
+        read -p "Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Cancelling import"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+## Clear out the harvest directories on the build container
+clear_build_container_harvest_dirs() {
+    print_verbose "        -- Locating build container"
+    NODE=$(get_service_node $ARG_STACK "catalog_build")
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
+        print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
+        return $EC
+    fi
+
+    print_verbose "        -- Clearing out local/harvest/folio/ and local/harvest/hlm/ on the build container"
+    run_in_node_service $NODE $ARG_STACK "catalog_build" \
+        "rm -rf local/harvest/folio/* && rm -rf local/harvest/hlm/*"
+    return $?
+}
+
+## Disable the FOLIO cron by creating the 'disabled' file in /mnt/shared
+disable_folio_cron() {
+    print_verbose "        -- Check to see if the cron needs to be disabled"
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/disabled ]]; then
+        print_verbose "        -- Already disabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Temporarily disabling the cron container from running FOLIO harvests/imports while we copy files"
+    touch /mnt/shared/oai/${ARG_STACK}/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
+            "mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
+        return $EC
+    fi
+
+    print_warning "${YELLOW}${BOLD}FOLIO imports are currently disabled for the cron container.${RESET}" \
+            "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
+            "mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
+    return $EC
+
+}
+
+## Copy the FOLIO harvest files to the location the build container will find them
+copy_folio_harvest_files() {
+    print_verbose "        -- Copying of the harvest files to harvest_folio_build"
+    CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/* /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
+        return $EC
+    fi
+
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt ]]; then
+        print_verbose "        -- Copying the last_harvest.txt file"
+        CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+        ${CMD}
+        EC=$?
+        if [[ $EC -ne 0 ]]; then
+            print_error "${RED}Failed to copy the last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
+            return $EC
+        fi
+    fi
+
+    return $EC
+}
+
+enable_folio_cron() {
+    return 0
+}
+
+
+## List all of the steps used in this script for a full import.
+## Called when running this script with --list
+pc_hook_list() {
+    LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+
+    if [[ $ARG_LIST -ne 1 ]]; then return 255; fi
+    
+    print_info "Steps for the full import command:"
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        print_info "$STEP -- ${key} (${STEP_FUNCS[$key]})"
+      ((STEP++))
+    done
+}
+
+## Run the full import steps, optionally starting from
+## a specific step based on the --step flag.
+pc_hook_full_import() {
+    LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+    TOTAL_RUNTIME=0
+
+    # Don't run anything if this was just a --list request
+    if [[ $ARG_LIST -eq 1 ]]; then return 255; fi
+
+    required_params_full_import
+
+    warn_if_not_in_screen
+
+    # TODO validate --step is valid
+
+    print_info "Running full import helper for stack '$ARG_STACK'."
+    print_info "Starting from step: $ARG_STEP"
+
+    # Loop through all of the steps for the full import and call each of those functions.
+    # If any of them returns a non-zero value, then stop.
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        # Check if we need to skip the step
+        if [[ $STEP -lt $ARG_STEP ]]; then
+            print_verbose "Skipping step $STEP ($key) (waiting for step $ARG_STEP)"
+            ((STEP++))
+            continue
+        fi
+
+        # Run the step function and capture the runtime and exit code
+        print_info "${BOLD}${YELLOW}Step: $STEP -- ${key}${RESET} (${STEP_FUNCS[$key]})"
+        START_TIME=$(date +%s)
+        ${STEP_FUNCS[$key]}
+        RC=$?
+        END_TIME=$(date +%s)
+        RUNTIME=$((END_TIME-START_TIME))
+        TOTAL_RUNTIME=$((TOTAL_RUNTIME+RUNTIME))
+        
+        # Stop processing if there was a failure
+        if [[ $RC -ne 0 ]]; then
+            print_error "${RED}Failed processing step $STEP${RESET}. "\
+                "${GREEN}Step $STEP runtime: $(format_seconds $RUNTIME)" \
+                "Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}." \
+                "\nTo retry from this step run: $( basename "$0" ) --step $STEP $ARG_STACK"
+            exit 1
+        fi
+
+        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in $(format_seconds $RUNTIME)${RESET}"
+        ((STEP++))
+    done
+
+    print_info "${BOLD}Completed processing${RESET}. ${GREEN}Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}"
+}
+
+
+### Helper functions
+
+## Given a number of seconds, convert that to D:H:M:S format
+## Args:
+##   $1: (int) number of seconds
+format_seconds() {
+    SECONDS=$1
+    date -ud "@$SECONDS" +"$(( SECONDS/3600/24 )):%H:%M:%S (D:H:M:S)"
+}
+
+## Check if this script is being run in a screen session
+## If not, ask the user to confirm if they want to continue
+warn_if_not_in_screen() {
+    if ! [[ "$TERM" == screen* ]]; then
+        read -p "This script will likely run for a long time. You are currently not running this in a screen session. Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            die "${RED}Cancelling import${RESET}"
+        fi
+    fi
+}
+
+required_params_full_import() {
+    if [[ -z $ARG_STACK ]]; then
+        die "The STACK argument is required."
+    fi
+}
+
+# Load dynamically created flags
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_full_import
+    exit 0
+fi
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+declare -a HOOK_FUNCS
+readarray -t HOOK_FUNCS < <(list_funcs_startswith pc_hook_)
+for HOOK_FUNC in "${HOOK_FUNCS[@]}"; do
+    ${HOOK_FUNC}
+    RC=$?
+    if [[ $RC -ne 255 ]]; then exit $RC; fi
+done
+die "Nothing to run. Exiting."
