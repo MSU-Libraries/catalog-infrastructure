@@ -302,8 +302,8 @@ get_service_image() {
     # the correct one (i.e. cron not croncache)
     # https://github.com/moby/moby/issues/32985
     IMAGE=$(ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker service ls --format='{{.Image}} {{.Name}}' -f 'name=${DEPLOYMENT}-${SERVICE}'")
-    IMAGE=$(echo $IMAGE | grep "${DEPLOYMENT}-${SERVICE}$" | awk '{print $1}')
-    printf '%s' $IMAGE
+    IMAGE=$(echo "$IMAGE" | grep "${DEPLOYMENT}-${SERVICE}$" | awk '{print $1}')
+    printf '%s' "$IMAGE"
 }
 
 get_service_node() {
@@ -316,8 +316,8 @@ get_service_node() {
     # https://github.com/moby/moby/issues/32985
     NODE=$(ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker service ps ${DEPLOYMENT}-${SERVICE} --format='{{.Node}} {{.Name}}' -f 'desired-state=running'")
     # Filter out services that don't match the name, get only the node name, get only the first result, get the 9th character (the node number)
-    NODE=$(echo $NODE | grep "${DEPLOYMENT}-${SERVICE}." | awk '{print $1}' | head -1 | cut -c9)
-    printf '%s' $NODE
+    NODE=$(echo "$NODE" | grep "${DEPLOYMENT}-${SERVICE}." | awk '{print $1}' | head -1 | cut -c9)
+    printf '%s' "$NODE"
 }
 
 run_on_node() {
@@ -473,4 +473,24 @@ run_sql_on_node_to_rows() {
     # For some added safety, remove the unused last row var
     unset ROW_$ROW_CNT
     return $ECODE
+}
+
+# Given a number of seconds, convert that to D:H:M:S format
+# Args:
+#   $1: (int) number of seconds
+format_seconds() {
+    SECONDS=$1
+    date -ud "@$SECONDS" +"$(( SECONDS/3600/24 )):%H:%M:%S (D:H:M:S)"
+}
+
+# Check if this script is being run in a screen session
+# If not, ask the user to confirm if they want to continue
+warn_if_not_in_screen() {
+    if ! [[ "$TERM" == screen* ]]; then
+        read -p "This script will likely run for a long time. You are currently not running this in a screen session. Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            die "${RED}Cancelling import${RESET}"
+        fi
+    fi
 }
