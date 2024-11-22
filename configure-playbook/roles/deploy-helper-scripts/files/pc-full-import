@@ -9,15 +9,36 @@ please_do_not_run_me
 init_log_level
 
 # Declare all of the full import steps
-declare -A STEP_FUNCS
-declare -a STEPS
+declare -A STEP_FUNCS # Track the functions to call for each step
+declare -A STEP_SECONDS # Track the runtime in seconds for each step
+declare -a STEPS # Define each step with a unique human readable name
 STEPS=(
     "Run checks to verify the MariaDB service" \
     "Run checks to verify the Solr service" \
     "Verify the build container image" \
     "Clear build container harvest directories" \
     "Disable FOLIO cron" \
-    "Copy FOLIO harvest files"
+    "Copy FOLIO harvest files" \
+    "Enable FOLIO cron" \
+    "Reset biblio-build" \
+    "Import FOLIO data" \
+    "Disable HLM cron" \
+    "Copy HLM harvest files" \
+    "Enable HLM cron" \
+    "Import HLM data" \
+    "Build the spellcheck indices" \
+    "Show collection counts" \
+    "Increase Solr memory" \
+    "Wait for the Solr service to update" \
+    "Wait for Solr to be healthy" \
+    "Run Solr collection swap" \
+    "Reset the last_harvest file" \
+    "Clear out swapped biblio-build" \
+    "Reset Solr memory" \
+    "Wait for the Solr service to update with original memory" \
+    "Wait for Solr to be healthy with original memory" \
+    "Rebuild the alphabrowse databases" \
+    "Add generated call numbers"
 )
 STEP_FUNCS["Run checks to verify the MariaDB service"]="run_mariadb_checks"
 STEP_FUNCS["Run checks to verify the Solr service"]="run_solr_checks"
@@ -25,6 +46,26 @@ STEP_FUNCS["Verify the build container image"]="verify_build_container_image"
 STEP_FUNCS["Clear build container harvest directories"]="clear_build_container_harvest_dirs"
 STEP_FUNCS["Disable FOLIO cron"]="disable_folio_cron"
 STEP_FUNCS["Copy FOLIO harvest files"]="copy_folio_harvest_files"
+STEP_FUNCS["Enable FOLIO cron"]="enable_folio_cron"
+STEP_FUNCS["Reset biblio-build"]="reset_biblio_build"
+STEP_FUNCS["Import FOLIO data"]="import_folio"
+STEP_FUNCS["Disable HLM cron"]="disable_hlm_cron"
+STEP_FUNCS["Copy HLM harvest files"]="copy_hlm_harvest_files"
+STEP_FUNCS["Enable HLM cron"]="enable_hlm_cron"
+STEP_FUNCS["Import HLM data"]="import_hlm"
+STEP_FUNCS["Build the spellcheck indices"]="build_spellcheck"
+STEP_FUNCS["Show collection counts"]="show_collection_counts"
+STEP_FUNCS["Increase Solr memory"]="increase_solr_memory"
+STEP_FUNCS["Wait for the Solr service to update"]="wait_for_solr_update"
+STEP_FUNCS["Wait for Solr to be healthy"]="run_solr_checks"
+STEP_FUNCS["Run Solr collection swap"]="solr_collection_swap"
+STEP_FUNCS["Reset the last_harvest file"]="reset_last_harvest"
+STEP_FUNCS["Clear out swapped biblio-build"]="reset_biblio_build"
+STEP_FUNCS["Reset Solr memory"]="reset_solr_memory"
+STEP_FUNCS["Wait for the Solr service to update with original memory"]="wait_for_solr_update"
+STEP_FUNCS["Wait for Solr to be healthy with original memory"]="run_solr_checks"
+STEP_FUNCS["Rebuild the alphabrowse databases"]="alphabrowse_rebuild"
+STEP_FUNCS["Add generated call numbers"]="add_generated_call_numbers"
 
 run_help_full_import() {
     run_help "Helper script to run a full import of the biblio collection"
@@ -32,10 +73,20 @@ run_help_full_import() {
 
 ### Script flags
 # shellcheck disable=SC2034
-parse_flags_step() {
-    VAR_NAME=STEP
-    FLAG_PATTERN="--step"
+parse_flags_first_step() {
+    VAR_NAME=FIRST_STEP
+    FLAG_PATTERN="--first-step"
     HELP_TEXT="Step to continue from"
+    VAR_DEFAULT=1
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_last_step() {
+    VAR_NAME=LAST_STEP
+    FLAG_PATTERN="--last-step"
+    HELP_TEXT="Last step to run"
     VAR_DEFAULT=1
     VAR_IS_BOOL=0
     format_flag_info
@@ -52,6 +103,26 @@ parse_flags_list() {
 }
 
 # shellcheck disable=SC2034
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="--dry-run"
+    HELP_TEXT="Display only the steps that would be run, perform no actions"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_yes() {
+    VAR_NAME=YES
+    FLAG_PATTERN="--yes"
+    HELP_TEXT="Bypass all user confirmation requests"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
 parse_flags_max_attempts() {
     VAR_NAME=MAX_ATTEMPTS
     FLAG_PATTERN="--max-attempts"
@@ -62,6 +133,7 @@ parse_flags_max_attempts() {
 }
 
 ### Help examples
+## TODO Add more examples with the new flags
 help_examples_full_import() {
     echo "# Run a full import from the first step"
     echo "./$SCRIPT_NAME  catalog-prod"
@@ -69,7 +141,7 @@ help_examples_full_import() {
 
 help_examples_resume_import() {
     echo "# Run a full import from the third step with verbose messages"
-    echo "./$SCRIPT_NAME  catalog-prod --step 3 -vv"
+    echo "./$SCRIPT_NAME  catalog-prod --first-step 3 -vv"
 }
 
 help_examples_list() {
@@ -96,8 +168,8 @@ run_mariadb_checks() {
 ## Verify the build container image matches the cron container
 verify_build_container_image() {
     print_verbose "        -- Checking the image used on build image"
-    BUILD_IMAGE=$(get_service_image $ARG_STACK "catalog_build")
-    CRON_IMAGE=$(get_service_image $ARG_STACK "catalog_cron")
+    BUILD_IMAGE=$(get_service_image "$ARG_STACK" "catalog_build")
+    CRON_IMAGE=$(get_service_image "$ARG_STACK" "catalog_cron")
     print_debug " -- Build Image: ${BUILD_IMAGE:=[None found]}. Cron Image: ${CRON_IMAGE:=[None found]}"
 
     # Fail if the build image was not found
@@ -107,7 +179,7 @@ verify_build_container_image() {
     fi
 
     # Ask the user to confirm if the build image doesn't match the cron image
-    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]]; then
+    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]] && [[ $ARG_YES -eq 0 ]]; then
         print_error "${RED}Build container image does not match the cron container image!${RESET}" \
             "\nBuild Image: ${BUILD_IMAGE}.\nCron Image: ${CRON_IMAGE}"
         read -p "Do you want to continue anyways? [Y/n] " -n 1 -r
@@ -123,7 +195,7 @@ verify_build_container_image() {
 ## Clear out the harvest directories on the build container
 clear_build_container_harvest_dirs() {
     print_verbose "        -- Locating build container"
-    NODE=$(get_service_node $ARG_STACK "catalog_build")
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
         print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
@@ -131,7 +203,7 @@ clear_build_container_harvest_dirs() {
     fi
 
     print_verbose "        -- Clearing out local/harvest/folio/ and local/harvest/hlm/ on the build container"
-    run_in_node_service $NODE $ARG_STACK "catalog_build" \
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
         "rm -rf local/harvest/folio/* && rm -rf local/harvest/hlm/*"
     return $?
 }
@@ -145,7 +217,7 @@ disable_folio_cron() {
     fi
 
     print_verbose "        -- Temporarily disabling the cron container from running FOLIO harvests/imports while we copy files"
-    touch /mnt/shared/oai/${ARG_STACK}/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled
+    touch /mnt/shared/oai/"${ARG_STACK}"/enabled && mv /mnt/shared/oai/"${ARG_STACK}"/enabled /mnt/shared/oai/"${ARG_STACK}"/disabled
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
@@ -157,12 +229,12 @@ disable_folio_cron() {
             "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
             "mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
     return $EC
-
 }
 
 ## Copy the FOLIO harvest files to the location the build container will find them
 copy_folio_harvest_files() {
     print_verbose "        -- Copying of the harvest files to harvest_folio_build"
+    print_verbose "$CMD"
     CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/* /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
     ${CMD}
     EC=$?
@@ -182,13 +254,122 @@ copy_folio_harvest_files() {
         fi
     fi
 
+    print_verbose "        -- Making a new last_harvest file with the current timestamp"
+    CMD="echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
+        return $EC
+    fi
+
     return $EC
 }
 
+## Re-enable the cron's harvest if required
 enable_folio_cron() {
+    print_verbose "        -- Check to see if the cron needs to be enabled"
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/enabled ]]; then
+        print_verbose "        -- Already enabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Enabling the cron container"
+    CMD="touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n${CMD}"
+        return $EC
+    fi
+
+    return $EC
+}
+
+## Clear our the biblio-build Solr collection
+reset_biblio_build() {
     return 0
 }
 
+## Import the FOLIO records on the build container
+import_folio() {
+    # TODO show FOLIO record count on biblio vs biblio-build
+    return 0
+}
+
+## Temporarily disable the HLM cron from harvesting new files
+disable_hlm_cron() {
+    return 0
+}
+
+## Copy the HLM harvest files to the build container
+copy_hlm_harvest_files() {
+    return 0
+}
+
+## Re-enable the HLM cron
+enable_hlm_cron() {
+    return 0
+}
+
+## Import the HLM records in the build container
+import_hlm() {
+    # TODO show HLM record count on biblio vs biblio-build
+    return 0
+}
+
+## Build the spellcheck indices on biblio-build
+build_spellcheck() {
+    return 0
+}
+
+## Show collection counts and get user confirmation to continue
+show_collection_counts() {
+    return 0
+}
+
+## Deploy compose file with increased memory allocation required for
+## doing a collection swap
+increase_solr_memory() {
+    return 0
+}
+
+## Wait for Solr service to update
+wait_for_solr_update() {
+    return 0
+}
+
+## Perform the collection swap
+solr_collection_swap() {
+    # Get the aliases currently to determine what to swap
+    # curl -s "http://solr:8983/solr/admin/collections?action=LISTALIASES" | grep biblio
+    return 0
+}
+
+## Set back the time on the last_harvest file
+reset_last_harvest() {
+    return 0
+}
+
+## Clear out the old collection, now in biblio-build, asking for user confirmation
+clear_out_biblio_build() {
+    return 0
+}
+
+## Redeploy Solr with the original memory
+reset_solr_memory() {
+    return 0
+}
+
+## Run the alphabrowse rebuild
+alphabrowse_rebuild() {
+    return 0
+}
+
+## Run the script to add generated call numbers from solr_solr
+add_generated_call_numbers() {
+    return 0
+}
 
 ## List all of the steps used in this script for a full import.
 ## Called when running this script with --list
@@ -196,11 +377,11 @@ pc_hook_list() {
     LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
 
     if [[ $ARG_LIST -ne 1 ]]; then return 255; fi
-    
-    print_info "Steps for the full import command:"
+
+    print_info "${BOLD}${GREEN}Steps for the full import command:${RESET}"
     STEP=1
     for key in "${STEPS[@]}"; do
-        print_info "$STEP -- ${key} (${STEP_FUNCS[$key]})"
+        print_info "${BOLD}${GREEN}$STEP ${RESET}-- ${key} (${STEP_FUNCS[$key]})"
       ((STEP++))
     done
 }
@@ -215,76 +396,111 @@ pc_hook_full_import() {
     if [[ $ARG_LIST -eq 1 ]]; then return 255; fi
 
     required_params_full_import
+    validate_step_params
 
-    warn_if_not_in_screen
+    if [[ $ARG_DRY_RUN -eq 0 ]] && [[ $ARG_YES -eq 0 ]]; then
+        warn_if_not_in_screen
+    fi
 
-    # TODO validate --step is valid
+    print_warning "${YELLOW}${BOLD}Do not run a pipeline for $ARG_STACK while running" \
+        "this script, it will interrupt processing and you will likely need to start over.${RESET}"
 
     print_info "Running full import helper for stack '$ARG_STACK'."
-    print_info "Starting from step: $ARG_STEP"
+    print_info "Starting from step: $ARG_FIRST_STEP and ending with step: $ARG_LAST_STEP"
 
     # Loop through all of the steps for the full import and call each of those functions.
     # If any of them returns a non-zero value, then stop.
     STEP=1
     for key in "${STEPS[@]}"; do
         # Check if we need to skip the step
-        if [[ $STEP -lt $ARG_STEP ]]; then
-            print_verbose "Skipping step $STEP ($key) (waiting for step $ARG_STEP)"
+        if [[ $STEP -gt $ARG_LAST_STEP ]]; then
+            print_verbose "Completed processing --last-step ($ARG_LAST_STEP), stopping."
+            break
+        fi
+        if [[ $STEP -lt $ARG_FIRST_STEP ]]; then
+            print_verbose "Skipping step $STEP ($key) (waiting for step $ARG_FIRST_STEP)"
             ((STEP++))
             continue
         fi
 
         # Run the step function and capture the runtime and exit code
         print_info "${BOLD}${YELLOW}Step: $STEP -- ${key}${RESET} (${STEP_FUNCS[$key]})"
+        if [[ $ARG_DRY_RUN -eq 1 ]]; then
+            ((STEP++))
+            continue
+        fi
         START_TIME=$(date +%s)
-        ${STEP_FUNCS[$key]}
+        ${STEP_FUNCS[$key]}when expan
         RC=$?
         END_TIME=$(date +%s)
         RUNTIME=$((END_TIME-START_TIME))
         TOTAL_RUNTIME=$((TOTAL_RUNTIME+RUNTIME))
-        
+        STEP_SECONDS[$key]=$(format_seconds $RUNTIME)
+
         # Stop processing if there was a failure
         if [[ $RC -ne 0 ]]; then
             print_error "${RED}Failed processing step $STEP${RESET}. "\
-                "${GREEN}Step $STEP runtime: $(format_seconds $RUNTIME)" \
+                "${GREEN}Step $STEP runtime: ${STEP_SECONDS[$key]}" \
                 "Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}." \
                 "\nTo retry from this step run: $( basename "$0" ) --step $STEP $ARG_STACK"
             exit 1
         fi
 
-        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in $(format_seconds $RUNTIME)${RESET}"
+        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in ${STEP_SECONDS[$key]}${RESET}"
         ((STEP++))
     done
 
-    print_info "${BOLD}Completed processing${RESET}. ${GREEN}Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}"
+    # Print success and a summary report
+    print_info "${BOLD}Completed processing${RESET}."
+    print_info "${BOLD}Summary:${RESET}"
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        # Don't report times on skipped steps
+        if [[ $STEP -lt $ARG_FIRST_STEP ]] || [[ $STEP -gt $ARG_LAST_STEP ]]; then
+            print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: Skipped${RESET}"
+            ((STEP++))
+            continue
+        fi
+        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in ${STEP_SECONDS[$key]}${RESET}"
+        ((STEP++))
+    done
+    print_info "${BOLD}${GREEN}Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}"
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        print_info "${BOLD}Dry run complete${RESET}"
+    fi
 }
 
 
 ### Helper functions
 
-## Given a number of seconds, convert that to D:H:M:S format
-## Args:
-##   $1: (int) number of seconds
-format_seconds() {
-    SECONDS=$1
-    date -ud "@$SECONDS" +"$(( SECONDS/3600/24 )):%H:%M:%S (D:H:M:S)"
-}
-
-## Check if this script is being run in a screen session
-## If not, ask the user to confirm if they want to continue
-warn_if_not_in_screen() {
-    if ! [[ "$TERM" == screen* ]]; then
-        read -p "This script will likely run for a long time. You are currently not running this in a screen session. Do you want to continue anyways? [Y/n] " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            die "${RED}Cancelling import${RESET}"
-        fi
-    fi
-}
-
 required_params_full_import() {
     if [[ -z $ARG_STACK ]]; then
         die "The STACK argument is required."
+    fi
+}
+
+validate_step_params() {
+    INT_RE='^[0-9]+$'
+
+    # Validate that the step parameters are integers
+    if [[ -n $ARG_FIRST_STEP ]] && ! [[ $ARG_FIRST_STEP =~ $INT_RE ]] ; then
+        die "--first-step provided must be an integer"
+    fi
+    if [[ -n $ARG_LAST_STEP ]] && ! [[ $ARG_LAST_STEP =~ $INT_RE ]] ; then
+        die "--last-step provided must be an integer"
+    fi
+
+    # Validate that the last step number is greater than the first step
+    if [[ -n $ARG_FIRST_STEP ]] && [[ -n $ARG_LAST_STEP ]] && [[ $ARG_LAST_STEP -lt $ARG_FIRST_STEP ]]; then
+        die "--first-step parameter must be less than the --last-step."
+    fi
+
+    # Validate that the steps are one of the valid steps
+    if [[ -n $ARG_LAST_STEP ]] && [[ $ARG_LAST_STEP -ge ${#STEPS[@]} ]]; then
+        die "--last-step must be a step less than or equal to ${#STEPS[@]}. See --list to view all steps"
+    fi
+    if [[ -n $ARG_FIRST_STEP ]] && [[ $ARG_FIRST_STEP -lt 1 ]]; then
+        die "--first-step must be at least 1"
     fi
 }
 
