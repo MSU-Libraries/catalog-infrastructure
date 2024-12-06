@@ -37,6 +37,7 @@ services:
       - "--accesslog"
       - "--accesslog.filepath=/mnt/logs/access.log"
       - "--accesslog.fields.headers.names.User-Agent=keep"
+      - "--accesslog.fields.names.ClientHost=drop"
       - "--api.dashboard=true"
       #- "--api.debug=true"     # Enable this line to use Traefik's /debug
       - "--entrypoints.health-ent.address=:8081"
