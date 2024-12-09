@@ -67,7 +67,6 @@ module "cluster" {
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]
-  net_allow_inbound_ssh_alt = []
   net_allow_inbound_ncpa = [
     "35.8.220.0/22",
   ]
