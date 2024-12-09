@@ -30,6 +30,14 @@ resource "aws_security_group" "security_group_public_net" {
     ipv6_cidr_blocks = []
   }
   ingress {
+    description      = "SSH Alt"
+    from_port        = 222
+    to_port          = 222
+    protocol         = "tcp"
+    cidr_blocks      = var.net_allow_inbound_ssh_alt
+    ipv6_cidr_blocks = []
+  }
+  ingress {
     description      = "Nagios"
     from_port        = 5693
     to_port          = 5693

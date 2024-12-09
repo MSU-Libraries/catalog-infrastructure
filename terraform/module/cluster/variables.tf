@@ -46,6 +46,11 @@ variable "net_allow_inbound_ssh" {
   type = list(string)
 }
 
+variable "net_allow_inbound_ssh_alt" {
+  description = "Allow inbound to SSH alt port (222) these CIDRs"
+  type = list(string)
+}
+
 variable "net_allow_inbound_ncpa" {
   description = "Allow inbound to Nagios NCPA port these CIDRs"
   type = list(string)
