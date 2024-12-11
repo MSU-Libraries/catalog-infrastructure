@@ -145,6 +145,7 @@ Provision Shared Resources:
   artifacts:
     paths:
       - configure-playbook/hosts
+      - ~/.ssh/known_hosts
   script:
     - |
       # Run the playbook to provision
@@ -157,8 +158,6 @@ Provision Shared Resources:
   extends: .infra_template
   script:
     - |
-      ls;
-      ls configure-playbook;
       # Run the configure playbook
       if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
         cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
@@ -170,8 +169,6 @@ Provision Shared Resources:
   extends: .infra_template
   script:
     - |
-      ls;
-      ls configure-playbook;
       # Run the Ubuntu setup playbook
       if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
         scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
