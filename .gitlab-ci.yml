@@ -145,7 +145,7 @@ Provision Shared Resources:
   artifacts:
     paths:
       - configure-playbook/hosts
-      - ~/.ssh/known_hosts
+      - $HOME/.ssh/known_hosts
   script:
     - |
       # Run the playbook to provision
@@ -153,8 +153,9 @@ Provision Shared Resources:
       [[ -f terraform.tfvars.json ]] && mv terraform.tfvars.json terraform/env/${TERRAFORM_ENV}/;
       ansible-playbook provision-playbook/provision.yml;
       pwd;
-      ls ~;
-      ls ~/.ssh;
+      ls $HOME/.ssh;
+      cd $HOME;
+      pwd;
       echo "Provisioning for $TERRAFORM_ENV completed.";
 
 .configure_template:
