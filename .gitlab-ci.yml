@@ -5,6 +5,9 @@ stages:
   - devel
   - prod
 
+variables:
+  TZ: America/Detroit
+
 Shellcheck:
   stage: test
   image: alpine:latest
@@ -47,36 +50,82 @@ Provision Shared Resources:
   stage: shared
   variables:
     TERRAFORM_ENV: shared
-    TZ: America/Detroit
   artifacts:
     paths:
       - terraform.tfvars.json
 
-Provision Devel Cluster:
+1-Provision Devel Cluster:
   extends: .provision_template
   stage: devel
   environment:
     name: devel
   variables:
     TERRAFORM_ENV: devel
-    TZ: America/Detroit
+
+2-Ubuntu Setup Playbook Devel Cluster (Optional):
+  extends: .ubuntu_setup_template
+  stage: devel
+  environment:
+    name: devel
   needs:
     - job: Provision Shared Resources
       artifacts: true
+    - job: 1-Provision Devel Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: devel
 
-Provision Prod Cluster:
+3-Configure Devel Cluster:
+  extends: .configure_template
+  stage: devel
+  environment:
+    name: devel
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+    - job: 1-Provision Devel Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: devel
+
+1-Provision Prod Cluster:
   extends: .provision_template
   stage: prod
   environment:
     name: prod
   variables:
     TERRAFORM_ENV: prod
-    TZ: America/Detroit
+
+2-Ubuntu Setup Playbook Prod Cluster (Optional):
+  extends: .ubuntu_setup_template
+  stage: prod
+  environment:
+    name: prod
   needs:
     - job: Provision Shared Resources
       artifacts: true
+    - job: 1-Provision Prod Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: prod
 
-.provision_template:
+3-Configure Prod Cluster:
+  extends: .configure_template
+  stage: prod
+  environment:
+    name: prod
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+    - job: 1-Provision Prod Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: prod
+
+
+#### Templates ####
+
+.infra_template:
   tags:
     - msul-shared
   image: $CI_REGISTRY_IMAGE/ansible:latest
@@ -90,6 +139,12 @@ Provision Prod Cluster:
     - install -d -m 700 ~/.ssh/
     - ( umask 022; touch ~/.ssh/known_hosts )
     - ssh-keyscan ansible.lib.msu.edu >> ~/.ssh/known_hosts
+
+.provision_template:
+  extends: .infra_template
+  artifacts:
+    paths:
+      - configure-playbook/hosts
   script:
     - |
       # Run the playbook to provision
@@ -97,15 +152,31 @@ Provision Prod Cluster:
       [[ -f terraform.tfvars.json ]] && mv terraform.tfvars.json terraform/env/${TERRAFORM_ENV}/;
       ansible-playbook provision-playbook/provision.yml;
       echo "Provisioning for $TERRAFORM_ENV completed.";
+
+.configure_template:
+  extends: .infra_template
+  script:
+    - |
+      ls;
+      ls configure-playbook;
+      # Run the configure playbook
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
+        cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
+        ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts;
+        echo "Success! Servers for $TERRAFORM_ENV are now accessible.";
+      fi
+
+.ubuntu_setup_template:
+  extends: .infra_template
+  script:
+    - |
+      ls;
+      ls configure-playbook;
       # Run the Ubuntu setup playbook
       if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
         scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts";
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml";
-        # Run the configure playbook
-        cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
-        ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts;
-        echo "Success! Servers for $TERRAFORM_ENV are now accessible.";
       fi
 
 include:
