@@ -152,6 +152,9 @@ Provision Shared Resources:
       cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml;
       [[ -f terraform.tfvars.json ]] && mv terraform.tfvars.json terraform/env/${TERRAFORM_ENV}/;
       ansible-playbook provision-playbook/provision.yml;
+      pwd;
+      ls ~;
+      ls ~/.ssh;
       echo "Provisioning for $TERRAFORM_ENV completed.";
 
 .configure_template:
