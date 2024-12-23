@@ -204,7 +204,7 @@ clear_build_container_harvest_dirs() {
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
         print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
-        return $EC
+        return "$EC"
     fi
 
     print_verbose "        -- Clearing out local/harvest/folio/ and local/harvest/hlm/ on the build container"
@@ -227,13 +227,13 @@ disable_folio_cron() {
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
             "mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
-        return $EC
+        return "$EC"
     fi
 
     print_warning "${YELLOW}${BOLD}FOLIO imports are currently disabled for the cron container.${RESET}" \
             "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
             "mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
-    return $EC
+    return "$EC"
 }
 
 ## Copy the FOLIO harvest files to the location the build container will find them
@@ -245,7 +245,7 @@ copy_folio_harvest_files() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
-        return $EC
+        return "$EC"
     fi
 
     if [[ -f /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt ]]; then
@@ -255,7 +255,7 @@ copy_folio_harvest_files() {
         EC=$?
         if [[ $EC -ne 0 ]]; then
             print_error "${RED}Failed to copy the last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
-            return $EC
+            return "$EC"
         fi
     fi
 
@@ -265,10 +265,10 @@ copy_folio_harvest_files() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
-        return $EC
+        return "$EC"
     fi
 
-    return $EC
+    return "$EC"
 }
 
 ## Re-enable the cron's harvest if required
@@ -285,10 +285,10 @@ enable_folio_cron() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n${CMD}"
-        return $EC
+        return "$EC"
     fi
 
-    return $EC
+    return "$EC"
 }
 
 ## Clear our the biblio-build Solr collection
@@ -298,7 +298,7 @@ reset_biblio_build() {
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
         print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
-        return $EC
+        return "$EC"
     fi
 
     print_verbose "        -- Reset the biblio-build Solr collecion"
@@ -310,7 +310,7 @@ reset_biblio_build() {
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $COUNT ]]; then
         print_error "${RED}Failed to get the Solr count for biblio-build${RESET}. Exit code: $EC. Output: $COUNT"
-        return $EC
+        return "$EC"
     fi
     if [[ "$COUNT" -ne "0" ]]; then
         print_error "${RED}The biblio-build collection still has records in it!${RESET}. Current count: $COUNT"
@@ -329,20 +329,20 @@ import_folio() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to import FOLIO records into biblio-build${RESET}. Exit code: $EC."
-        return $EC
+        return "$EC"
     fi
 
     print_verbose "        -- Getting the biblio FOLIO record count"
     BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:folio*&rows=0\&useParams=" | jq -r '.response.numFound')
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
         print_error "${RED}Failed to get the FOLIO count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
-        return $EC
+        return "$EC"
     fi
     BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:folio*&rows=0\&useParams=" | jq -r '.response.numFound')
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
         print_error "${RED}Failed to get the FOLIO count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
-        return $EC
+        return "$EC"
     fi
 
     print_info "        -- FOLIO records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
@@ -365,13 +365,13 @@ disable_hlm_cron() {
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to disable the HLM cron${RESET}. Exit code: $EC. Command: \n" \
             "mv /mnt/shared/hlm/${ARG_STACK}/enabled /mnt/shared/hlm/${ARG_STACK}/disabled"
-        return $EC
+        return "$EC"
     fi
 
     print_warning "${YELLOW}${BOLD}HLM imports are currently disabled for the cron container.${RESET}" \
             "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
             "mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled"
-    return $EC
+    return "$EC"
 }
 
 ## Copy the HLM harvest files to the build container
@@ -384,9 +384,9 @@ copy_hlm_harvest_files() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
-        return $EC
+        return "$EC"
     fi
-    return $EC
+    return "$EC"
 }
 
 ## Re-enable the HLM cron
@@ -403,10 +403,10 @@ enable_hlm_cron() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to enable the HLM cron${RESET}. Exit code: $EC. Command: \n${CMD}"
-        return $EC
+        return "$EC"
     fi
 
-    return $EC
+    return "$EC"
 }
 
 ## Import the HLM records in the build container
@@ -418,20 +418,20 @@ import_hlm() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to import HLM records into biblio-build${RESET}. Exit code: $EC."
-        return $EC
+        return "$EC"
     fi
 
     print_verbose "        -- Getting the biblio HLM record count"
     BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:hlm*&rows=0\&useParams=" | jq -r '.response.numFound')
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
         print_error "${RED}Failed to get the HLM count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
-        return $EC
+        return "$EC"
     fi
     BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:hlm*&rows=0\&useParams=" | jq -r '.response.numFound')
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
         print_error "${RED}Failed to get the HLM count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
-        return $EC
+        return "$EC"
     fi
 
     print_info "        -- HLM records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
@@ -450,13 +450,13 @@ build_spellcheck() {
         EC=$?
         if [[ $EC -ne 0 ]]; then
             print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
-            return $EC
+            return "$EC"
         fi
         OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr1:8983/solr/biblio-build/select?q=*:*\&spellcheck.dictionary=basicSpell\&spellcheck=true\&spellcheck.build=true")
         EC=$?
         if [[ $EC -ne 0 ]]; then
             print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
-            return $EC
+            return "$EC"
         fi
     done
     # TODO maybe add file size checking in the future for
@@ -473,13 +473,13 @@ show_collection_counts() {
     BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:*&rows=0\&useParams=" | jq -r '.response.numFound')
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
         print_error "${RED}Failed to get the record count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
-        return $EC
+        return "$EC"
     fi
     BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:*&rows=0\&useParams=" | jq -r '.response.numFound')
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
         print_error "${RED}Failed to get the record count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
-        return $EC
+        return "$EC"
     fi
 
     print_info "        -- Records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
@@ -541,13 +541,13 @@ solr_collection_swap() {
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO ]]; then
         print_error "${RED}Failed to get the alias for biblo${RESET}. Exit code: $EC. Output: $BIBLIO"
-        return $EC
+        return "$EC"
     fi
     BUILD=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES" | jq -r '.aliases."biblio-build"')
     EC=$?
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO ]]; then
         print_error "${RED}Failed to get the alias for biblo-build${RESET}. Exit code: $EC. Output: $BUILD"
-        return $EC
+        return "$EC"
     fi
 
     print_verbose "         -- Current: biblio: $BIBLIO. build: $BUILD"
@@ -558,13 +558,13 @@ solr_collection_swap() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to swap biblio-build to $BIBLIO${RESET}. Exit code: $EC. Output: $OUTPUT"
-        return $EC
+        return "$EC"
     fi
     OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio\&collections=$BUILD")
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to swap biblio to $BUILD${RESET}. Exit code: $EC. Output: $OUTPUT"
-        return $EC
+        return "$EC"
     fi
 
     return 0
@@ -584,7 +584,7 @@ reset_last_harvest() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to make a backup of the last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
-        return $EC
+        return "$EC"
     fi
 
     CMD="mv /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt"
@@ -592,7 +592,7 @@ reset_last_harvest() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to restore the new last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
-        return $EC
+        return "$EC"
     fi
     return 0
 }
@@ -621,7 +621,7 @@ alphabrowse_rebuild() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to build the new alphabrowse databases on node ${NODE_ORDER[0]}${RESET}. Exit code: $EC."
-        return $EC
+        return "$EC"
     fi
 
     # Do the copy on the remaining nodes
@@ -631,7 +631,7 @@ alphabrowse_rebuild() {
         EC=$?
         if [[ $EC -ne 0 ]]; then
             print_error "${RED}Failed to copy the new alphabrowse databases on node ${COPY_NODE}${RESET}. Exit code: $EC."
-            return $EC
+            return "$EC"
         fi
     done
 
