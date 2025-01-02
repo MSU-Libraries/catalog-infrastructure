@@ -87,7 +87,7 @@ parse_flags_last_step() {
     VAR_NAME=LAST_STEP
     FLAG_PATTERN="--last-step"
     HELP_TEXT="Last step to run"
-    VAR_DEFAULT=1
+    VAR_DEFAULT=${#STEPS[@]}
     VAR_IS_BOOL=0
     format_flag_info
 }
@@ -790,6 +790,7 @@ fi
 
 # shellcheck disable=SC2046
 parse_args $(split_flags "$@")
+require_root
 declare -a HOOK_FUNCS
 readarray -t HOOK_FUNCS < <(list_funcs_startswith pc_hook_)
 for HOOK_FUNC in "${HOOK_FUNCS[@]}"; do
