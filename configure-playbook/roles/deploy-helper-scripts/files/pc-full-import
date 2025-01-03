@@ -216,7 +216,7 @@ clear_build_container_harvest_dirs() {
 ## Disable the FOLIO cron by creating the 'disabled' file in /mnt/shared
 disable_folio_cron() {
     print_verbose "        -- Check to see if the cron needs to be disabled"
-    if [[ -f /mnt/shared/oai/${ARG_STACK}/disabled ]]; then
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/disabled ]] && [[ ! -f /mnt/shared/oai/"${ARG_STACK}"/enabled ]]; then
         print_verbose "        -- Already disabled. Nothing to do."
         return 0
     fi
@@ -226,7 +226,7 @@ disable_folio_cron() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
-            "mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
+            "touch /mnt/shared/oai/"${ARG_STACK}"/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
         return "$EC"
     fi
 
@@ -238,9 +238,19 @@ disable_folio_cron() {
 
 ## Copy the FOLIO harvest files to the location the build container will find them
 copy_folio_harvest_files() {
-    print_verbose "        -- Copying of the harvest files to harvest_folio_build"
+    print_verbose "        -- Ensuring required directories exist"
+    CMD="mkdir -p /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/ /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
     print_verbose "$CMD"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to ensure required directories exist${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+
+    print_verbose "        -- Copying of the harvest files to harvest_folio_build"
     CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/* /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+    print_verbose "$CMD"
     ${CMD}
     EC=$?
     if [[ $EC -ne 0 ]]; then
@@ -259,12 +269,13 @@ copy_folio_harvest_files() {
         fi
     fi
 
+    # TODO didn't get to verify this on devel run
     print_verbose "        -- Making a new last_harvest file with the current timestamp"
-    CMD="echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt"
-    ${CMD}
+    echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt
     EC=$?
     if [[ $EC -ne 0 ]]; then
-        print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
+        print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n" \
+        "echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt"
         return "$EC"
     fi
 
@@ -274,17 +285,17 @@ copy_folio_harvest_files() {
 ## Re-enable the cron's harvest if required
 enable_folio_cron() {
     print_verbose "        -- Check to see if the cron needs to be enabled"
-    if [[ -f /mnt/shared/oai/${ARG_STACK}/enabled ]]; then
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/enabled ]] && [[ ! -f /mnt/shared/oai/${ARG_STACK}/disabled ]]; then
         print_verbose "        -- Already enabled. Nothing to do."
         return 0
     fi
 
     print_verbose "        -- Enabling the cron container"
-    CMD="touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
-    ${CMD}
+    touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled
     EC=$?
     if [[ $EC -ne 0 ]]; then
-        print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n${CMD}"
+        print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
+        "touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
         return "$EC"
     fi
 
@@ -316,7 +327,7 @@ reset_biblio_build() {
         print_error "${RED}The biblio-build collection still has records in it!${RESET}. Current count: $COUNT"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -398,11 +409,11 @@ enable_hlm_cron() {
     fi
 
     print_verbose "        -- Enabling the cron container"
-    CMD="touch /mnt/shared/hlm/${ARG_STACK}/disabled && mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled"
-    ${CMD}
+    touch /mnt/shared/hlm/${ARG_STACK}/disabled && mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled
     EC=$?
     if [[ $EC -ne 0 ]]; then
-        print_error "${RED}Failed to enable the HLM cron${RESET}. Exit code: $EC. Command: \n${CMD}"
+        print_error "${RED}Failed to enable the HLM cron${RESET}. Exit code: $EC. Command: \n" \
+        "touch /mnt/shared/hlm/${ARG_STACK}/disabled && mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled"
         return "$EC"
     fi
 
@@ -468,7 +479,7 @@ build_spellcheck() {
 ## Show collection counts and get user confirmation to continue
 show_collection_counts() {
     print_verbose "        -- Getting collection counts for user approval"
-    
+
 
     BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:*&rows=0\&useParams=" | jq -r '.response.numFound')
     if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
@@ -501,6 +512,7 @@ show_collection_counts() {
 ## Deploy compose file with increased memory allocation required for
 ## doing a collection swap
 increase_solr_memory() {
+    # TODO does not work on devel cluster. try on prod cluster
     print_verbose "        -- Deploying Solring with higher memory"
     sudo -Hu deploy bash -c "docker stack deploy --with-registry-auth -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud.yml\") -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud-highmem.yml\") \"$ARG_STACK-solr\""
     return 0
@@ -515,9 +527,9 @@ wait_for_solr_update() {
     while (( ATTEMPTS <= ARG_MAX_ATTEMPTS )); do
         STATUS=$(run_on_node 1 "docker service inspect $ARG_STACK-solr_solr --format='{{.UpdateStatus.State}}'")
         EC=$?
-        # Ignore template parse error because that means the stack was not updated recently and is not in the service
-        # info anymore
-        if [[ "$STATUS" == "completed" ]] || [[ "$STATUS" == *"template parsing error"* ]]; then
+        # Ignore empty status because it was the result of a template parse error
+        # that means the stack was not updated recently and is not in the service info anymore
+        if [[ "$STATUS" == "completed" ]] || [[ -z "$STATUS" ]]; then
             print_info "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Stack successfully updated"
             return 0
         elif [[ $EC -ne 0 ]]; then
@@ -535,7 +547,7 @@ wait_for_solr_update() {
 ## Perform the collection swap
 solr_collection_swap() {
     print_verbose "         -- Performing the collection swap in Solr"
-    
+
     print_verbose "         -- Determining what collections to swap based on current alias"
     BIBLIO=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES" | jq -r '.aliases.biblio')
     EC=$?
@@ -583,8 +595,12 @@ reset_last_harvest() {
     ${CMD}
     EC=$?
     if [[ $EC -ne 0 ]]; then
-        print_error "${RED}Failed to make a backup of the last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
-        return "$EC"
+        read -p "Failed to make a backup of the last_harvest file. Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Stopping processing"
+            return "$EC"
+        fi
     fi
 
     CMD="mv /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt"
@@ -717,7 +733,7 @@ pc_hook_full_import() {
             print_error "${RED}Failed processing step $STEP${RESET}. "\
                 "${GREEN}Step $STEP runtime: ${STEP_SECONDS[$key]}" \
                 "Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}." \
-                "\nTo retry from this step run: $( basename "$0" ) --step $STEP $ARG_STACK"
+                "\nTo retry from this step run: $( basename "$0" ) --first-step $STEP $ARG_STACK"
             exit 1
         fi
 
