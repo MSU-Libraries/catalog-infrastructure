@@ -226,7 +226,7 @@ disable_folio_cron() {
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
-            "touch /mnt/shared/oai/"${ARG_STACK}"/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
+            "touch /mnt/shared/oai/${ARG_STACK}/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
         return "$EC"
     fi
 
@@ -271,7 +271,7 @@ copy_folio_harvest_files() {
 
     # TODO didn't get to verify this on devel run
     print_verbose "        -- Making a new last_harvest file with the current timestamp"
-    echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt
+    date -u +"%Y-%m-%dT%H:%M:%SZ" > /mnt/shared/oai/"${ARG_STACK}"/harvest_folio_build/new_last_harvest.txt
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n" \
@@ -291,7 +291,7 @@ enable_folio_cron() {
     fi
 
     print_verbose "        -- Enabling the cron container"
-    touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled
+    touch /mnt/shared/oai/"${ARG_STACK}"/disabled && mv /mnt/shared/oai/"${ARG_STACK}"/disabled /mnt/shared/oai/"${ARG_STACK}"/enabled
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
@@ -409,7 +409,7 @@ enable_hlm_cron() {
     fi
 
     print_verbose "        -- Enabling the cron container"
-    touch /mnt/shared/hlm/${ARG_STACK}/disabled && mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled
+    touch /mnt/shared/hlm/"${ARG_STACK}"/disabled && mv /mnt/shared/hlm/"${ARG_STACK}"/disabled /mnt/shared/hlm/"${ARG_STACK}"/enabled
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to enable the HLM cron${RESET}. Exit code: $EC. Command: \n" \
