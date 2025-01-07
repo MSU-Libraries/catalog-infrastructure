@@ -1,6 +1,32 @@
 #!/bin/bash
 
-# shellcheck disable=SC2155,SC2029
+
+# disabling SC2034 because of un-used color codes
+# shellcheck disable=SC2155,SC2029,SC2034
+
+
+# Color codes to use in messages
+# Examples:
+#   print_info "${BOLD}My bold message${RESET} Not bold"
+#   print_info "${BOLD}${RED}My bold and red message${RESET} Normal text"
+BLACK='\x1B[0;30m'
+RED='\x1B[0;31m'
+GREEN='\x1B[0;32m'
+BROWN='\x1B[0;33m'
+BLUE='\x1B[0;34m'
+PURPLE='\x1B[0;35m'
+CYAN='\x1B[0;36m'
+LGRAY='\x1B[0;37m'
+GRAY='\x1B[1;30m'
+LRED='\x1B[1;31m'
+LGREEN='\x1B[1;32m'
+YELLOW='\x1B[1;33m'
+LBLUE='\x1B[1;34m'
+LPURPLE='\x1B[1;35m'
+LCYAN='\x1B[1;36m'
+WHITE='\x1B[1:37m'
+BOLD='\033[1m'
+RESET='\x1B[0m\033[0m'
 
 please_do_not_run_me() {
     # This script is a place to stored shared variables and functions used by other scripts.
@@ -44,7 +70,7 @@ _print_text() {
     if [[ $LOG_LEVEL -ge $MSG_LEVEL || $LOG_LEVEL -lt 0 ]]; then
         declare LOG_TS=$(date +%Y-%m-%d\ %H:%M:%S)
         declare MSG="[${LOG_TS}] $*"
-        1>&2 echo "$MSG"
+        1>&2 echo -e "$MSG"
     fi
 }
 print_warning() {
@@ -267,21 +293,94 @@ get_node_container() {
     printf '%s' "$CONTAINER_NAME"
 }
 
+get_service_image() {
+    declare NODE_HOSTNAME=$(node_hostname 1) # The service command returns identical results on all nodes
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
+
+    # Due to docker service's filter parameter not accepting exact matches, we have to post process to make sure we're matching
+    # the correct one (i.e. cron not croncache)
+    # https://github.com/moby/moby/issues/32985
+    IMAGE=$(ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker service ls --format='{{.Image}} {{.Name}}' -f 'name=${DEPLOYMENT}-${SERVICE}'")
+    IMAGE=$(echo "$IMAGE" | grep "${DEPLOYMENT}-${SERVICE}$" | awk '{print $1}')
+    printf '%s' "$IMAGE"
+}
+
+get_service_node() {
+    declare NODE_HOSTNAME=$(node_hostname 1) # The service command returns identical results on all nodes
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
+
+    # Due to docker service's filter parameter not accepting exact matches, we have to post process to make sure we're matching
+    # the correct one (i.e. cron not croncache)
+    # https://github.com/moby/moby/issues/32985
+    NODE=$(ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker service ps ${DEPLOYMENT}-${SERVICE} --format='{{.Node}} {{.Name}}' -f 'desired-state=running'")
+    # Filter out services that don't match the name, get only the node name, get only the first result, get the 9th character (the node number)
+    NODE=$(echo "$NODE" | grep "${DEPLOYMENT}-${SERVICE}." | awk '{print $1}' | head -1 | cut -c9)
+    printf '%s' "$NODE"
+}
+
 run_on_node() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
     declare CMD="$2"
 
     ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "$CMD"
+    EC=$?
+    return $EC
 }
 
 run_on_all_nodes() {
     declare CMD="$1"
     declare NODE
+    declare PIDS=()
+    declare ECS=()
 
+    # Kick off the command on each node, and capture the pid
     for NODE in {1..3}; do
         run_on_node "$NODE" "$CMD" &
+        PIDS+=($!)
     done
-    wait
+
+    # Wait for each command to complete and capture the exit code
+    for PID in "${PIDS[@]}"; do
+      wait "$PID"
+      ECS+=("$?")
+    done
+
+    # Check exit codes for errors
+    for ((i=0; i<${#ECS[@]}; i++)); do
+        if [[ ${ECS[$i]} -ne 0 ]]; then
+            NODE=$((i+1))
+            print_error "Command on node $NODE exited with code ${ECS[$i]}"
+            return "${ECS[$i]}"
+        fi
+    done
+
+    return 0
+}
+
+run_on_all_nodes_with_retry() {
+    declare CMD="$1"
+    declare MAX_ATTEMPTS="$2"
+    ATTEMPTS=1
+
+    print_verbose "(Attempt $ATTEMPTS/$ARG_MAX_ATTEMPTS) Attempting to run command on all hosts: $CMD"
+    while (( ATTEMPTS <= MAX_ATTEMPTS )); do
+        run_on_all_nodes "$CMD"
+        EC=$?
+        if [[ $EC -eq 0 ]]; then
+            print_info "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Successfully ran command on all hosts: $CMD"
+            return 0
+        else
+            print_error "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Failed to run command on all hosts. Exit Code: $EC. Command: $CMD"
+        fi
+        # Wait before retrying
+        sleep 1
+        ((ATTEMPTS++))
+    done
+
+    # If we reached this point, then we've gone past the max attempts
+    return 1
 }
 
 run_in_local_service() {
@@ -292,6 +391,18 @@ run_in_local_service() {
 
     docker exec -i "$CONTAINER_NAME" bash <<< "$CMD"
 }
+
+run_curl_in_local_service() {
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
+    declare CMD="$3"
+    declare EXTRAS="$4"     # E.g. -H "Conent-type: text/xml"
+    declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" "$SERVICE")
+
+    # shellcheck disable=SC2016
+    docker exec -i --env CURL="$CMD" --env EXTRAS="$EXTRAS" "${CONTAINER_NAME=}" bash -c 'curl -s "$(eval echo $CURL)" $EXTRAS'
+}
+
 
 run_in_node_service() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
@@ -322,7 +433,6 @@ mariadb_defaults_file() {
 run_local_sql() {
     declare DEPLOYMENT="$1"
     declare QUERY="$2"
-    declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" mariadb_galera)
 
     run_in_local_service "$DEPLOYMENT" mariadb_galera "$(declare -f mariadb_defaults_file); mariadb --defaults-file=\$(mariadb_defaults_file) -N -e $(printf '%q' "$QUERY")"
 }
@@ -374,4 +484,24 @@ run_sql_on_node_to_rows() {
     # For some added safety, remove the unused last row var
     unset ROW_$ROW_CNT
     return $ECODE
+}
+
+# Given a number of seconds, convert that to D:H:M:S format
+# Args:
+#   $1: (int) number of seconds
+format_seconds() {
+    SECONDS=$1
+    date -ud "@$SECONDS" +"$(( SECONDS/3600/24 )):%H:%M:%S (D:H:M:S)"
+}
+
+# Check if this script is being run in a screen session
+# If not, ask the user to confirm if they want to continue
+warn_if_not_in_screen() {
+    if ! [[ "$TERM" == screen* ]]; then
+        read -p "This script will likely run for a long time. You are currently not running this in a screen session. Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            die "${RED}Cancelling import${RESET}"
+        fi
+    fi
 }
