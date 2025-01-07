@@ -104,6 +104,14 @@
     owner: root
     group: deploy
 
+- name: Deploy pc-full-import script
+  ansible.builtin.copy:
+    src: pc-full-import
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
 - name: Deploy pc-db script
   ansible.builtin.copy:
     src: pc-db
