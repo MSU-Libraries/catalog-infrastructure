@@ -1,0 +1,824 @@
+#!/bin/bash
+
+# shellcheck disable=SC2155,SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
+please_do_not_run_me
+
+init_log_level
+
+# Declare all of the full import steps
+# Note: Some steps commented out but code left in place in case we end
+#       up using them in the future.
+declare -A STEP_FUNCS # Track the functions to call for each step
+declare -A STEP_SECONDS # Track the runtime in seconds for each step
+declare -a STEPS # Define each step with a unique human readable name
+STEPS=(
+    "Run checks to verify the MariaDB service" \
+    "Run checks to verify the Solr service" \
+    "Verify the build container image" \
+    "Clear build container harvest directories" \
+    "Disable FOLIO cron" \
+    "Copy FOLIO harvest files" \
+    "Enable FOLIO cron" \
+    "Reset biblio-build" \
+    "Import FOLIO data" \
+    "Disable HLM cron" \
+    "Copy HLM harvest files" \
+    "Enable HLM cron" \
+    "Import HLM data" \
+    "Build the spellcheck indices" \
+    "Show collection counts" \
+#    "Increase Solr memory"
+#    "Wait for the Solr service to update"
+#    "Wait for Solr to be healthy"
+    "Run Solr collection swap" \
+    "Reset the last_harvest file" \
+    "Clear out swapped biblio-build" \
+#    "Reset Solr memory"
+#    "Wait for the Solr service to update with original memory"
+#    "Wait for Solr to be healthy with original memory"
+    "Rebuild the alphabrowse databases" \
+    "Add generated call numbers"
+)
+STEP_FUNCS["Run checks to verify the MariaDB service"]="run_mariadb_checks"
+STEP_FUNCS["Run checks to verify the Solr service"]="run_solr_checks"
+STEP_FUNCS["Verify the build container image"]="verify_build_container_image"
+STEP_FUNCS["Clear build container harvest directories"]="clear_build_container_harvest_dirs"
+STEP_FUNCS["Disable FOLIO cron"]="disable_folio_cron"
+STEP_FUNCS["Copy FOLIO harvest files"]="copy_folio_harvest_files"
+STEP_FUNCS["Enable FOLIO cron"]="enable_folio_cron"
+STEP_FUNCS["Reset biblio-build"]="reset_biblio_build"
+STEP_FUNCS["Import FOLIO data"]="import_folio"
+STEP_FUNCS["Disable HLM cron"]="disable_hlm_cron"
+STEP_FUNCS["Copy HLM harvest files"]="copy_hlm_harvest_files"
+STEP_FUNCS["Enable HLM cron"]="enable_hlm_cron"
+STEP_FUNCS["Import HLM data"]="import_hlm"
+STEP_FUNCS["Build the spellcheck indices"]="build_spellcheck"
+STEP_FUNCS["Show collection counts"]="show_collection_counts"
+#STEP_FUNCS["Increase Solr memory"]="increase_solr_memory"
+#STEP_FUNCS["Wait for the Solr service to update"]="wait_for_solr_update"
+#STEP_FUNCS["Wait for Solr to be healthy"]="run_solr_checks"
+STEP_FUNCS["Run Solr collection swap"]="solr_collection_swap"
+STEP_FUNCS["Reset the last_harvest file"]="reset_last_harvest"
+STEP_FUNCS["Clear out swapped biblio-build"]="reset_biblio_build"
+#STEP_FUNCS["Reset Solr memory"]="reset_solr_memory"
+#STEP_FUNCS["Wait for the Solr service to update with original memory"]="wait_for_solr_update"
+#STEP_FUNCS["Wait for Solr to be healthy with original memory"]="run_solr_checks"
+STEP_FUNCS["Rebuild the alphabrowse databases"]="alphabrowse_rebuild"
+STEP_FUNCS["Add generated call numbers"]="add_generated_call_numbers"
+
+run_help_full_import() {
+    run_help "Helper script to run a full import of the biblio collection"
+}
+
+### Script flags
+# shellcheck disable=SC2034
+parse_flags_first_step() {
+    VAR_NAME=FIRST_STEP
+    FLAG_PATTERN="--first-step"
+    HELP_TEXT="Step to continue from"
+    VAR_DEFAULT=1
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_last_step() {
+    VAR_NAME=LAST_STEP
+    FLAG_PATTERN="--last-step"
+    HELP_TEXT="Last step to run"
+    VAR_DEFAULT=${#STEPS[@]}
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_list() {
+    VAR_NAME=LIST
+    FLAG_PATTERN="--list"
+    HELP_TEXT="List all of the steps in the import"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="--dry-run"
+    HELP_TEXT="Display only the steps that would be run, perform no actions"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_yes() {
+    VAR_NAME=YES
+    FLAG_PATTERN="--yes"
+    HELP_TEXT="Bypass all user confirmation requests"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+# shellcheck disable=SC2034
+parse_flags_max_attempts() {
+    VAR_NAME=MAX_ATTEMPTS
+    FLAG_PATTERN="--max-attempts"
+    HELP_TEXT="Max attempts for any step before exiting"
+    VAR_DEFAULT=3
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+### Help examples
+## TODO make sure $SCRIPT_NAME works after moved to /usr/local/bin
+help_examples_full_import() {
+    echo "# Run a full import from the first step"
+    echo "./$SCRIPT_NAME  catalog-prod"
+}
+
+help_examples_resume_import() {
+    echo "# Run a full import from the third step with verbose messages"
+    echo "./$SCRIPT_NAME  catalog-prod --first-step 3 -vv"
+}
+
+help_examples_partial_import() {
+    echo "# Show the dry run output of a full import from the third step through the ninth step"
+    echo "./$SCRIPT_NAME  catalog-prod --first-step 3 --last-step 9 --dry-run"
+}
+
+help_examples_list() {
+    echo "# List all of the full import steps"
+    echo "./$SCRIPT_NAME  catalog-prod --list"
+}
+
+### Import step functions
+
+## Run the NCPA checks for MariaDB services
+run_solr_checks() {
+    print_verbose "         -- Running NCPA check for Solr on all hosts"
+    run_on_all_nodes_with_retry "/usr/local/ncpa/plugins/check_solr.sh $ARG_STACK" "$ARG_MAX_ATTEMPTS"
+    return $?
+}
+
+## Run the NCPA checks for MariaDB services
+run_mariadb_checks() {
+    print_verbose "        -- Running NCPA check for MariaDB on all hosts"
+    run_on_all_nodes_with_retry "/usr/local/ncpa/plugins/check_galera.sh $ARG_STACK" "$ARG_MAX_ATTEMPTS"
+    return $?
+}
+
+## Verify the build container image matches the cron container
+verify_build_container_image() {
+    print_verbose "        -- Checking the image used on build image"
+    BUILD_IMAGE=$(get_service_image "$ARG_STACK" "catalog_build")
+    CRON_IMAGE=$(get_service_image "$ARG_STACK" "catalog_cron")
+    print_debug " -- Build Image: ${BUILD_IMAGE:=[None found]}. Cron Image: ${CRON_IMAGE:=[None found]}"
+
+    # Fail if the build image was not found
+    if [ -z "$BUILD_IMAGE" ] || [[ "$BUILD_IMAGE" == "[None found]" ]]; then
+        print_error "${RED}A build image was not found and is required for using this script${RESET}"
+        return 1
+    fi
+
+    # Ask the user to confirm if the build image doesn't match the cron image
+    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]] && [[ $ARG_YES -eq 0 ]]; then
+        print_error "${RED}Build container image does not match the cron container image!${RESET}" \
+            "\nBuild Image: ${BUILD_IMAGE}.\nCron Image: ${CRON_IMAGE}"
+        read -p "Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Cancelling import"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+## Clear out the harvest directories on the build container
+clear_build_container_harvest_dirs() {
+    print_verbose "        -- Locating build container"
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
+        print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
+        return "$EC"
+    fi
+
+    print_verbose "        -- Clearing out local/harvest/folio/ and local/harvest/hlm/ on the build container"
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
+        "rm -rf local/harvest/folio/* && rm -rf local/harvest/hlm/*"
+    return $?
+}
+
+## Disable the FOLIO cron by creating the 'disabled' file in /mnt/shared
+disable_folio_cron() {
+    print_verbose "        -- Check to see if the cron needs to be disabled"
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/disabled ]] && [[ ! -f /mnt/shared/oai/"${ARG_STACK}"/enabled ]]; then
+        print_verbose "        -- Already disabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Temporarily disabling the cron container from running FOLIO harvests/imports while we copy files"
+    touch /mnt/shared/oai/"${ARG_STACK}"/enabled && mv /mnt/shared/oai/"${ARG_STACK}"/enabled /mnt/shared/oai/"${ARG_STACK}"/disabled
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to disable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
+            "touch /mnt/shared/oai/${ARG_STACK}/enabled && mv /mnt/shared/oai/${ARG_STACK}/enabled /mnt/shared/oai/${ARG_STACK}/disabled"
+        return "$EC"
+    fi
+
+    print_warning "${YELLOW}${BOLD}FOLIO imports are currently disabled for the cron container.${RESET}" \
+            "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
+            "mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
+    return "$EC"
+}
+
+## Copy the FOLIO harvest files to the location the build container will find them
+copy_folio_harvest_files() {
+    print_verbose "        -- Ensuring required directories exist"
+    CMD="mkdir -p /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/ /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+    print_verbose "$CMD"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to ensure required directories exist${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+
+    print_verbose "        -- Copying of the harvest files to harvest_folio_build"
+    CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/processed/* /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+    print_verbose "$CMD"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt ]]; then
+        print_verbose "        -- Copying the last_harvest.txt file"
+        CMD="cp /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/"
+        ${CMD}
+        EC=$?
+        if [[ $EC -ne 0 ]]; then
+            print_error "${RED}Failed to copy the last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
+            return "$EC"
+        fi
+    fi
+
+    print_verbose "        -- Making a new last_harvest file with the current timestamp"
+    date -u +"%Y-%m-%dT%H:%M:%SZ" > /mnt/shared/oai/"${ARG_STACK}"/harvest_folio_build/new_last_harvest.txt
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to create a new last_harvest file${RESET}. Exit code: $EC. Command: \n" \
+        "echo $(date -u +"%Y-%m-%dT%H:%M:%SZ") > /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt"
+        return "$EC"
+    fi
+
+    return "$EC"
+}
+
+## Re-enable the cron's harvest if required
+enable_folio_cron() {
+    print_verbose "        -- Check to see if the cron needs to be enabled"
+    if [[ -f /mnt/shared/oai/${ARG_STACK}/enabled ]] && [[ ! -f /mnt/shared/oai/${ARG_STACK}/disabled ]]; then
+        print_verbose "        -- Already enabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Enabling the cron container"
+    touch /mnt/shared/oai/"${ARG_STACK}"/disabled && mv /mnt/shared/oai/"${ARG_STACK}"/disabled /mnt/shared/oai/"${ARG_STACK}"/enabled
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to enable the FOLIO cron${RESET}. Exit code: $EC. Command: \n" \
+        "touch /mnt/shared/oai/${ARG_STACK}/disabled && mv /mnt/shared/oai/${ARG_STACK}/disabled /mnt/shared/oai/${ARG_STACK}/enabled"
+        return "$EC"
+    fi
+
+    return "$EC"
+}
+
+## Clear our the biblio-build Solr collection
+reset_biblio_build() {
+    print_verbose "        -- Locating build container"
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $NODE ]]; then
+        print_error "${RED}Failed to get the node that the build container is running on${RESET}. Exit code: $EC. Output: $NODE"
+        return "$EC"
+    fi
+
+    print_verbose "        -- Reset the biblio-build Solr collecion"
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
+        "pc-import-folio --verbose --reset-solr --collection biblio-build --quick"
+
+    print_verbose "        -- Verify that biblio-build is empty"
+    COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=*%3A*&rows=0\&useParams=" | jq -r '.response.numFound')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $COUNT ]]; then
+        print_error "${RED}Failed to get the Solr count for biblio-build${RESET}. Exit code: $EC. Output: $COUNT"
+        return "$EC"
+    fi
+    if [[ "$COUNT" -ne "0" ]]; then
+        print_error "${RED}The biblio-build collection still has records in it!${RESET}. Current count: $COUNT"
+        return 1
+    fi
+
+    return 0
+}
+
+## Import the FOLIO records on the build container
+import_folio() {
+    print_verbose "        -- Run the FOLIO import"
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
+        "pc-import-folio --verbose --collection biblio-build --batch-import --quick"
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to import FOLIO records into biblio-build${RESET}. Exit code: $EC."
+        return "$EC"
+    fi
+
+    print_verbose "        -- Getting the biblio FOLIO record count"
+    BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:folio*&rows=0\&useParams=" | jq -r '.response.numFound')
+    if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
+        print_error "${RED}Failed to get the FOLIO count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
+        return "$EC"
+    fi
+    BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:folio*&rows=0\&useParams=" | jq -r '.response.numFound')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
+        print_error "${RED}Failed to get the FOLIO count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
+        return "$EC"
+    fi
+
+    print_info "        -- FOLIO records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
+    print_info "        -- FOLIO records in biblio-build: ${GREEN}$BUILD_COUNT${RESET}"
+
+    return 0
+}
+
+## Temporarily disable the HLM cron from harvesting new files
+disable_hlm_cron() {
+    print_verbose "        -- Check to see if the cron needs to be disabled"
+    if [[ -f /mnt/shared/hlm/${ARG_STACK}/disabled ]] && [[ ! -f /mnt/shared/hlm/"${ARG_STACK}"/enabled ]]; then
+        print_verbose "        -- Already disabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Temporarily disabling the cron container from running HLM harvests/imports while we copy files"
+    touch /mnt/shared/hlm/"${ARG_STACK}"/enabled && mv /mnt/shared/hlm/"${ARG_STACK}"/enabled /mnt/shared/hlm/"${ARG_STACK}"/disabled
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to disable the HLM cron${RESET}. Exit code: $EC. Command: \n" \
+            "mv /mnt/shared/hlm/${ARG_STACK}/enabled /mnt/shared/hlm/${ARG_STACK}/disabled"
+        return "$EC"
+    fi
+
+    print_warning "${YELLOW}${BOLD}HLM imports are currently disabled for the cron container.${RESET}" \
+            "If this script fails prior to re-enableing it, be sure to manually enable it by running: \n" \
+            "mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled"
+    return "$EC"
+}
+
+## Copy the HLM harvest files to the build container
+copy_hlm_harvest_files() {
+    print_verbose "        -- Copying of the harvest files to the build container"
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
+    CMD="cp /mnt/shared/hlm/${ARG_STACK}/current/* /usr/local/vufind/local/harvest/hlm/"
+    print_verbose "$CMD"
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" "$CMD"
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+    return "$EC"
+}
+
+## Re-enable the HLM cron
+enable_hlm_cron() {
+    print_verbose "        -- Check to see if the cron needs to be enabled"
+    if [[ -f /mnt/shared/hlm/${ARG_STACK}/enabled ]] && [[ ! -f /mnt/shared/hlm/"${ARG_STACK}"/disabled ]]; then
+        print_verbose "        -- Already enabled. Nothing to do."
+        return 0
+    fi
+
+    print_verbose "        -- Enabling the cron container"
+    touch /mnt/shared/hlm/"${ARG_STACK}"/disabled && mv /mnt/shared/hlm/"${ARG_STACK}"/disabled /mnt/shared/hlm/"${ARG_STACK}"/enabled
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to enable the HLM cron${RESET}. Exit code: $EC. Command: \n" \
+        "touch /mnt/shared/hlm/${ARG_STACK}/disabled && mv /mnt/shared/hlm/${ARG_STACK}/disabled /mnt/shared/hlm/${ARG_STACK}/enabled"
+        return "$EC"
+    fi
+
+    return "$EC"
+}
+
+## Import the HLM records in the build container
+import_hlm() {
+    print_verbose "        -- Run the HLM import"
+    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
+    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
+        "pc-import-hlm --verbose --import --quick"
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to import HLM records into biblio-build${RESET}. Exit code: $EC."
+        return "$EC"
+    fi
+
+    print_verbose "        -- Getting the biblio HLM record count"
+    BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:hlm*&rows=0\&useParams=" | jq -r '.response.numFound')
+    if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
+        print_error "${RED}Failed to get the HLM count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
+        return "$EC"
+    fi
+    BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:hlm*&rows=0\&useParams=" | jq -r '.response.numFound')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
+        print_error "${RED}Failed to get the HLM count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
+        return "$EC"
+    fi
+
+    print_info "        -- HLM records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
+    print_info "        -- HLM records in biblio-build: ${GREEN}$BUILD_COUNT${RESET}"
+
+    return 0
+}
+
+## Build the spellcheck indices on biblio-build
+build_spellcheck() {
+    print_verbose "        -- Run the spellcheck indicies rebuild on biblio-build"
+    solrs=(solr1 solr2 solr3)
+    for solr in "${solrs[@]}"; do
+        print_verbose "        -- Building indicies on ${BOLD}${solr}${RESET}"
+        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr1:8983/solr/biblio-build/select?q=*:*\&spellcheck=true\&spellcheck.build=true")
+        EC=$?
+        if [[ $EC -ne 0 ]]; then
+            print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
+            return "$EC"
+        fi
+        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr1:8983/solr/biblio-build/select?q=*:*\&spellcheck.dictionary=basicSpell\&spellcheck=true\&spellcheck.build=true")
+        EC=$?
+        if [[ $EC -ne 0 ]]; then
+            print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
+            return "$EC"
+        fi
+    done
+    # TODO maybe add file size checking in the future for
+    # /bitnami/solr/server/solr/biblioN/spellShingle
+    # and /bitnami/solr/server/solr/biblioN/spellchecker
+    return 0
+}
+
+## Show collection counts and get user confirmation to continue
+show_collection_counts() {
+    print_verbose "        -- Getting collection counts for user approval"
+
+
+    BIBLIO_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio/select?indent=true\&q.op=OR\&q=id:*&rows=0\&useParams=" | jq -r '.response.numFound')
+    if [[ $EC -ne 0 ]] || [[ -z $BIBLIO_COUNT ]]; then
+        print_error "${RED}Failed to get the record count for biblio${RESET}. Exit code: $EC. Output: $BIBLIO_COUNT"
+        return "$EC"
+    fi
+    BUILD_COUNT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/biblio-build/select?indent=true\&q.op=OR\&q=id:*&rows=0\&useParams=" | jq -r '.response.numFound')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $BUILD_COUNT ]]; then
+        print_error "${RED}Failed to get the record count for biblio-build${RESET}. Exit code: $EC. Output: $BUILD_COUNT"
+        return "$EC"
+    fi
+
+    print_info "        -- Records in biblio:       ${GREEN}$BIBLIO_COUNT${RESET}"
+    print_info "        -- Records in biblio-build: ${GREEN}$BUILD_COUNT${RESET}"
+
+    # Get user confirmation
+    if [[ $ARG_YES -eq 0 ]]; then
+        read -p "Based on these counts, do you want to continue and do the remaining steps? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Stopping processing"
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+## Deploy compose file with increased memory allocation required for
+## doing a collection swap.
+## Not using this step at the moment; the stack rollsback, /opt/bitnami/scripts/solr/run.sh
+## exits due to being killed (no additional information even with set -o xtrace enabled)
+increase_solr_memory() {
+    if [[ "$ARG_STACK" == "catalog-"* ]]; then
+        print_verbose "         -- Deploying Solr with higher memory"
+        sudo -Hu deploy bash -c "docker stack deploy --with-registry-auth -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud-highmem.yml\") \"$ARG_STACK-solr\""
+        print_verbose "         -- Sleeping for 20s to give time for stack to update"
+        sleep 20
+    else
+        print_verbose "         -- Skipping. Only do this on the production cluster"
+    fi
+    return 0
+}
+
+## Wait for Solr service to update
+wait_for_solr_update() {
+    print_verbose "         -- Waiting for the Solr service to update"
+    ATTEMPTS=1
+
+    print_verbose "(Attempt $ATTEMPTS/$ARG_MAX_ATTEMPTS) Attempting to check the update status of the Solr service"
+    while (( ATTEMPTS <= ARG_MAX_ATTEMPTS )); do
+        STATUS=$(run_on_node 1 "docker service inspect $ARG_STACK-solr_solr --format='{{.UpdateStatus.State}}'")
+        EC=$?
+        # Ignore empty status because it was the result of a template parse error
+        # that means the stack was not updated recently and is not in the service info anymore
+        if [[ "$STATUS" == "completed" ]] || [[ -z "$STATUS" ]]; then
+            print_info "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Stack successfully updated"
+            return 0
+        elif [[ $EC -ne 0 ]]; then
+            print_error "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Failed to run command on all hosts. Exit Code: $EC. Output: $STATUS"
+        fi
+        # Wait before retrying
+        sleep 1
+        ((ATTEMPTS++))
+    done
+
+    # If we reached this point, then we've gone past the max attempts
+    return 1
+}
+
+## Perform the collection swap
+solr_collection_swap() {
+    print_verbose "         -- Performing the collection swap in Solr"
+
+    print_verbose "         -- Determining what collections to swap based on current alias"
+    BIBLIO=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES" | jq -r '.aliases.biblio')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $BIBLIO ]]; then
+        print_error "${RED}Failed to get the alias for biblo${RESET}. Exit code: $EC. Output: $BIBLIO"
+        return "$EC"
+    fi
+    BUILD=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES" | jq -r '.aliases."biblio-build"')
+    EC=$?
+    if [[ $EC -ne 0 ]] || [[ -z $BIBLIO ]]; then
+        print_error "${RED}Failed to get the alias for biblo-build${RESET}. Exit code: $EC. Output: $BUILD"
+        return "$EC"
+    fi
+
+    print_verbose "         -- Current: biblio: $BIBLIO. build: $BUILD"
+    print_verbose "         -- Target: biblio: $BUILD. build: $BIBLIO"
+
+    # Perform the swap
+    OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio-build\&collections=$BIBLIO")
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to swap biblio-build to $BIBLIO${RESET}. Exit code: $EC. Output: $OUTPUT"
+        return "$EC"
+    fi
+    OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio\&collections=$BUILD")
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to swap biblio to $BUILD${RESET}. Exit code: $EC. Output: $OUTPUT"
+        return "$EC"
+    fi
+
+    return 0
+}
+
+## Set back the time on the last_harvest file
+reset_last_harvest() {
+    print_verbose "         -- Update the last_harvest file with the time we saved earlier in the process"
+
+    if [[ ! -f "/mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt" ]]; then
+        print_error "${RED}No new harvest time file found to use!${RESET} Path: /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt"
+        return 1
+    fi
+
+    CMD="mv /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt.backup"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        read -p "Failed to make a backup of the last_harvest file. Do you want to continue anyways? [Y/n] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Stopping processing"
+            return "$EC"
+        fi
+    fi
+
+    CMD="mv /mnt/shared/oai/${ARG_STACK}/harvest_folio_build/new_last_harvest.txt /mnt/shared/oai/${ARG_STACK}/harvest_folio/last_harvest.txt"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to restore the new last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+    return 0
+}
+
+## Redeploy Solr with the original memory
+reset_solr_memory() {
+    print_verbose "        -- Deploying Solring with original memory settings"
+    sudo -Hu deploy bash -c "docker stack deploy --with-registry-auth -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud.yml\") \"$ARG_STACK-solr\""
+    return 0
+}
+
+## Run the alphabrowse rebuild
+alphabrowse_rebuild() {
+    # Determine which node is allowed to do the build (per logic in check_skip of alpha-browse.sh)
+    NODE_ORDER=(1 2 3)
+    if [[ "$ARG_STACK" == "catalog-beta" ]]; then
+        NODE_ORDER=(2 1 3)
+    elif [[ "$ARG_STACK" == "catalog-preview" ]]; then
+        NODE_ORDER=(3 1 2)
+    fi
+
+    # Kick off the build
+    CMD="/alpha-browse.sh -v -p /mnt/shared/alpha-browse/${ARG_STACK} -f"
+    run_in_node_service "${NODE_ORDER[0]}" "$ARG_STACK" "solr_cron" "$CMD"
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to build the new alphabrowse databases on node ${NODE_ORDER[0]}${RESET}. Exit code: $EC."
+        return "$EC"
+    fi
+
+    # Do the copy on the remaining nodes
+    for COPY_NODE in "${NODE_ORDER[@]:1}"; do
+        CMD="/alpha-browse.sh -v -p /mnt/shared/alpha-browse/${ARG_STACK}"
+        run_in_node_service "${COPY_NODE}" "$ARG_STACK" "solr_cron" "$CMD"
+        EC=$?
+        if [[ $EC -ne 0 ]]; then
+            print_error "${RED}Failed to copy the new alphabrowse databases on node ${COPY_NODE}${RESET}. Exit code: $EC."
+            return "$EC"
+        fi
+    done
+
+    return 0
+}
+
+## Run the script to add generated call numbers from solr_solr
+add_generated_call_numbers() {
+    print_verbose "         -- Adding the generated call numbers to Solr"
+    CMD="python3 ./add_generated_call_numbers.py"
+    run_in_node_service 1 "$ARG_STACK" "solr_solr" "python3 ./add_generated_call_numbers.py"
+    return $?
+}
+
+## List all of the steps used in this script for a full import.
+## Called when running this script with --list
+pc_hook_list() {
+    LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+
+    if [[ $ARG_LIST -ne 1 ]]; then return 255; fi
+
+    print_info "${BOLD}${GREEN}Steps for the full import command:${RESET}"
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        print_info "${BOLD}${GREEN}$STEP ${RESET}-- ${key} (${STEP_FUNCS[$key]})"
+      ((STEP++))
+    done
+}
+
+## Run the full import steps, optionally starting from
+## a specific step based on the --step flag.
+pc_hook_full_import() {
+    LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+    TOTAL_RUNTIME=0
+
+    # Don't run anything if this was just a --list request
+    if [[ $ARG_LIST -eq 1 ]]; then return 255; fi
+
+    required_params_full_import
+    validate_step_params
+
+    if [[ $ARG_DRY_RUN -eq 0 ]] && [[ $ARG_YES -eq 0 ]]; then
+        warn_if_not_in_screen
+    fi
+
+    print_warning "${YELLOW}${BOLD}Do not run a pipeline for $ARG_STACK while running" \
+        "this script, it will interrupt processing and you will likely need to start over.${RESET}"
+
+    print_info "Running full import helper for stack '$ARG_STACK'."
+    print_info "Starting from step: $ARG_FIRST_STEP and ending with step: $ARG_LAST_STEP"
+
+    # Loop through all of the steps for the full import and call each of those functions.
+    # If any of them returns a non-zero value, then stop.
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        # Check if we need to skip the step
+        if [[ $STEP -gt $ARG_LAST_STEP ]]; then
+            print_verbose "Completed processing --last-step ($ARG_LAST_STEP), stopping."
+            break
+        fi
+        if [[ $STEP -lt $ARG_FIRST_STEP ]]; then
+            print_verbose "Skipping step $STEP ($key) (waiting for step $ARG_FIRST_STEP)"
+            ((STEP++))
+            continue
+        fi
+
+        # Run the step function and capture the runtime and exit code
+        print_info "${BOLD}${YELLOW}Step: $STEP -- ${key}${RESET} (${STEP_FUNCS[$key]})"
+        if [[ $ARG_DRY_RUN -eq 1 ]]; then
+            ((STEP++))
+            continue
+        fi
+        START_TIME=$(date +%s)
+        ${STEP_FUNCS[$key]}
+        RC=$?
+        END_TIME=$(date +%s)
+        RUNTIME=$((END_TIME-START_TIME))
+        TOTAL_RUNTIME=$((TOTAL_RUNTIME+RUNTIME))
+        STEP_SECONDS[$key]=$(format_seconds $RUNTIME)
+
+        # Stop processing if there was a failure
+        if [[ $RC -ne 0 ]]; then
+            print_error "${RED}Failed processing step $STEP${RESET}. "\
+                "${GREEN}Step $STEP runtime: ${STEP_SECONDS[$key]}" \
+                "Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}." \
+                "\nTo retry from this step run: $( basename "$0" ) --first-step $STEP $ARG_STACK"
+            exit 1
+        fi
+
+        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in ${STEP_SECONDS[$key]}${RESET}"
+        ((STEP++))
+    done
+
+    # Print success and a summary report
+    print_info "${BOLD}Completed processing${RESET}."
+    print_info "${BOLD}Summary:${RESET}"
+    STEP=1
+    for key in "${STEPS[@]}"; do
+        # Don't report times on skipped steps
+        if [[ $STEP -lt $ARG_FIRST_STEP ]] || [[ $STEP -gt $ARG_LAST_STEP ]]; then
+            print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: Skipped${RESET}"
+            ((STEP++))
+            continue
+        fi
+        print_info "${BOLD}${LCYAN}Step: $STEP -- ${key}${RESET}: ${GREEN}Completed in ${STEP_SECONDS[$key]}${RESET}"
+        ((STEP++))
+    done
+    print_info "${BOLD}${GREEN}Total runtime: $(format_seconds $TOTAL_RUNTIME)${RESET}"
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        print_info "${BOLD}Dry run complete${RESET}"
+    fi
+}
+
+
+### Helper functions
+
+required_params_full_import() {
+    if [[ -z $ARG_STACK ]]; then
+        die "The STACK argument is required."
+    fi
+}
+
+validate_step_params() {
+    INT_RE='^[0-9]+$'
+
+    # Validate that the step parameters are integers
+    if [[ -n $ARG_FIRST_STEP ]] && ! [[ $ARG_FIRST_STEP =~ $INT_RE ]] ; then
+        die "--first-step provided must be an integer"
+    fi
+    if [[ -n $ARG_LAST_STEP ]] && ! [[ $ARG_LAST_STEP =~ $INT_RE ]] ; then
+        die "--last-step provided must be an integer"
+    fi
+
+    # Validate that the last step number is greater than the first step
+    if [[ -n $ARG_FIRST_STEP ]] && [[ -n $ARG_LAST_STEP ]] && [[ $ARG_LAST_STEP -lt $ARG_FIRST_STEP ]]; then
+        die "--first-step parameter must be less than the --last-step."
+    fi
+
+    # Validate that the steps are one of the valid steps
+    if [[ -n $ARG_LAST_STEP ]] && [[ $ARG_LAST_STEP -gt ${#STEPS[@]} ]]; then
+        die "--last-step must be a step less than or equal to ${#STEPS[@]}. See --list to view all steps"
+    fi
+    if [[ -n $ARG_FIRST_STEP ]] && [[ $ARG_FIRST_STEP -lt 1 ]]; then
+        die "--first-step must be at least 1"
+    fi
+}
+
+# Load dynamically created flags
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_full_import
+    exit 0
+fi
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+require_root
+declare -a HOOK_FUNCS
+readarray -t HOOK_FUNCS < <(list_funcs_startswith pc_hook_)
+for HOOK_FUNC in "${HOOK_FUNCS[@]}"; do
+    ${HOOK_FUNC}
+    RC=$?
+    if [[ $RC -ne 255 ]]; then exit $RC; fi
+done
+die "Nothing to run. Exiting."
