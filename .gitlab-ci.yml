@@ -4,6 +4,7 @@ stages:
   - shared
   - devel
   - prod
+  - optional
 
 variables:
   TZ: America/Detroit
@@ -64,7 +65,7 @@ Provision Shared Resources:
 
 2-Ubuntu Setup Playbook Devel Cluster (Optional):
   extends: .ubuntu_setup_template
-  stage: devel
+  stage: optional
   environment:
     name: devel
   needs:
@@ -98,7 +99,7 @@ Provision Shared Resources:
 
 2-Ubuntu Setup Playbook Prod Cluster (Optional):
   extends: .ubuntu_setup_template
-  stage: prod
+  stage: optional
   environment:
     name: prod
   needs:
