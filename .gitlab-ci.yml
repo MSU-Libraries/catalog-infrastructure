@@ -63,20 +63,7 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: devel
 
-2-Ubuntu Setup Playbook Devel Cluster (Optional):
-  extends: .ubuntu_setup_template
-  stage: optional
-  environment:
-    name: devel
-  needs:
-    - job: Provision Shared Resources
-      artifacts: true
-    - job: 1-Provision Devel Cluster
-      artifacts: true
-  variables:
-    TERRAFORM_ENV: devel
-
-3-Configure Devel Cluster:
+2-Configure Devel Cluster:
   extends: .configure_template
   stage: devel
   environment:
@@ -97,20 +84,7 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: prod
 
-2-Ubuntu Setup Playbook Prod Cluster (Optional):
-  extends: .ubuntu_setup_template
-  stage: optional
-  environment:
-    name: prod
-  needs:
-    - job: Provision Shared Resources
-      artifacts: true
-    - job: 1-Provision Prod Cluster
-      artifacts: true
-  variables:
-    TERRAFORM_ENV: prod
-
-3-Configure Prod Cluster:
+2-Configure Prod Cluster:
   extends: .configure_template
   stage: prod
   environment:
@@ -123,6 +97,31 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: prod
 
+1-Ubuntu Setup Playbook Devel Cluster (Optional):
+  extends: .ubuntu_setup_template
+  stage: optional
+  environment:
+    name: devel
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+    - job: 1-Provision Devel Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: devel
+
+2-Ubuntu Setup Playbook Prod Cluster (Optional):
+  extends: .ubuntu_setup_template
+  stage: optional
+  environment:
+    name: prod
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+    - job: 1-Provision Prod Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: prod
 
 #### Templates ####
 
