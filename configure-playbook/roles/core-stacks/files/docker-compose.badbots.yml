@@ -27,14 +27,27 @@ services:
         # >> China-based Alibaba Cloud Bot 47.76.0.0/16
         # >> some other bot from Singapore: 119.8.160.0/19, 124.243.128.0/18
         # >> spam bot from France: 45.95.233.103 (will probably not last)
+        # >> sources of bot scanning with randomized/impossible user agents & absurd facet combos:
+        #    - ethr.net: 69.176.80.0/20
+        #    - China Mobile Communications: 223.64.0.0/10
+        #    - China Mobile Communications: 36.128.0.0/10
+        #    - China Mobile Communications: 111.0.0.0/10
+        #    - China Mobile Communications: 120.192.0.0/10
+        #    - China Mobile Communications: 39.128.0.0/10
+        #    - China Mobile Communications: 183.192.0.0/10
+        #    - China Mobile Communications: 112.0.0.0/10
+        #    - China Mobile Communications: 117.128.0.0/10
+        #    - CHINANET HUNAN PROVINCE NETWORK: 223.144.0.0/12
+        #    - China Unicom Henan province network: 42.224.0.0/12
+        #    - China Unicom Henan province network: 115.48.0.0/12
         # >> User-Agent bot matching: (?i) means case-insensitive match
-        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || ClientIP(`45.95.233.103/32`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
+        - "traefik.http.routers.badbot-http-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || ClientIP(`45.95.233.103/32`) || ClientIP(`69.176.80.0/20`) || ClientIP(`223.64.0.0/10`) || ClientIP(`36.128.0.0/10`) || ClientIP(`111.0.0.0/10`) || ClientIP(`120.192.0.0/10`) || ClientIP(`39.128.0.0/10`) || ClientIP(`183.192.0.0/10`) || ClientIP(`112.0.0.0/10`) || ClientIP(`117.128.0.0/10`) || ClientIP(`223.144.0.0/12`) || ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
         - "traefik.http.routers.badbot-http-router.priority=10000"
         - "traefik.http.routers.badbot-http-router.service=badbot-bouncer"
         # Badbot HTTPS
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.middlewares=badbot-block"
-        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || ClientIP(`45.95.233.103/32`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
+        - "traefik.http.routers.badbot-https-router.rule=ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || ClientIP(`124.243.128.0/18`) || ClientIP(`45.95.233.103/32`) || ClientIP(`69.176.80.0/20`) || ClientIP(`223.64.0.0/10`) || ClientIP(`36.128.0.0/10`) || ClientIP(`111.0.0.0/10`) || ClientIP(`120.192.0.0/10`) || ClientIP(`39.128.0.0/10`) || ClientIP(`183.192.0.0/10`) || ClientIP(`112.0.0.0/10`) || ClientIP(`117.128.0.0/10`) || ClientIP(`223.144.0.0/12`) || ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
         - "traefik.http.routers.badbot-https-router.priority=10000"
         - "traefik.http.routers.badbot-https-router.tls=true"
         - "traefik.http.routers.badbot-https-router.service=badbot-bouncer"
