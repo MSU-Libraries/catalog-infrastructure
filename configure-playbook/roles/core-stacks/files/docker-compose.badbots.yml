@@ -70,6 +70,7 @@ services:
           ClientIP(`112.0.0.0/10`) || ClientIP(`117.128.0.0/10`) || ClientIP(`223.144.0.0/12`) || \
           ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || \
           ClientIP(`45.93.184.0/23`) || ClientIP(`45.89.148.0/23`) || \
+          ClientIP(`47.82.8.0/22`) || \
           HeadersRegexp(`User-Agent`, `(?i)(Bytespider|AcademicBotRTU|GoogleOther|Amazonbot|ClaudeBot|GPTBot|FriendlyCrawler|SemrushBot|Diffbot|HawaiiBot|DataForSeoBot)`)"
         - "traefik.http.routers.badbot-https-router.priority=10000"
         - "traefik.http.routers.badbot-https-router.tls=true"
