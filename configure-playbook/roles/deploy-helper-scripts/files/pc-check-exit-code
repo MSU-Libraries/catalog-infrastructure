@@ -135,6 +135,11 @@ main() {
         echo "${LOG}"
     fi
 
+    # If file is empty assume OK (file is cleared while cron job is running)
+    if [[ -z $CODE ]]; then
+        CODE=0
+    fi
+
     # Exit with the code from the file
     verbose "Processing complete."
     exit "${CODE}"
