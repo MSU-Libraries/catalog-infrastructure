@@ -47,9 +47,10 @@ create_users:
 
  - name: jbrandon
    comment: 'Jenny Brandon'
-   groups: ubuntu
+   groups: ubuntu,docker,deploy
    public_keys:
      - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxKqxZUQtqrcFMzQCStnUg7U37dPX0kwyAAKRwDrR6dRLptKsNQCUHiGQ0YIhjVQUSppmms6LxEMm194QnOgx5wDVEG5sBczrl3fGM+ukUSdGIdqab0VjT1yO5pNrvy38e2PcyXEo97uUjnqYBA5ijU9G7Yk8f/iOv6Kwav7Ts5NWhnslOi79ITZI1Xec61j6bxvircnB4eciOG4Rcg/gV8FcL0NVT+Q7yTW5/OE6RSZkt6tHPyzruaSI1FS8pbpKq0dCGuAWHZlkPzc/4KyApAM+oiMo9mhC9GsUXb8ruyfT72/Lse5gf3JqhnLoaw4BWQ4Qvs+YaseBa4vYz+MAZQ== jbrandon@mail.lib.msu.edu
+     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKIlbjXiVe4hKkWjvr3qGdAxkSkyzq2Akc7kDCBQ2PKh jbrandon@MacBookPro
 
  - name: roudonro
    comment: 'Robby Roudon'
