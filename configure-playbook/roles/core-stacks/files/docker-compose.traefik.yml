@@ -28,6 +28,8 @@ services:
       - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.aws.lib.msu.edu`)'
       - "--entrypoints.msul-http-ent.address=:80"
       - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
+      - "--entrypoints.msul-http-ent.http.redirections.entryPoint.to=msul-https-ent"
+      - "--entrypoints.msul-http-ent.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.msul-https-ent.address=:443"
       - "--entrypoints.msul-https-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entryPoints.msul-https-ent.forwardedHeaders.trustedIPs=10.0.0.0/16"
@@ -86,7 +88,7 @@ services:
         - "traefik.http.services.traefik-public-traefik.loadbalancer.server.port=9999"
         # BasicAuth Middleware for restricted resources
         - "traefik.http.middlewares.restrict-auth.basicauth.users=${BASICAUTH_FOR_RESOURCES}"
-        # Redirect Middleware
+        # Redirect Middleware (TODO Deprecated - Traefik now configured to always redirect HTTP)
         - "traefik.http.middlewares.http-redirect.redirectscheme.scheme=https"
         - "traefik.http.middlewares.http-redirect.redirectscheme.permanent=true"
         # Middleware to add /vufind to path
@@ -103,19 +105,12 @@ services:
         # Emergency brakes on overload situation
         # - median request time over 60 seconds (all requests, not just VuFind pages)
         # - 50% or higher network failure (e.g. timeout or dropped packet)
-        # - 50% or higher ratio of 5XX HTTP responses compared to all responses
-        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 60000 \
-          || NetworkErrorRatio() > 0.50 \
-          || ResponseCodeRatio(500, 600, 0, 600) > 0.50"
+        - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=\
+          LatencyAtQuantileMS(50.0) > 60000 \
+          || NetworkErrorRatio() > 0.50"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.checkperiod=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.fallbackduration=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.recoveryduration=15s"
-        # Traefik Dashboard HTTP
-        - "traefik.http.routers.dashboard-http-router.entrypoints=msul-http-ent"
-        - "traefik.http.routers.dashboard-http-router.middlewares=http-redirect"
-        - "traefik.http.routers.dashboard-http-router.rule=\
-            Host(`${DEPLOY_HOST_1}`,`${DEPLOY_HOST_2}`,`${DEPLOY_HOST_3}`)"
-        - "traefik.http.routers.dashboard-http-router.service=api@internal"
         # Traefik Dashboard HTTPS
         - "traefik.http.routers.dashboard-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.dashboard-https-router.middlewares=restrict-auth"
