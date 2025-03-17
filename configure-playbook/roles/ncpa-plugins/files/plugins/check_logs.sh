@@ -27,6 +27,12 @@ while read -r LINE; do
     fi
 done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYMENT}-" --format "{{ .Names }}" )
 
+# Fail if we can't find the VuFind container
+if [ -z "$VUFIND_NAME" ]; then
+    echo "UNKNOWN: No running VuFind container found on the current node."
+    exit 3
+fi
+
 declare APACHE_ERROR_FILE="/var/log/apache2/error.log"
 declare VUFIND_LOG_FILE="/var/log/vufind/vufind.log"
 logfiles_are_readable() {
