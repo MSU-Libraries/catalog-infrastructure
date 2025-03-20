@@ -311,8 +311,8 @@ get_service_node() {
     declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
 
-    # Due to docker service's filter parameter not accepting exact matches, we have to post process to make sure we're matching
-    # the correct one (i.e. cron not croncache)
+    # Due to docker service's filter parameter not accepting exact matches, we have to post process to
+    # make sure we're matching the correct one (i.e. cron not croncache)
     # https://github.com/moby/moby/issues/32985
     NODE=$(ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker service ps ${DEPLOYMENT}-${SERVICE} --format='{{.Node}} {{.Name}}' -f 'desired-state=running'")
     # Filter out services that don't match the name, get only the node name, get only the first result, get the 9th character (the node number)
@@ -403,7 +403,6 @@ run_curl_in_local_service() {
     docker exec -i --env CURL="$CMD" --env EXTRAS="$EXTRAS" "${CONTAINER_NAME=}" bash -c 'curl -s "$(eval echo $CURL)" $EXTRAS'
 }
 
-
 run_in_node_service() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
     declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
@@ -412,6 +411,16 @@ run_in_node_service() {
     declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
 
     printf '%s\n' "$CMD" | ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker exec -i $CONTAINER_NAME bash -"
+}
+
+run_tty_in_node_service() {
+    declare NODE_HOSTNAME=$(node_hostname "$1")
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
+    declare CMD="${4:-bash}"
+    declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
+
+    ssh -tt "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "docker exec -it $CONTAINER_NAME $CMD"
 }
 
 mariadb_defaults_file() {
