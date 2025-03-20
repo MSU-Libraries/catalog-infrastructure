@@ -42,6 +42,7 @@ please_do_not_run_me
 
 # Init log level variables, setting default log level
 # If unspecified, the log level will be 1 (WARNING)
+# If env DEBUG=1 is set, forces DEBUG logging
 init_log_level() {
     declare -g LOG_LEVEL=${1:-1}
     declare -g -r MSG_ERROR=-1
@@ -51,6 +52,9 @@ init_log_level() {
     declare -g -r MSG_INFO=2
     declare -g -r MSG_VERBOSE=3
     declare -g -r MSG_DEBUG=4
+    if [[ $DEBUG -eq 1 ]]; then
+        LOG_LEVEL=$MSG_DEBUG
+    fi
 }
 
 # Call all other functions starting with `init_args_` with intent
@@ -107,7 +111,7 @@ run_help() {
     echo "  ./$SCRIPT_NAME STACK [PARAMS]"
     declare -a EXAMPLE_FUNCS
     readarray -t EXAMPLE_FUNCS < <(list_funcs_startswith help_examples_)
-    if [[ ${#EXAMPLE_FUNCS[@]} -gt 0 ]]; then
+    if [[ -n "${EXAMPLE_FUNCS}" && ${#EXAMPLE_FUNCS[@]} -gt 0 ]]; then
         echo ""
         echo "Examples:"
     fi
@@ -202,6 +206,7 @@ load_flags() {
     declare -g -a FLAG_HELP
     declare -a FLAG_ARGS_FUNCS
     readarray -t FLAG_ARGS_FUNCS < <(list_funcs_startswith parse_flags_)
+    print_debug "parse_flags funcs" "${FLAG_ARGS_FUNCS[@]}"
     for FLAG_ARGS_FUNC in "${FLAG_ARGS_FUNCS[@]}"; do
         while IFS=$'\t' read -r VAR_NAME FLAG_PATTERN HELP_TEXT VAR_DEFAULT VAR_IS_BOOL; do
             declare NOT_BOOL_SUFFIX=
@@ -221,8 +226,7 @@ parse_args() {
     declare POSITION=0
     while [[ $# -gt 0 ]]; do
         for VAR_NAME in "${!FLAG_PATTERN_REGISTRY[@]}"; do
-            case "$1" in
-            "${FLAG_PATTERN_REGISTRY[$VAR_NAME]}")
+            if [[ "$1" =~ ^(${FLAG_PATTERN_REGISTRY[$VAR_NAME]})$ ]]; then
                 if [[ ${FLAG_BOOL_REGISTRY[$VAR_NAME]} -eq 1 ]]; then
                     declare -g "$VAR_NAME=$(( ! FLAG_DEFAULT_REGISTRY[$VAR_NAME] ))"
                     shift
@@ -232,8 +236,7 @@ parse_args() {
                     shift 2
                     continue 2
                 fi
-                ;;
-            esac
+            fi
         done
 
         case "$1" in
@@ -243,6 +246,9 @@ parse_args() {
             ;;
         -v|--verbose)
             (( LOG_LEVEL += 1 ))
+            if [[ $LOG_LEVEL -gt 4 ]]; then
+                (( LOG_LEVEL = 4 ))
+            fi
             shift
             ;;
         --debug)
@@ -254,7 +260,7 @@ parse_args() {
             case "${POSITION}" in
             0)
                 # shellcheck disable=SC2034
-                ARG_STACK=$1
+                declare -g ARG_STACK=$1
                 shift
                 ;;
             1)
