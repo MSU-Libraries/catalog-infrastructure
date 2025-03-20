@@ -1,0 +1,14 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( dirname "$0" )
+SCRIPT_NAME=$( basename "$0" )
+source "${SCRIPT_DIR}/pc-common"
+
+declare -g LOCAL_DIR="/mnt/shared/local"
+declare -g ARG_STACK
+
+init_log_level
+
+run_help_fstab() {
+    run_help "Manage updates to the fstab for public catalog devel deployments"
+}
