@@ -1,17 +1,23 @@
-#! /bin/bash
-#! /usr/local/bin/pc-connect SERVICE HOST
+#!/bin/bash
+
+# Connect to a catalog container:
+#   /usr/local/bin/pc-connect SERVICE HOST
+
+# shellcheck disable=SC1091
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
 
 # Set defaults
 default_args() {
-    declare -g -A ARGS
-    ARGS[SERVICE]=
-    ARGS[HOST]=
-    ARGS[CMD]=bash
-    ARGS[DB]=0
-    ARGS[ZK]=0
-    ARGS[DRYRUN]=0
-    ARGS[VERBOSE]=0
-    ARGS[DEBUG]=0
+    declare -g ARG_SERVICE=
+    declare -g ARG_HOST=
+    declare -g ARG_CMD=bash
+    declare -g ARG_USER=
+    declare -g ARG_DB=0
+    declare -g ARG_ZK=0
+    declare -g ARG_DRYRUN=0
+    declare -g ARG_VERBOSE=0
+    declare -g ARG_DEBUG=0
 }
 default_args
 
@@ -39,8 +45,10 @@ runhelp() {
     echo "      Connect to the mysql service in the container. SHOULD ONLY BE USED ON *mariadb_galera SERVICES"
     echo "  -z|--zk"
     echo "      Connect to the zkshell service in the container. SHOULD ONLY BE USED ON *solr_solr SERVICES"
-    echo "  -c|--cmd"
+    echo "  -c|--cmd CMD"
     echo "      Command to run inside the container. Default: bash"
+    echo "  -u|--user USER"
+    echo "      Override the user to use within the container."
     echo "  -n|--dry-run"
     echo "      Do not perform any actions, just dry-run the output."
     echo "  -v|--verbose"
@@ -55,14 +63,14 @@ message() {
     1>&2 echo "[${LOG_TS}] $*"
 }
 verbose() {
-    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
-    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
+    [[ ${ARG_DRYRUN} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARG_VERBOSE} -eq 1 ]] && message "${DRYRUN}$*"
 }
 error() {
     message "ERROR: $*"
 }
 debug() {
-    [[ ${ARGS[DEBUG]} -eq 1 ]] && message "Debug: $*"
+    [[ ${ARG_DEBUG} -eq 1 ]] && message "Debug: $*"
 }
 die() {
     error "$*"
@@ -86,35 +94,40 @@ parse_args() {
             exit 0
             ;;
         -n|--dry-run)
-            ARGS[DRYRUN]=1
-            ARGS[VERBOSE]=1
+            ARG_DRYRUN=1
+            ARG_VERBOSE=1
             shift;;
         -v|--verbose)
-            ARGS[VERBOSE]=1
+            ARG_VERBOSE=1
             shift;;
         --debug)
-            ARGS[DEBUG]=1
-            ARGS[VERBOSE]=1
-            [[ -n "${ARGS[SERVICE]}" ]] && \
+            ARG_DEBUG=1
+            ARG_VERBOSE=1
+            [[ -n "${ARG_SERVICE}" ]] && \
                 die "The --debug flag must be set before SERVICE."
             shift;;
+        -c|--cmd)
+            ARG_CMD="$2"
+            shift 2;;
+        -u|--user)
+            ARG_USER="$2"
+            shift 2;;
         -d|--db)
-            ARGS[DB]=1
+            ARG_DB=1
             shift;;
         -z|--zk)
-            ARGS[ZK]=1
+            ARG_ZK=1
             shift;;
         *)
             case "${POSITION}" in
             0)
-                ARGS[SERVICE]=$1
+                ARG_SERVICE=$1
                 POSITION=1
                 shift ;;
             1)
-                ARGS[HOST]=$1
-                # If it doesn't end in .aws.lib.msu.edu, add it
-                if [[ ${ARGS[HOST]} =~ ^[1-3]$ ]]; then
-                    ARGS[HOST]=catalog-${ARGS[HOST]}.aws.lib.msu.edu
+                ARG_HOST=$1
+                if [[ $ARG_HOST =~ ^[1-3]$ ]]; then
+                    ARG_HOST=$(node_hostname "$ARG_HOST")
                 else
                     die "ERROR: Must provide a value node. Valid nodes are 1-3"
                 fi
@@ -133,69 +146,84 @@ parse_args() {
 # and will exit if not met
 catch_invalid_args() {
     # Check for missing arguments
-    [[ -z "${ARGS[SERVICE]}" ]] \
+    [[ -z ${ARG_SERVICE} ]] \
         && die "SERVICE is a required argument"
-    [[ -z "${ARGS[CMD]}" ]] \
+    [[ -z ${ARG_CMD} ]] \
         && die "COMMAND is a required argument"
 
     # Checks if ZK or DB if set, then the required service must be set
-    if [[ ${ARGS[DB]} -eq 1 ]] && [[ ${ARGS[SERVICE]} != *"mariadb_galera" ]]; then
+    if [[ ${ARG_DB} -eq 1 ]] && [[ ${ARG_SERVICE} != *"mariadb_galera" ]]; then
         die "When --db is provided, the SERVICE must be *mariadb_galera"
     fi
-    if [[ ${ARGS[ZK]} -eq 1 ]] && [[ ${ARGS[SERVICE]} != *"solr_solr" ]]; then
+    if [[ ${ARG_ZK} -eq 1 ]] && [[ ${ARG_SERVICE} != *"solr_solr" ]]; then
         die "When --zk is provided, the SERVICE must be *solr_solr"
     fi
 }
 
 get_host() {
-    verbose "docker service ps \"${ARGS[SERVICE]}\" -f desired-state=running --format \"{{.Node}}\""
-    if ! HOST=$(docker service ps "${ARGS[SERVICE]}" -f desired-state=running --format "{{.Node}}"); then
-        die "Failed to locate service ${ARGS[SERVICE]}"
+    verbose "docker service ps \"${ARG_SERVICE}\" -f desired-state=running --format \"{{.Node}}\""
+    if ! HOST=$(docker service ps "${ARG_SERVICE}" -f desired-state=running --format "{{.Node}}"); then
+        die "Failed to locate service ${ARG_SERVICE}"
     fi
     echo "${HOST}" | sort | head -1
 }
 
 get_container() {
-    verbose "ssh $1 docker ps -f name=${ARGS[SERVICE]} --format \"{{.Names}}\""
-    ssh "$1" docker ps -f name="${ARGS[SERVICE]}" --format "{{.Names}}"
+    verbose "ssh $1 docker ps -f name=${ARG_SERVICE} --format \"{{.Names}}\""
+    ssh "$1" docker ps -f name="${ARG_SERVICE}" --format "{{.Names}}"
 }
 
 run_command() {
     # Find the host for the service (or use the one provided)
-    if [[ -n "${ARGS[HOST]}" ]]; then
-        HOST=${ARGS[HOST]}
-    elif ! HOST=$(get_host); then
-        exit 1
+    DEPLOYMENT=${ARG_SERVICE%-*}
+    SERVICE=${ARG_SERVICE##*-}
+    NODE=$(get_service_node "$DEPLOYMENT" "$SERVICE")
+    HOST=$(node_hostname "$NODE")
+    if [[ -n ${ARG_HOST} ]]; then
+        HOST=${ARG_HOST}
     fi
 
-    debug "Attempting to connect to service ${ARGS[SERVICE]} on host ${HOST}"
+    debug "Attempting to connect to service ${ARG_SERVICE} on host ${HOST}"
     if ! CONTAINER=$(get_container "${HOST}"); then
-        die "Failed to locate container for ${ARGS[SERVICE]} on ${HOST}"
+        die "Failed to locate container for ${ARG_SERVICE} on ${HOST}"
     fi
 
     # Update command if needed
-    if [[ ${ARGS[DB]} -eq 1 ]]; then
-        ARGS[CMD]=connect
-    elif [[ ${ARGS[ZK]} -eq 1 ]]; then
-        ARGS[CMD]=solr-zk-shell
+    if [[ ${ARG_DB} -eq 1 ]]; then
+        ARG_CMD=connect
+    elif [[ ${ARG_ZK} -eq 1 ]]; then
+        ARG_CMD=solr-zk-shell
     fi
 
     # Connect to the container to run the command
-    verbose "ssh -tt ${HOST} \"docker exec -it $CONTAINER ${ARGS[CMD]}\""
-    if [[ ${ARGS[DRYRUN]} -eq 0 ]]; then
-        ssh -tt "${HOST}" "docker exec -it $CONTAINER ${ARGS[CMD]}"
+    if [[ -n $ARG_USER ]]; then
+        ARG_USER=" -u $ARG_USER"
+    fi
+    verbose "ssh -tt ${HOST} \"docker exec${ARG_USER} -it ${CONTAINER} ${ARG_CMD}\""
+    if [[ ${ARG_DRYRUN} -eq 0 ]]; then
+        if [[ -z $CONTAINER ]]; then
+            die "Could not find $ARG_SERVICE on $HOST."
+        fi
+        ssh -tt "${HOST}" "docker exec ${ARG_USER} -it ${CONTAINER} ${ARG_CMD}"
     fi
 }
 
 # Deploy the Docker stack, exiting unsuccessfully if the deploy fails
 main() {
-    verbose "Service:     ${ARGS[SERVICE]}"
-
+    verbose "Service:     ${ARG_SERVICE}"
     run_command
 }
 
 # Parse and start running
-parse_args "$@"
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+# Ensure user is root
+if [[ $EUID -ne 0 ]]; then
+    verbose "Running as sudo"
+    exec sudo -H "$0" "$@"
+fi
+
 catch_invalid_args
 main
 

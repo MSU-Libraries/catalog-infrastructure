@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # shellcheck disable=SC1091
-
 SCRIPT_DIR=$( dirname "$0" )
-
 source "${SCRIPT_DIR}/pc-common"
 source "${SCRIPT_DIR}/pc-db-cluster"
+
 # shellcheck disable=SC2119
 init_log_level
 

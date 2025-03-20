@@ -1,0 +1,4 @@
+# Commands docker users can use without pw prompt
+Cmnd_Alias  DOCKER_GROUP=/usr/local/bin/pc-connect
+
+%docker  ALL=(root) NOPASSWD: DOCKER_GROUP
