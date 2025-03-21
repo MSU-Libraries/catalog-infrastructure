@@ -127,3 +127,27 @@
     mode: '0644'
     owner: root
     group: deploy
+
+- name: Deploy pc-symlink script
+  ansible.builtin.copy:
+    src: pc-symlink
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-rsync script
+  ansible.builtin.copy:
+    src: pc-rsync
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-fstab script
+  ansible.builtin.copy:
+    src: pc-fstab
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
