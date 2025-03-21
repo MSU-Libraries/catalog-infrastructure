@@ -8,7 +8,6 @@ Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
                         /usr/bin/rm -f /mnt/shared/docker_stats/*, \
                         !/usr/bin/rm -f /mnt/shared/docker_stats/*..*, \
                         /usr/local/bin/pc-mount-logs *, \
-                        umount /mnt/shared/local/*, \
                         /usr/local/bin/pc-symlink, \
                         /usr/local/bin/pc-fstab, \
                         /usr/local/bin/pc-rsync
