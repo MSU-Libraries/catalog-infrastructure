@@ -12,5 +12,140 @@ declare -g LOCAL_DIR="/mnt/shared/local"
 init_log_level
 
 run_help_fstab() {
-    run_help "Manage updates to the fstab for public catalog devel deployments"
+    run_help "Manage updates to the fstab and mounts for public catalog devel deployments"
 }
+
+help_examples_fstab_add() {
+    echo "# Create new fstab bind mount and mount it"
+    echo "./$SCRIPT_NAME devel-nathan -s /repo/module -m /live/module"
+}
+
+help_examples_fstab_del() {
+    echo "# Remove an existing fstab bind mount"
+    echo "./$SCRIPT_NAME devel-nathan -m /live/module -r"
+}
+
+parse_flags_source() {
+    VAR_NAME=SOURCE
+    FLAG_PATTERN="-s"
+    HELP_TEXT="The bind source dir, the dir to be bound at the mountpoint"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_mount() {
+    VAR_NAME=MOUNT
+    FLAG_PATTERN="-m"
+    HELP_TEXT="The mountpoint dir"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_remove() {
+    VAR_NAME=REMOVE
+    FLAG_PATTERN="-r|--rm"
+    HELP_TEXT="Remove the mountpoint from fstab"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="-n|--dry-run"
+    HELP_TEXT="Dry run the command; print what would happen, but make no changes."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_fstab
+    exit 0
+fi
+
+has_directory_traversal() {
+    [[ $1 =~ (^|/)\.\.(/|$) ]]
+}
+
+validate_args() {
+    if [[ -z ${ARG_STACK} ]]; then
+        die "The stack name must be passed as an argument."
+    fi
+    if [[ -z ${ARG_SOURCE} && ${ARG_REMOVE} -eq 0 ]]; then
+        die "Source dir for the mountpoint must be specified with -s flag."
+    fi
+    if [[ -n ${ARG_SOURCE} && ${ARG_REMOVE} -eq 1 ]]; then
+        die "Source dir cannot be specified if removing mountpoint (match removal using mountpoint, not source)."
+    fi
+    if [[ -z ${ARG_MOUNT} ]]; then
+        die "Mountpoint dir must be specified with -m flag."
+    fi
+    ARG_SOURCE="${ARG_SOURCE##"${LINK_BASE}"}"
+    ARG_MOUNT="${ARG_MOUNT##"${LINK_BASE}"}"
+    if has_directory_traversal "${ARG_SOURCE}"; then
+        die "Source dir may not contain directory traversals."
+    fi
+    if has_directory_traversal "${ARG_LINK_TARGET}"; then
+        die "Mountpoint may not contain directory traversals."
+    fi
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        export LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+        print_info "DRY RUN mode. No changes will occur."
+    fi
+}
+
+fstab_backup() {
+    if [[ $ARG_DRY_RUN -eq 0 ]]; then
+        cp /etc/fstab "/tmp/fstab.$( date +%Y%m%d%H%M%S )"
+    fi
+}
+
+fstab_remove() {
+    MATCH_LINE=$(sed -n -e "\|${LINK_BASE}/${ARG_MOUNT#/}|p" /etc/fstab)
+    print_info "removing fstab line: " "->${MATCH_LINE}<-"
+    if [[ $ARG_DRY_RUN -eq 0 && -n $MATCH_LINE ]]; then
+        umount "${LINK_BASE}/${ARG_MOUNT#/}" || true
+        sed -i -e "\|${LINK_BASE}/${ARG_MOUNT#/}|d" /etc/fstab
+    fi
+}
+
+fstab_add() {
+    if [[ $ARG_REMOVE -eq 0 ]]; then
+        declare -a FSTAB_LINE
+        FSTAB_LINE+=("${LINK_BASE}/${ARG_SOURCE#/}" "${LINK_BASE}/${ARG_MOUNT#/}")
+        FSTAB_LINE+=("none" "bind,_netdev,x-systemd.after=network-online.target" "0" "0")
+
+        print_info "fstab line: " "${FSTAB_LINE[@]}"
+        if [[ $ARG_DRY_RUN -eq 0 ]]; then
+            (IFS=$'\t'; echo "${FSTAB_LINE[*]}" >> /etc/fstab)
+            mkdir -p "${LINK_BASE}/${ARG_MOUNT#/}"
+            mount "${LINK_BASE}/${ARG_MOUNT#/}"
+        fi
+    fi
+}
+
+main() {
+    declare -g LINK_BASE="$LOCAL_DIR/$ARG_STACK"
+    print_debug "Base path for source and mount: $LINK_BASE"
+    validate_args
+    fstab_backup
+    fstab_remove
+    fstab_add
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+# Ensure user is root
+if [[ $EUID -ne 0 ]]; then
+    print_verbose "Running as sudo"
+    exec sudo -H "$0" "$@"
+fi
+
+main
