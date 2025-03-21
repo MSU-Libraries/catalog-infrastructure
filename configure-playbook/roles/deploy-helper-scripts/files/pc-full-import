@@ -4,7 +4,6 @@
 
 SCRIPT_DIR=$( dirname "$0" )
 source "${SCRIPT_DIR}/pc-common"
-please_do_not_run_me
 
 init_log_level
 

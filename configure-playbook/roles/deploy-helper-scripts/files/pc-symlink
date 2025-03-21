@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# shellcheck disable=SC2034
+
+SCRIPT_DIR=$( dirname "$0" )
+SCRIPT_NAME=$( basename "$0" )
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/pc-common"
+
+declare -g LOCAL_DIR="/mnt/shared/local"
+
+init_log_level
+
+run_help_symlink() {
+    run_help "Manage symlinks within the shared filesystem"
+}
+
+help_examples_make_link() {
+    echo "# Create symlink in /mnt/shared/local/devel-nathan/"
+    echo "./$SCRIPT_NAME devel-nathan -s /repo/my.ini -t /live/my.ini"
+}
+
+parse_flags_symlink_path() {
+    VAR_NAME=LINK_PATH
+    FLAG_PATTERN="-s"
+    HELP_TEXT="The symlink path (location of the symlink)"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_symlink_target() {
+    VAR_NAME=LINK_TARGET
+    FLAG_PATTERN="-t"
+    HELP_TEXT="The symlink target (where the symlink points to)"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_symlink_force() {
+    VAR_NAME=LINK_FORCE
+    FLAG_PATTERN="-f|--force"
+    HELP_TEXT="Force the creation of the symlink"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="-n|--dry-run"
+    HELP_TEXT="Dry run the command; print what would happen, but make no changes."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_symlink
+    exit 0
+fi
+
+has_directory_traversal() {
+    [[ $1 =~ (^|/)\.\.(/|$) ]]
+}
+
+validate_args() {
+    if [[ -z ${ARG_STACK} ]]; then
+        die "The stack name must be passed as an argument."
+    fi
+    if [[ -z ${ARG_LINK_PATH} ]]; then
+        die "Symlink path must be specified with -s flag."
+    fi
+    if [[ -z ${ARG_LINK_TARGET} ]]; then
+        die "Symlink target must be specified with -t flag."
+    fi
+    ARG_LINK_PATH="${ARG_LINK_PATH##"${LINK_BASE}"}"
+    ARG_LINK_TARGET="${ARG_LINK_TARGET##"${LINK_BASE}"}"
+    if has_directory_traversal "${ARG_LINK_PATH}"; then
+        die "Symlink path may not contain directory traversals."
+    fi
+    if has_directory_traversal "${ARG_LINK_TARGET}"; then
+        die "Symlink target may not contain directory traversals."
+    fi
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        export LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+        print_info "DRY RUN mode. No changes will occur."
+    fi
+}
+
+main() {
+    declare -g LINK_BASE="$LOCAL_DIR/$ARG_STACK"
+    print_debug "Base path for symlink and target: $LINK_BASE"
+    validate_args
+
+    declare -a LN_ARGS
+    if [[ $ARG_LINK_FORCE -eq 1 ]]; then
+        LN_ARGS+=("-f")
+    fi
+    LN_ARGS+=("${LINK_BASE}/${ARG_LINK_TARGET#/}" "${LINK_BASE}/${ARG_LINK_PATH#/}")
+
+    print_info "Command: ln -s" "${LN_ARGS[@]}"
+    if [[ $ARG_DRY_RUN -eq 0 ]]; then
+        ln -s "${LN_ARGS[@]}"
+    fi
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+# Ensure user is root
+if [[ $EUID -ne 0 ]]; then
+    print_verbose "Running as sudo"
+    exec sudo -H "$0" "$@"
+fi
+
+main
