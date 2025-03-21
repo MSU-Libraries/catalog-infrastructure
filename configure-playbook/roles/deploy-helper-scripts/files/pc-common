@@ -1,9 +1,7 @@
 #!/bin/bash
 
-
 # disabling SC2034 because of un-used color codes
 # shellcheck disable=SC2155,SC2029,SC2034
-
 
 # Color codes to use in messages
 # Examples:
