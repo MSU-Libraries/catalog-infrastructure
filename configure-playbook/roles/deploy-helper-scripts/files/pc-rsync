@@ -1,14 +1,123 @@
 #!/bin/bash
 
+# shellcheck disable=SC2034
+
 SCRIPT_DIR=$( dirname "$0" )
 SCRIPT_NAME=$( basename "$0" )
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/pc-common"
 
 declare -g LOCAL_DIR="/mnt/shared/local"
-declare -g ARG_STACK
 
 init_log_level
 
 run_help_rsync() {
     run_help "Run rsync commands within the shared/local/ storage"
 }
+
+help_examples_rsync() {
+    echo "# Rsync from /mnt/shared/local/devel-nathan/live/ to destination"
+    echo "./$SCRIPT_NAME devel-nathan -a -s live/ -d .archive/20250321022225/live/"
+}
+
+parse_flags_source() {
+    VAR_NAME=SOURCE
+    FLAG_PATTERN="-s"
+    HELP_TEXT="The rsync source"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_dest() {
+    VAR_NAME=DEST
+    FLAG_PATTERN="-d"
+    HELP_TEXT="The rsync destination"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_archive() {
+    VAR_NAME=ARCHIVE
+    FLAG_PATTERN="-a"
+    HELP_TEXT="The rsync archive flag; same as -rlptgoD"
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="-n|--dry-run"
+    HELP_TEXT="Dry run the command; print what would happen, but make no changes."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_rsync
+    exit 0
+fi
+
+has_directory_traversal() {
+    [[ $1 =~ (^|/)\.\.(/|$) ]]
+}
+
+validate_args() {
+    if [[ -z ${ARG_STACK} ]]; then
+        die "The stack name must be passed as an argument."
+    fi
+    if [[ -z ${ARG_SOURCE} ]]; then
+        die "The source must be specified."
+    fi
+    if [[ -z ${ARG_DEST} ]]; then
+        die "The destionation must be specified."
+    fi
+    ARG_SOURCE="${ARG_SOURCE##"${LINK_BASE}"}"
+    ARG_DEST="${ARG_DEST##"${LINK_BASE}"}"
+    if has_directory_traversal "${ARG_SOURCE}"; then
+        die "Source path may not contain directory traversals."
+    fi
+    if has_directory_traversal "${ARG_DEST}"; then
+        die "Destination path may not contain directory traversals."
+    fi
+
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        export LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+        print_info "DRY RUN mode. No changes will occur."
+    fi
+}
+
+main() {
+    declare -g LINK_BASE="$LOCAL_DIR/$ARG_STACK"
+    print_debug "Base path for source and dest: $LINK_BASE"
+    validate_args
+
+    declare -a RS_FLAGS
+    if [[ $ARG_ARCHIVE -eq 1 ]]; then
+        RS_ARGS+=("-a")
+    fi
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        RS_ARGS+=("-n")
+    fi
+    RS_ARGS+=("${LINK_BASE}/${ARG_SOURCE#/}" "${LINK_BASE}/${ARG_DEST#/}")
+
+    print_info "Command: rsync" "${RS_ARGS[@]}"
+    rsync "${RS_ARGS[@]}"
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+# Ensure user is root
+if [[ $EUID -ne 0 ]]; then
+    print_verbose "Running as sudo"
+    exec sudo -H "$0" "$@"
+fi
+
+main

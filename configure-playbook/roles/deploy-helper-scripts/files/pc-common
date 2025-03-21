@@ -111,6 +111,7 @@ run_help() {
     echo "  ./$SCRIPT_NAME STACK [PARAMS]"
     declare -a EXAMPLE_FUNCS
     readarray -t EXAMPLE_FUNCS < <(list_funcs_startswith help_examples_)
+    # shellcheck disable=SC2128
     if [[ -n "${EXAMPLE_FUNCS}" && ${#EXAMPLE_FUNCS[@]} -gt 0 ]]; then
         echo ""
         echo "Examples:"
@@ -178,7 +179,7 @@ split_flags() {
         fi
         shift
     done
-    echo -n "${NEWARGS[@]}"
+    echo -n "" "${NEWARGS[@]}"
 }
 
 list_funcs_startswith() {
