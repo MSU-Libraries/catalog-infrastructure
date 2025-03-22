@@ -207,7 +207,12 @@ load_flags() {
     readarray -t FLAG_ARGS_FUNCS < <(list_funcs_startswith parse_flags_)
     print_debug "parse_flags funcs" "${FLAG_ARGS_FUNCS[@]}"
     for FLAG_ARGS_FUNC in "${FLAG_ARGS_FUNCS[@]}"; do
-        while IFS=$'\t' read -r VAR_NAME FLAG_PATTERN HELP_TEXT VAR_DEFAULT VAR_IS_BOOL; do
+        while IFS= read -r LINE; do
+            VAR_NAME=$(echo "$LINE" | awk -F '\t' '{print $1}')
+            FLAG_PATTERN=$(echo "$LINE" | awk -F '\t' '{print $2}')
+            HELP_TEXT=$(echo "$LINE" | awk -F '\t' '{print $3}')
+            VAR_DEFAULT=$(echo "$LINE" | awk -F '\t' '{print $4}')
+            VAR_IS_BOOL=$(echo "$LINE" | awk -F '\t' '{print $5}')
             declare NOT_BOOL_SUFFIX=
             if [[ $VAR_IS_BOOL -eq 0 ]]; then
                 NOT_BOOL_SUFFIX="$VAR_NAME"
