@@ -107,6 +107,10 @@ main() {
     fi
     RS_ARGS+=("${LINK_BASE}/${ARG_SOURCE#/}" "${LINK_BASE}/${ARG_DEST#/}")
 
+    if [[ $ARG_DRY_RUN -eq 0 ]]; then
+        mkdir -p "${LINK_BASE}"
+        mkdir -p "${LINK_BASE}/${ARG_DEST#/}"
+    fi
     print_info "Command: rsync" "${RS_ARGS[@]}"
     rsync "${RS_ARGS[@]}"
 }
