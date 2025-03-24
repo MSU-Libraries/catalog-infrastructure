@@ -112,7 +112,11 @@ main() {
         mkdir -p "${LINK_BASE}/${ARG_DEST#/}"
     fi
     print_info "Command: rsync" "${RS_ARGS[@]}"
-    rsync "${RS_ARGS[@]}"
+    if [[ -d "${LINK_BASE}/${ARG_SOURCE#/}" ]]; then
+        rsync "${RS_ARGS[@]}"
+    else
+        print_warning "Skipping rsync; source directory does not exist: ${LINK_BASE}/${ARG_SOURCE#/}"
+    fi
 }
 
 # shellcheck disable=SC2046
