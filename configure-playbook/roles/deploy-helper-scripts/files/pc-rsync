@@ -105,10 +105,11 @@ main() {
     if [[ $ARG_DRY_RUN -eq 1 ]]; then
         RS_ARGS+=("-n")
     fi
+    RS_ARGS+=("--chown=1000:1000")
     RS_ARGS+=("${LINK_BASE}/${ARG_SOURCE#/}" "${LINK_BASE}/${ARG_DEST#/}")
 
     if [[ $ARG_DRY_RUN -eq 0 ]]; then
-        mkdir -v -p "${LINK_BASE}/${ARG_DEST#/}"
+        install -v --owner=1000 --group=1000 -d "${LINK_BASE}/${ARG_DEST#/}"
     fi
     print_info "Command: rsync" "${RS_ARGS[@]}"
     if [[ -d "${LINK_BASE}/${ARG_SOURCE#/}" ]]; then

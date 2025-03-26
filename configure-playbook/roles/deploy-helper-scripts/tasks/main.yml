@@ -144,6 +144,14 @@
     owner: root
     group: deploy
 
+- name: Deploy pc-install script
+  ansible.builtin.copy:
+    src: pc-install
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
 - name: Deploy pc-fstab script
   ansible.builtin.copy:
     src: pc-fstab
