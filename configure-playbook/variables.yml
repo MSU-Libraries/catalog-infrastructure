@@ -6,7 +6,7 @@ CONREBOOT_VERSION: "0.2.5-2"
 create_users:
  - name: deploy
    comment: 'Deploy'
-   groups: docker
+   groups: docker,ubuntu
    public_keys:
      - ***REMOVED***
    pw_lock: true
