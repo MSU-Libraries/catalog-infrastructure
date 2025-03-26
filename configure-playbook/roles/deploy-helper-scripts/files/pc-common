@@ -335,8 +335,6 @@ run_on_node() {
     declare CMD="$2"
 
     ssh "${SSH_USER+${SSH_USER}@}${NODE_HOSTNAME}" "$CMD"
-    EC=$?
-    return $EC
 }
 
 run_on_all_nodes() {
