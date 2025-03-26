@@ -56,6 +56,15 @@ parse_flags_group() {
     format_flag_info
 }
 
+parse_flags_mode() {
+    VAR_NAME=MODE
+    FLAG_PATTERN="-m"
+    HELP_TEXT="Set mode for target (as in chmod)"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
 parse_flags_dir() {
     VAR_NAME=DIR
     FLAG_PATTERN="-d"
@@ -133,6 +142,9 @@ main() {
     fi
     if [[ -n $ARG_GROUP ]]; then
         INST_ARGS+=("-g" "$ARG_GROUP")
+    fi
+    if [[ -n $ARG_MODE ]]; then
+        INST_ARGS+=("-m" "$ARG_MODE")
     fi
     if [[ $ARG_DIR -eq 1 ]]; then
         INST_ARGS+=("-d" "${LINK_BASE}/${ARG_TARGET#/}")
