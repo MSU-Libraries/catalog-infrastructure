@@ -60,7 +60,7 @@ parse_flags_link_dest() {
     VAR_NAME=LINK_DEST
     FLAG_PATTERN="--link-dest"
     HELP_TEXT="Hard link files from this directory instead of syncing if they are identical."
-    VAR_DEFAULT=0
+    VAR_DEFAULT=
     VAR_IS_BOOL=0
     format_flag_info
 }
