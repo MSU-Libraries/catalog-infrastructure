@@ -89,6 +89,7 @@ validate_args() {
     fi
     ARG_SOURCE="${ARG_SOURCE##"${LINK_BASE}"}"
     ARG_DEST="${ARG_DEST##"${LINK_BASE}"}"
+    ARG_LINK_DEST="${ARG_LINK_DEST##"${LINK_BASE}"}"
     if has_directory_traversal "${ARG_SOURCE}"; then
         die "Source path may not contain directory traversals."
     fi
