@@ -56,6 +56,15 @@ parse_flags_dry_run() {
     format_flag_info
 }
 
+parse_flags_link_dest() {
+    VAR_NAME=LINK_DEST
+    FLAG_PATTERN="--link-dest"
+    HELP_TEXT="Hard link files from this directory instead of syncing if they are identical."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
 load_flags
 
 # Capture all the common pleads for help
@@ -86,6 +95,9 @@ validate_args() {
     if has_directory_traversal "${ARG_DEST}"; then
         die "Destination path may not contain directory traversals."
     fi
+    if [[ -n $ARG_LINK_DEST ]] && has_directory_traversal "${ARG_LINK_DEST}"; then
+        die "Link dest path may not contain directory traversals."
+    fi
 
     if [[ $ARG_DRY_RUN -eq 1 ]]; then
         export LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
@@ -104,6 +116,9 @@ main() {
     fi
     if [[ $ARG_DRY_RUN -eq 1 ]]; then
         RS_ARGS+=("-n")
+    fi
+    if [[ -n $ARG_LINK_DEST ]]; then
+        RS_ARGS+=("--link-dest" "${LINK_BASE}/${ARG_LINK_DEST#/}")
     fi
     RS_ARGS+=("--chown=1000:1000")
     RS_ARGS+=("${LINK_BASE}/${ARG_SOURCE#/}" "${LINK_BASE}/${ARG_DEST#/}")
