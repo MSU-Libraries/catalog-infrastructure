@@ -1,0 +1,162 @@
+#!/bin/bash
+
+# shellcheck disable=SC2034
+
+SCRIPT_DIR=$( dirname "$0" )
+SCRIPT_NAME=$( basename "$0" )
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/pc-common"
+
+declare -g LOCAL_DIR="/mnt/shared/local"
+
+init_log_level
+
+run_help_clone() {
+    run_help "Setup a git clone of a repository"
+}
+
+help_examples_fstab_add() {
+    echo "./$SCRIPT_NAME devel-robby -p /repo -u \$REPO_URL -i \$SSH_PRIVATE_KEY"
+}
+
+parse_flags_path() {
+    VAR_NAME=PATH
+    FLAG_PATTERN="-p"
+    HELP_TEXT="The path to clone to"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_url() {
+    VAR_NAME=URL
+    FLAG_PATTERN="-u"
+    HELP_TEXT="The Git URL to clone"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_private_key() {
+    VAR_NAME=PKEY
+    FLAG_PATTERN="-i"
+    HELP_TEXT="The private key to use for cloning"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_b64_private_key() {
+    VAR_NAME=B64_PKEY
+    FLAG_PATTERN="-b"
+    HELP_TEXT="The base64 encoded private key to use for cloning"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="-n|--dry-run"
+    HELP_TEXT="Dry run the command; print what would happen, but make no changes."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_clone
+    exit 0
+fi
+
+has_directory_traversal() {
+    [[ $1 =~ (^|/)\.\.(/|$) ]]
+}
+
+decode_b64_key() {
+    if [[ -n $ARG_B64_PKEY ]]; then
+        ARG_PKEY=$( echo "$ARG_B64_PKEY" | base64 -d - ) || \
+            die "Invalid base64 encoding passed to -b"
+    fi
+}
+
+validate_args() {
+    if [[ -z ${ARG_STACK} ]]; then
+        die "The stack name must be passed as an argument."
+    fi
+    if [[ -z ${ARG_PATH} ]]; then
+        die "Path must be specified with -p flag."
+    fi
+    if [[ -z ${ARG_URL} ]]; then
+        die "Git repo URL must be specified with -u flag."
+    fi
+    ARG_PATH="${ARG_PATH##"${LINK_BASE}"}"
+    if has_directory_traversal "${ARG_PATH}"; then
+        die "Path may not contain directory traversals."
+    fi
+    if [[ -n $ARG_B64_PKEY && -n $ARG_PKEY ]]; then
+        die "Can only specify -i or -b for key, not both."
+    fi
+    decode_b64_key
+    if [[ $ARG_DRY_RUN -eq 1 ]]; then
+        export LOG_LEVEL=$(( LOG_LEVEL < 2 ? 2 : LOG_LEVEL ))
+        print_info "DRY RUN mode. No changes will occur."
+    fi
+}
+
+git_ssh_command() {
+    KEY_FILE=$(mktemp)
+    echo "$ARG_PKEY" > "$KEY_FILE"
+    print_info "GIT_SSH_COMMAND=\"ssh -i ${KEY_FILE@Q} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null\""
+    echo "ssh -i ${KEY_FILE@Q} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+}
+
+set_repo_permissions() {
+    print_info "Configuring git repo for shared permissions."
+    git -C "${LINK_BASE}/${ARG_PATH}" config core.sharedRepository group
+    chgrp -R 1000 "${LINK_BASE}/${ARG_PATH}"
+    chmod -R g+rw "${LINK_BASE}/${ARG_PATH}"
+    chmod g-w "${LINK_BASE}/${ARG_PATH}"/.git/objects/pack/*
+    find "${LINK_BASE}/${ARG_PATH}" -type d -exec chmod g+s {} \;
+    chown 33 -R "${LINK_BASE}/${ARG_PATH}"/vufind/themes/
+    chown 1000 -R "${LINK_BASE}/${ARG_PATH}"/vufind/module/
+}
+
+do_clone() {
+    if [[ -n $ARG_PKEY ]]; then
+        GIT_SSH_COMMAND=$( git_ssh_command )
+        export GIT_SSH_COMMAND
+    fi
+    print_info "Command: git clone -b \"$ARG_STACK\" \"$ARG_URL\" \"${LINK_BASE}/${ARG_PATH}\""
+    if [[ $ARG_DRY_RUN -eq 0 ]]; then
+        git clone -b "$ARG_STACK" "$ARG_URL" "${LINK_BASE}/${ARG_PATH}"
+        set_repo_permissions
+    fi
+}
+
+main() {
+    declare -g LINK_BASE="$LOCAL_DIR/$ARG_STACK"
+    print_debug "Base path for source and mount: $LINK_BASE"
+    validate_args
+    ARG_PATH="${ARG_PATH#/}"
+    ARG_PATH="${ARG_PATH%/}"
+    if [[ ! -d "${LINK_BASE}/${ARG_PATH}/.git" ]]; then
+        do_clone
+    else
+        print_warning "Git clone already exists; skipping."
+    fi
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+# Ensure user is root
+if [[ $EUID -ne 0 ]]; then
+    print_verbose "Running as sudo"
+    exec sudo -H "$0" "$@"
+fi
+
+main
