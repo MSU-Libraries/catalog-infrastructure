@@ -11,6 +11,7 @@ Cmnd_Alias  DEPLOY_USER=/usr/bin/mkdir -p /mnt/shared/*, \
                         /usr/local/bin/pc-symlink, \
                         /usr/local/bin/pc-fstab, \
                         /usr/local/bin/pc-install, \
+                        /usr/local/bin/pc-clone, \
                         /usr/local/bin/pc-rsync
 
 deploy  ALL=(root) NOPASSWD: DEPLOY_USER
