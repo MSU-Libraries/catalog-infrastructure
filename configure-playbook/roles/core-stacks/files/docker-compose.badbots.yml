@@ -75,12 +75,13 @@ services:
           HeadersRegexp(`User-Agent`, `Firefox/([0-9]{1,2})\\.`) || \
           HeadersRegexp(`User-Agent`, `Opera/[0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `iPhone OS [0-9]_`) || \
+          HeadersRegexp(`User-Agent`, `Gecko/1[0-9][0-9][0-9]-`) || \
           HeadersRegexp(`User-Agent`, `Gecko/20[4-9][0-9]-`) || \
           HeadersRegexp(`User-Agent`, `Gecko/2[1-9][0-9][0-9]-`) || \
-          HeadersRegexp(`User-Agent`, `Gecko/[3-9][0-9][0-9][0-9]-`) || \
+          HeadersRegexp(`User-Agent`, `Gecko/[03-9][0-9][0-9][0-9]-`) || \
           HeadersRegexp(`User-Agent`, `MSIE [0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Windows 9[5-8x]\\.`) || \
-          HeadersRegexp(`User-Agent`, `Firefox/([0-9]{1,2})\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/([0-9]{1,2})\\.`) || \
           HeadersRegexp(`User-Agent`, `Android [1-6]\\.`) || \
           HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9] Safari`) || \
           HeadersRegexp(`User-Agent`, `PPC Mac OS X`) || \
