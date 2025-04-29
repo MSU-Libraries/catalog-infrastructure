@@ -35,7 +35,7 @@ The following CI/CD variables must also be created:
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
 a corresponding private key in the CI/CD variables of the
-[catalog project's repository](https://gitlab.msu.edu/msu-libraries/devops/catalog). Should that key ever need to change,
+[catalog project's repository](https://gitlab.msu.edu/msu-libraries/catalog/catalog). Should that key ever need to change,
 both locations will need to be updated.
 
 
