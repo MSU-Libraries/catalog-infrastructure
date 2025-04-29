@@ -1,6 +1,7 @@
 ---
 
 CONREBOOT_VERSION: "0.2.5-2"
+REGISTRY_ACCESS_TOKEN: "$REGISTRY_ACCESS_TOKEN"
 
 # Create users config
 create_users:
