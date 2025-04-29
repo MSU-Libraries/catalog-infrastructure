@@ -1,5 +1,14 @@
 ---
 
+- name: Log into MSU GitLab container registry
+  community.docker.docker_login:
+    registry_url: registry.gitlab.msu.edu
+    username: cicd
+    password: "{{ REGISTRY_ACCESS_TOKEN }}"
+    reauthorize: true
+  become: true
+  become_user: deploy
+
 - name: Ensure Docker core-stacks dir exists
   ansible.builtin.file:
     path: /home/deploy/core-stacks/
@@ -97,3 +106,5 @@
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
+  become: true
+  become_user: deploy
