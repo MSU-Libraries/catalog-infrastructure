@@ -1,11 +1,17 @@
 ---
 version: "3.8"
 services:
-  dummy:
-    image: busybox:latest
-    command: sleep inf
+  badbot:
+    image: registry.gitlab.msu.edu/msu-libraries/catalog/catalog-limited-access:latest
     networks:
       - public
+    volumes:
+      - logs:/var/logs/apache2
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
     deploy:
       mode: replicated
       replicas: 1
@@ -15,10 +21,8 @@ services:
         window: 15s
       labels:
         - "traefik.enable=true"
-        # Avoid processing requests from bots
-        - "traefik.http.middlewares.badbot-block.ipallowlist.sourcerange=127.0.0.1/32"
-        # Badbot bouncer dummy service
-        - "traefik.http.services.badbot-bouncer.loadbalancer.server.port=9999"
+        # Badbot limited access service
+        - "traefik.http.services.badbot-limited.loadbalancer.server.port=80"
         # >> Tencent IP range with bots throughout: 43.128.0.0/10, 101.32.0.0/14, 123.206.0.0/15
         # >> chinamobile.com 117.48.148.0/22
         # >> China-based Alibaba Cloud Bot 47.76.0.0/16
@@ -91,7 +95,7 @@ services:
           HeadersRegexp(`User-Agent`, `Chrome/129\\.0\\.0\\.0 Safari/537\\.36`)"
         - "traefik.http.routers.badbot-https-router.priority=10000"
         - "traefik.http.routers.badbot-https-router.tls=true"
-        - "traefik.http.routers.badbot-https-router.service=badbot-bouncer"
+        - "traefik.http.routers.badbot-https-router.service=badbot-limited"
 
 networks:
   public:
