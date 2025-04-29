@@ -65,7 +65,6 @@ services:
         #    - Trident ?.?    (Old IE Trident engine)
         # >> User-Agent bot matching: (?i) means case-insensitive match
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
-        - "traefik.http.routers.badbot-https-router.middlewares=badbot-block"
         - "traefik.http.routers.badbot-https-router.rule=\
           ClientIP(`43.128.0.0/10`) || ClientIP(`117.48.148.0/22`) || ClientIP(`101.32.0.0/14`) || \
           ClientIP(`123.206.0.0/15`) || ClientIP(`47.76.0.0/16`) || ClientIP(`119.8.160.0/19`) || \
