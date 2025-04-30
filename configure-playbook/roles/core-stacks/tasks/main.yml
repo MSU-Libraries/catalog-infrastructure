@@ -77,10 +77,12 @@
 
 - name: Deploy public network stack
   ansible.builtin.command:
-    cmd: docker stack deploy --prune -c docker-compose.public.yml public
+    cmd: pc-deploy core-stacks badbots
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
+  become: true
+  become_user: deploy
 
 - name: Waiting to let public network deploy
   ansible.builtin.pause:
