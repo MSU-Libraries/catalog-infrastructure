@@ -5,8 +5,6 @@ services:
     image: registry.gitlab.msu.edu/msu-libraries/catalog/catalog-limited-access:latest
     networks:
       - public
-    volumes:
-      - logs:/var/logs/apache2
     logging:
       driver: "json-file"
       options:
@@ -95,9 +93,6 @@ services:
         - "traefik.http.routers.badbot-https-router.priority=10000"
         - "traefik.http.routers.badbot-https-router.tls=true"
         - "traefik.http.routers.badbot-https-router.service=badbot-limited"
-
-volumes:
-  logs:
 
 networks:
   public:
