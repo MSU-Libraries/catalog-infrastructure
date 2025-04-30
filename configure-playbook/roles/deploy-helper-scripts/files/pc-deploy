@@ -9,6 +9,8 @@ default_args() {
     ARGS[STACK]=
     ARGS[ENV]=
     ARGS[COMPOSE]=
+    ARGS[DETACH]="false"
+    ARGS[PRUNE]=0
     ARGS[DRYRUN]=0
     ARGS[VERBOSE]=0
     ARGS[DEBUG]=0
@@ -41,6 +43,10 @@ runhelp() {
     echo "      Required. Relative path to which environment directory should be used for selecting compose files within /home/deploy."
     echo "  STACK_CONF"
     echo "      Required. Stack configuration or Docker compose file to deploy within DEPLOY_ENV."
+    echo "  -d|--detach"
+    echo "      In deploying the stack, add the --detach=true flag to wait for stack convergence"
+    echo "  --prune"
+    echo "      In deploying the stack, add the --prune flag to prune missing unreferenced services"
     echo "  -n|--dry-run"
     echo "      Do not perform any actions, just dry-run the output."
     echo "  -v|--verbose"
@@ -90,6 +96,12 @@ parse_args() {
             runhelp
             exit 0
             ;;
+        -d|--detach)
+            ARGS[DETACH]="true"
+            shift;;
+        --prune)
+            ARGS[PRUNE]=1
+            shift;;
         -n|--dry-run)
             ARGS[DRYRUN]=1
             ARGS[VERBOSE]=1
@@ -191,7 +203,12 @@ run_command() {
     if [[ $USER != "deploy" ]]; then
         SUDO_PREFIX=(sudo -Hu deploy)
     fi
-    CMD="docker stack deploy --with-registry-auth -c <(source \"${VAR_FILE}\"; envsubst < \"${ARGS[COMPOSE]}\") \"${ARGS[STACK]}\""
+    # XXX The EXTRA_ARGS are just strings added to command. Not currently safe for special chars or spaces.
+    EXTRA_ARGS=("--with-registry-auth" "--detach=${ARGS[DETACH]}")
+    if [[ ${ARGS[PRUNE]} -eq 1 ]]; then
+        EXTRA_ARGS+=("--prune")
+    fi
+    CMD="docker stack deploy ${EXTRA_ARGS[*]} -c <(source \"${VAR_FILE}\"; envsubst < \"${ARGS[COMPOSE]}\") \"${ARGS[STACK]}\""
     verbose "Command:   ${SUDO_PREFIX[*]} bash -c '$CMD'"
     ([[ ${ARGS[DRYRUN]} -eq 0 ]] && "${SUDO_PREFIX[@]}" bash -c "$CMD") || true
 }
