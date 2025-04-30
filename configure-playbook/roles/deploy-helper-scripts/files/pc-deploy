@@ -226,10 +226,10 @@ main() {
     # Show output of the deploy command if verbose enabled
     [[ -n ${OUTPUT} ]] && verbose "${OUTPUT}"
     verbose "Deploy complete!"
+    exit 0  # XXX this is needed as verbose can return false
 }
 
 # Parse and start running
 parse_args "$@"
 catch_invalid_args
 main
-
