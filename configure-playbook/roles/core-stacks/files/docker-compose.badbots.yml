@@ -116,7 +116,7 @@ services:
           HeadersRegexp(`User-Agent`, `Chrome/1[0-1][0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Chrome/12[0-4]\\.`) || \
           HeadersRegexp(`User-Agent`, `Android [1-6]\\.`) || \
-          HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9](\.[0-9])? Safari`) || \
+          HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9](\\.[0-9])? Safari`) || \
           HeadersRegexp(`User-Agent`, `FxiOS/[0-9]{1,2}\\.`) || \
           HeadersRegexp(`User-Agent`, `CriOS/[0-9]{1,2}\\.`) || \
           HeadersRegexp(`User-Agent`, `PPC Mac OS X`) || \
