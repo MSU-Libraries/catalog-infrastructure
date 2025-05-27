@@ -55,12 +55,14 @@ services:
         #    - Gecko/????-   (Gecko build date > 2040)
         #    - MSIE ?.  (IE version < 10)
         #    - Windows 9?
-        #    - Chrome/??.  (Chrome < 100)
+        #    - Chrome/??.  (Chrome < 125)
         #    - Android ?.   (Android < 6)
         #    - Version/?.? Safari  (Old version of Safari)
         #    - PPC Mac OS X  (Ancient PPC Mac)
         #    - Windows NT ?.?   (Windows before version 10)
         #    - Trident ?.?    (Old IE Trident engine)
+        #    - FxiOS ?.    (Firefox on iOS versions < 100)
+        #    - CriOS ?.    (Chrome on iOS versions < 100)
         # >> Ramping up modulating bot scan from Huawei-Cloud
         #    - 27.106.96.0/20
         #    - 46.250.168.0/21
@@ -96,7 +98,7 @@ services:
           ClientIP(`111.119.208.0/20`) || ClientIP(`121.91.168.0/22`) || ClientIP(`122.8.176.0/20`) || \
           ClientIP(`159.138.0.0/16`) || ClientIP(`166.108.192.0/19`) || ClientIP(`189.1.224.0/19`) || \
           ClientIP(`190.92.192.0/19`) || \
-          HeadersRegexp(`User-Agent`, `Firefox/([0-9]{1,2})\\.`) || \
+          HeadersRegexp(`User-Agent`, `Firefox/[0-9]{1,2}\\.`) || \
           HeadersRegexp(`User-Agent`, `Opera/[0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `iPhone OS [0-9]_`) || \
           HeadersRegexp(`User-Agent`, `Gecko/1[0-9][0-9][0-9]-`) || \
@@ -110,6 +112,8 @@ services:
           HeadersRegexp(`User-Agent`, `Chrome/12[0-4]\\.`) || \
           HeadersRegexp(`User-Agent`, `Android [1-6]\\.`) || \
           HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9] Safari`) || \
+          HeadersRegexp(`User-Agent`, `FxiOS/[0-9]{1,2}\\.`) || \
+          HeadersRegexp(`User-Agent`, `CriOS/[0-9]{1,2}\\.`) || \
           HeadersRegexp(`User-Agent`, `PPC Mac OS X`) || \
           HeadersRegexp(`User-Agent`, `Windows NT [0-9]\\.[0-9]`) || \
           HeadersRegexp(`User-Agent`, `Trident [0-9]\\.[0-9]`) || \
