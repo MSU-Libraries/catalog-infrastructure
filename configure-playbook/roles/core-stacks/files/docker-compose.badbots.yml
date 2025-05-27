@@ -61,6 +61,23 @@ services:
         #    - PPC Mac OS X  (Ancient PPC Mac)
         #    - Windows NT ?.?   (Windows before version 10)
         #    - Trident ?.?    (Old IE Trident engine)
+        # >> Ramping up modulating bot scan from Huawei-Cloud
+        #    - 27.106.96.0/20
+        #    - 46.250.168.0/21
+        #    - 94.74.80.0/20
+        #    - 94.74.96.0/20
+        #    - 94.74.112.0/21
+        #    - 94.74.120.0/21
+        #    - 101.44.16.0/20
+        #    - 101.46.0.0/20
+        #    - 111.119.192.0/20
+        #    - 111.119.208.0/20
+        #    - 121.91.168.0/22
+        #    - 122.8.176.0/20
+        #    - 159.138.0.0/16
+        #    - 166.108.192.0/19
+        #    - 189.1.224.0/19
+        #    - 190.92.192.0/19
         # >> User-Agent bot matching: (?i) means case-insensitive match
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.rule=\
@@ -73,6 +90,12 @@ services:
           ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || \
           ClientIP(`45.93.184.0/23`) || ClientIP(`45.89.148.0/23`) || \
           ClientIP(`47.82.8.0/22`) || ClientIP(`47.80.0.0/13`) || ClientIP(`47.76.0.0/14`) || \
+          ClientIP(`27.106.96.0/20`) || ClientIP(`46.250.168.0/21`) || ClientIP(`94.74.80.0/20`) || \
+          ClientIP(`94.74.96.0/20`) || ClientIP(`94.74.112.0/21`) || ClientIP(`94.74.120.0/21`) || \
+          ClientIP(`101.44.16.0/20`) || ClientIP(`101.46.0.0/20`) || ClientIP(`111.119.192.0/20`) || \
+          ClientIP(`111.119.208.0/20`) || ClientIP(`121.91.168.0/22`) || ClientIP(`122.8.176.0/20`) || \
+          ClientIP(`159.138.0.0/16`) || ClientIP(`166.108.192.0/19`) || ClientIP(`189.1.224.0/19`) || \
+          ClientIP(`190.92.192.0/19`) || \
           HeadersRegexp(`User-Agent`, `Firefox/([0-9]{1,2})\\.`) || \
           HeadersRegexp(`User-Agent`, `Opera/[0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `iPhone OS [0-9]_`) || \
@@ -82,7 +105,9 @@ services:
           HeadersRegexp(`User-Agent`, `Gecko/[03-9][0-9][0-9][0-9]-`) || \
           HeadersRegexp(`User-Agent`, `MSIE [0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Windows 9[5-8x]`) || \
-          HeadersRegexp(`User-Agent`, `Chrome/([0-9]{1,2})\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/[0-9]{1,2}\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/1[0-1][0-9]\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/12[0-4]\\.`) || \
           HeadersRegexp(`User-Agent`, `Android [1-6]\\.`) || \
           HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9] Safari`) || \
           HeadersRegexp(`User-Agent`, `PPC Mac OS X`) || \
