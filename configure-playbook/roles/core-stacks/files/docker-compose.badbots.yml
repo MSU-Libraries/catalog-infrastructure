@@ -43,6 +43,8 @@ services:
         #    - DE-SCALEIT-CHI-23-1: 45.89.148.0/23
         # >> Scanning every link on item pages repeatedly and quickly (citing, email, sms, export, etc)
         #    - Alibaba Cloud LLC: 47.82.8.0/22
+        # >> Mass scraping print versions of EDS pages:
+        #    - Zenlayer Cloud: 45.40.48.0/20
         # >> Very high load and suspicious outdated browser version conformity
         #    - Alibaba Cloud LLC: 47.80.0.0/13
         #    - Alibaba Cloud LLC: 47.76.0.0/14
@@ -93,7 +95,7 @@ services:
           ClientIP(`120.192.0.0/10`) || ClientIP(`39.128.0.0/10`) || ClientIP(`183.192.0.0/10`) || \
           ClientIP(`112.0.0.0/10`) || ClientIP(`117.128.0.0/10`) || ClientIP(`223.144.0.0/12`) || \
           ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || \
-          ClientIP(`45.93.184.0/23`) || ClientIP(`45.89.148.0/23`) || \
+          ClientIP(`45.93.184.0/23`) || ClientIP(`45.89.148.0/23`) || ClientIP(`45.40.48.0/20`) || \
           ClientIP(`47.82.8.0/22`) || ClientIP(`47.80.0.0/13`) || ClientIP(`47.76.0.0/14`) || \
           ClientIP(`27.106.96.0/20`) || ClientIP(`46.250.168.0/21`) || ClientIP(`94.74.80.0/20`) || \
           ClientIP(`94.74.96.0/20`) || ClientIP(`94.74.112.0/21`) || ClientIP(`94.74.120.0/21`) || \
