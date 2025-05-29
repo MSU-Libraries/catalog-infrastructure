@@ -66,6 +66,7 @@ services:
         #    - FxiOS ?.    (Firefox on iOS versions < 100)
         #    - CriOS ?.    (Chrome on iOS versions < 100)
         # >> Ramping up modulating bot scan from Huawei-Cloud
+        #    - 1.92.0.0/16
         #    - 27.106.96.0/20
         #    - 46.250.168.0/21
         #    - 94.74.80.0/20
@@ -97,6 +98,7 @@ services:
           ClientIP(`42.224.0.0/12`) || ClientIP(`115.48.0.0/12`) || \
           ClientIP(`45.93.184.0/23`) || ClientIP(`45.89.148.0/23`) || ClientIP(`45.40.48.0/20`) || \
           ClientIP(`47.82.8.0/22`) || ClientIP(`47.80.0.0/13`) || ClientIP(`47.76.0.0/14`) || \
+          ClientIP(`1.92.0.0/16`) || \
           ClientIP(`27.106.96.0/20`) || ClientIP(`46.250.168.0/21`) || ClientIP(`94.74.80.0/20`) || \
           ClientIP(`94.74.96.0/20`) || ClientIP(`94.74.112.0/21`) || ClientIP(`94.74.120.0/21`) || \
           ClientIP(`101.44.16.0/20`) || ClientIP(`101.46.0.0/20`) || ClientIP(`111.119.192.0/20`) || \
