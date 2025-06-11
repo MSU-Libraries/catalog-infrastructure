@@ -86,6 +86,7 @@ services:
         #    - 166.108.192.0/19
         #    - 189.1.224.0/19
         #    - 190.92.192.0/19
+        ### EXCEPTION: Chrome 116 allowed for Peter Berg
         # >> User-Agent bot matching: (?i) means case-insensitive match
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.rule=\
@@ -117,7 +118,8 @@ services:
           HeadersRegexp(`User-Agent`, `MSIE [0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Windows 9[5-8x]`) || \
           HeadersRegexp(`User-Agent`, `Chrome/[0-9]{1,2}\\.`) || \
-          HeadersRegexp(`User-Agent`, `Chrome/1[0-1][0-9]\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/1[0-1][0-5]\\.`) || \
+          HeadersRegexp(`User-Agent`, `Chrome/1[0-1][7-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Chrome/12[0-4]\\.`) || \
           HeadersRegexp(`User-Agent`, `Android [1-6]\\.`) || \
           HeadersRegexp(`User-Agent`, `Version/[0-9]\\.[0-9](\\.[0-9])? Safari`) || \
