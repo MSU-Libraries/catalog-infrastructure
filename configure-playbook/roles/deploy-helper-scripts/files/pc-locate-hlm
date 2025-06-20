@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# shellcheck disable=SC2034,SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
+
+init_log_level
+
+run_help_locate_hlm() {
+    run_help "Helper script to locate records in HLM files"
+}
+
+### Help examples
+help_examples_locate_hlm() {
+    echo "# Locate a record based on the term '9781527558922' in catalog-prod files"
+    echo "./$SCRIPT_NAME catalog-prod -p 9781527558922"
+}
+
+help_examples_locate_hlm_multiple_patterns() {
+    echo "# Locate a record based on the term '9781527558922' AND '123455678' in catalog-prod files"
+    echo "./$SCRIPT_NAME catalog-prod -p 9781527558922,123455678"
+}
+
+parse_flags_source() {
+    VAR_NAME=PATTERNS
+    FLAG_PATTERN="-p|--pattern"
+    HELP_TEXT="The pattern to search for in the HLM files, can be comma separated list"
+    VAR_DEFAULT=
+    VAR_IS_BOOL=0
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_locate_hlm
+    exit 0
+fi
+
+validate_args() {
+    if [[ -z ${ARG_PATTERNS} ]]; then
+        die "The seach pattern(s) must be specified."
+    fi
+}
+
+match_files() {
+    for PATTERN in "${ARG_PATTERNS[@]}"; do
+        # zipgrep all the zip files in the HLM directory, ignoring .csv files
+        # shellcheck disable=SC2206
+        print_debug "for ZIP in ${HLM_DIR}/*.zip; do zipgrep -l \"${PATTERN}\" \$ZIP -x \"*.csv\"; done"
+        for ZIP in "${HLM_DIR}"/*.zip; do zipgrep -l "${PATTERN}" "$ZIP" -x "*.csv"; done
+    done
+}
+
+main() {
+    HLM_DIR="/mnt/shared/hlm/${ARG_STACK}/current"
+    validate_args
+
+    # Prepare the patterns by replacing commas with newlines, then sort them.
+    # mapfile -t reads lines into an array, stripping the newline.
+    mapfile -t ARG_PATTERNS < <(sort <<< "${ARG_PATTERNS//,/$'\n'}")
+
+    # Search for matches
+    declare -g -a MATCHED_FILES
+    mapfile -t MATCHED_FILES < <( match_files | sort -r )
+    
+    # Show matches
+    #   Using echo instead of print_* helpers to ensure
+    #   The output prints regardless of log level
+    echo "Found ${#MATCHED_FILES[@]} files that match."
+    for MATCH_FILE in "${MATCHED_FILES[@]}"; do
+        echo "Matched $( basename "${MATCH_FILE}" )"
+    done
+
+    # TODO -- eventually add in logic similar to pc-locate-oai
+    # that would enable -r and -e flags, but would need to
+    # extract the matches from the zip, convert the marc to xml
+    # and then extract the record
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+main
