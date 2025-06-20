@@ -8,7 +8,8 @@ _pc-locate-hlm()
     # directory (e.g. just after a sudo) which would cause `find` to throw errors
     cd /
 
-    if [[ $COMP_CWORD -eq 2 ]]; then
+    # TODO -- tab completion doesn't work if flags are passed first
+    if [[ $COMP_CWORD -eq 1 ]]; then
         # Get all the environment directory names in HLM_DIR
         readarray -d '' DEPLOY_ENVS < <(find ${HLM_DIR} \
             -maxdepth 1 -mindepth 1 -type d \
@@ -16,7 +17,11 @@ _pc-locate-hlm()
 
         mapfile -t COMPREPLY < <(compgen -W "${DEPLOY_ENVS[*]}" -- "$CURRENT")
     fi
-    COMPREPLY+=(-v --verbose --debug)
+
+    # TODO -- adding this makes tab completion stop working
+    # (the options display correctly, but can't tab complete to them)
+    #COMPREPLY+=(-p --pattern -v --verbose --debug)
+
     shopt -u nullglob
     return 0
 }
