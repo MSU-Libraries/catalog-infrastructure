@@ -387,17 +387,25 @@ disable_hlm_cron() {
 
 ## Copy the HLM harvest files to the build container
 copy_hlm_harvest_files() {
-    print_verbose "        -- Copying of the harvest files to the build container"
-    NODE=$(get_service_node "$ARG_STACK" "catalog_build")
-    CMD="cp /mnt/shared/hlm/${ARG_STACK}/current/* /usr/local/vufind/local/harvest/hlm/"
+    print_verbose "        -- Ensuring required directories exist"
+    CMD="mkdir -p /mnt/shared/hlm/${ARG_STACK}/harvest_hlm/processed/ /mnt/shared/hlm/${ARG_STACK}/harvest_hlm_build/"
     print_verbose "$CMD"
-    run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" "$CMD"
+    ${CMD}
+    EC=$?
+    if [[ $EC -ne 0 ]]; then
+        print_error "${RED}Failed to ensure required directories exist${RESET}. Exit code: $EC. Command: \n$CMD"
+        return "$EC"
+    fi
+
+    print_verbose "        -- Copying of the harvest files to harvest_hlm_build"
+    CMD="cp /mnt/shared/hlm/${ARG_STACK}/harvest_hlm/processed/* /mnt/shared/hlm/${ARG_STACK}/harvest_hlm_build/"
+    print_verbose "$CMD"
+    ${CMD}
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
         return "$EC"
     fi
-    return "$EC"
 }
 
 ## Re-enable the HLM cron
