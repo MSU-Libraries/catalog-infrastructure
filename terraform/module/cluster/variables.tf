@@ -94,5 +94,7 @@ variable "nodes" {
     subnet_id = string
     cpu_balance_threshold = optional(number)    # CPU Credit balance below which alarm is raised
     ebs_balance_threshold = optional(number)    # EBS Burst balance below which alarm is raised
+    zone_id = string
+    domain = string
   }))
 }

@@ -25,7 +25,7 @@ or resource names as needed.
 ### GitLab Setup
 The user running the pipeline needs to have access to read from the following repositories:  
 * [playbook-ubuntu-setup](https://gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup)
-* [playbook-conditional-reboot](https://gitlab.msu.edu/msu-libraries/systems/playbook-conditional-reboot)
+    * Although, this is an optional stage in the pipleine and not required.
 
 The following CI/CD variables must also be created: 
 * `AWS_KEY`
@@ -35,8 +35,8 @@ The following CI/CD variables must also be created:
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
 a corresponding private key in the CI/CD variables of the
-[catalog project's repository](https://gitlab.msu.edu/msu-libraries/catalog/catalog). Should that key ever need to change,
-both locations will need to be updated.
+[catalog project's repository](https://gitlab.msu.edu/msu-libraries/catalog/catalog/-/settings/ci_cd). Should that key ever need to change,
+both locations will need to be updated in the `DEPLOY_PRIVATE_KEY` variable there.
 
 
 ### Mounting the Shared Storage
