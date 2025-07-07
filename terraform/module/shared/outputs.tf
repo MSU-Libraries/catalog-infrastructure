@@ -49,3 +49,13 @@ output "efs_mount_hostnames" {
     for t in aws_efs_mount_target.shared_efs_mts : t.mount_target_dns_name
   ]
 }
+
+output "zone_id" {
+  description = "The zone_id in AWS Route53 for which the domain is associated"
+  value       = var.zone_id
+}
+
+output "domain" {
+  description = "The domain within which the servers will reside"
+  value       = var.domain
+}

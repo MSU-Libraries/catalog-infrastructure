@@ -221,6 +221,8 @@ module "nodes" {
   smtp_password = var.smtp_password
   cpu_balance_threshold = each.value.cpu_balance_threshold
   ebs_balance_threshold = each.value.ebs_balance_threshold
+  zone_id = var.zone_id
+  domain = var.domain
 }
 
 # Create round robin hostname records

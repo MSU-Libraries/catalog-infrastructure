@@ -20,6 +20,8 @@ module "shared" {
     "b" = "10.1.2.0/24"
     "c" = "10.1.3.0/24"
   }
+  zone_id         = "Z0159018169CCNUQINNQG"
+  domain          = "aws.lib.msu.edu"
 }
 
 output "smtp_host" {
@@ -66,4 +68,14 @@ output "efs_mount_hostnames" {
 output "zone_subnet_ids" {
   description = "Subnet IDs for each availability zone"
   value       = module.shared.zone_subnet_ids
+}
+
+output "zone_id" {
+  description = "The zone_id in AWS Route53 for which the domain is associated"
+  value       = module.shared.zone_id
+}
+
+output "domain" {
+  description = "The domain within which the servers will reside"
+  value       = module.shared.domain
 }

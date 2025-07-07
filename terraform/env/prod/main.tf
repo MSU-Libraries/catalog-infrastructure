@@ -51,14 +51,26 @@ variable "smtp_password" {
   type = string
 }
 
+variable "domain" {
+  # example: aws.lib.msu.edu
+  description = "The domain within which the servers will reside"
+  type = string
+}
+
+variable "zone_id" {
+  # example: Z01234567890ABCDEFGHI
+  description = "The zone_id in AWS Route53 for which the domain is associated"
+  type = string
+}
+
 module "cluster" {
   source = "../../module/cluster"
   cluster_name = "catalog"
   aws_region = "us-east-1"
   vpc_cidr = var.vpc_cidr
   vpc_id = var.vpc_id
-  domain = "aws.lib.msu.edu"
-  zone_id = "Z0159018169CCNUQINNQG"
+  domain = var.domain
+  zone_id = var.zone_id
   alert_topic_arn = var.alert_topic_arn
   efs_security_group_id = var.efs_security_group_id
   smtp_host = var.smtp_host
@@ -88,6 +100,8 @@ module "cluster" {
       ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.1.10"
       subnet_id = var.zone_subnet_ids[0]
+      domain = var.domain
+      zone_id = var.zone_id
     }
     "b" = {
       server_name = "catalog-2"
@@ -99,6 +113,8 @@ module "cluster" {
       ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.2.10"
       subnet_id = var.zone_subnet_ids[1]
+      domain = var.domain
+      zone_id = var.zone_id
     }
     "c" = {
       server_name = "catalog-3"
@@ -110,6 +126,8 @@ module "cluster" {
       ebs_balance_threshold = 75        # percentage of max
       private_ip = "10.1.3.10"
       subnet_id = var.zone_subnet_ids[2]
+      domain = var.domain
+      zone_id = var.zone_id
     }
   }
 }

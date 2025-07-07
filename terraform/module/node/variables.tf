@@ -76,3 +76,13 @@ variable "smtp_password" {
   description = "SMTP password"
   type = string
 }
+
+variable "zone_id" {
+  description = "DNS Zone ID"
+  type = string
+}
+
+variable "domain" {
+  description = "DNS Domain (i.e. aws.lib.msu.edu)"
+  type = string
+}

@@ -39,9 +39,8 @@ resource "aws_eip" "node_eip" {
 
 # Create a hostname for the public IP for this node machine
 resource "aws_route53_record" "node_dnsrec" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "${var.server_name}.aws.lib.msu.edu"
+  zone_id = var.zone_id
+  name    = "${var.server_name}.${var.domain}"
   type    = "A"
   ttl     = "300"
   records = [aws_eip.node_eip.public_ip]
