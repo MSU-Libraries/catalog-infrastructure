@@ -209,6 +209,7 @@ module "nodes" {
     var.efs_security_group_id
   ]
   server_name = each.value.server_name
+  cluster_name = var.cluster_name
   aws_instance_type = each.value.aws_instance_type
   aws_root_block_size = each.value.aws_root_block_size
   aws_region = var.aws_region
@@ -219,6 +220,8 @@ module "nodes" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_user
   smtp_password = var.smtp_password
+  root_public_key = var.root_public_key
+  ansible_public_key = var.ansible_public_key
   cpu_balance_threshold = each.value.cpu_balance_threshold
   ebs_balance_threshold = each.value.ebs_balance_threshold
   zone_id = var.zone_id

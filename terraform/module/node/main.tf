@@ -68,6 +68,9 @@ resource "aws_instance" "node_instance" {
   # Script to run upon provisioning
   user_data = templatefile("${path.module}/user_data.sh", 
     {
+      root_public_key = var.root_public_key,
+      ansible_public_key = var.ansible_public_key,
+      mail_name = "${var.cluster_name}.${var.domain}",
       smtp_host = var.smtp_host,
       smtp_user = var.smtp_user,
       smtp_password = var.smtp_password

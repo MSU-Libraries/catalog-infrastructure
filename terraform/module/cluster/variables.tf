@@ -82,6 +82,17 @@ variable "smtp_password" {
   type = string
 }
 
+variable "root_public_key" {
+  description = "The public key to add to the root user's authorized keys file"
+  type = string
+}
+
+variable "ansible_public_key" {
+  description = "(Optional) The public key to add to the ansible user's authorized keys file"
+  type = string
+  default = ""
+}
+
 variable "nodes" {
   description = "The list of variables used to create catalog nodes"
   type = map(object({

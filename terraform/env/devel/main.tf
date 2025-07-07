@@ -76,6 +76,8 @@ module "cluster" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_username
   smtp_password = var.smtp_password
+  root_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPEqI2N91B6/W5RA5OsgDmfn0OWBUSLUcRPQhZhuU/Ex root @ catalog nodes"
+  ansible_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChaBRQuzsZVT4S2/yYiahfam7IDAVx42YJOoOpc2fYy ansible@ansible.lib.msu.edu"
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]
