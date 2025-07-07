@@ -76,6 +76,8 @@ module "cluster" {
   smtp_host = var.smtp_host
   smtp_user = var.smtp_username
   smtp_password = var.smtp_password
+  root_public_key = "***REMOVED***"
+  ansible_public_key = "***REMOVED***"
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]

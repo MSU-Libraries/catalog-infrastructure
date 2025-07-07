@@ -22,15 +22,28 @@ Policy: `AmazonEC2FullAccess`
 If you are using the above IAM policy as a template for yourself, be sure to modify any IDs
 or resource names as needed.  
 
+Save the AWS Key and Secret for this user to be set in the GitLab CI/CD variables.
+
 ### GitLab Setup
 The user running the pipeline needs to have access to read from the following repositories:  
 * [playbook-ubuntu-setup](https://gitlab.msu.edu/msu-libraries/devops/playbook-ubuntu-setup)
     * Although, this is an optional stage in the pipleine and not required.
+    * This requires the public key for the `ROOT_PRIVATE_KEY` to be manually added to the
+      `ubuntusetup` user's authorized keys file on the `ansible.lib.msu.edu` server for the CI to connect.
+    * The CI will connect with that key but then from the `ansible.lib.msu.edu` server it will connect
+      to the catalog nodes as the `ansible` user using the key created in the `user_data.sh` script in Terraform
+      (the public key is passed in via the Terraform environment definitions and the private key is stored only
+      on the `ansible.lib.msu.edu` server in the `ansible` user's `.ssh` directory.
 
-The following CI/CD variables must also be created: 
-* `AWS_KEY`
-* `AWS_SECRET`
-* `ROOT_PRIVATE_KEY`
+The following CI/CD variables must also be created: (note that GitLab supports defining different values for the same variable for
+each environment, so you can have a `DEPLOY_HOST_1,2,3` for devel and for prod.
+
+* `AWS_KEY`: The AWS Key for the user with the above user-policy
+* `AWS_SECRET`: The AWS Secret for the user with the above user-policy
+* `ROOT_PRIVATE_KEY`: This is the `base64` encoded private key, the public key is in the Terraform environment definititions
+* `DEPLOY_HOST_1`: The first node in the cluster (i.e. catalog-1.aws.lib.msu.edu)
+* `DEPLOY_HOST_2`: The second node in the cluster
+* `DEPLOY_HOST_3`: The third node in the cluster
 
 ### Deploy User setup
 A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
