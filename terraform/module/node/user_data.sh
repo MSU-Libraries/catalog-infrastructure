@@ -16,11 +16,11 @@ if [[ -n ${ansible_public_key} ]]; then
     sudo useradd -m -u 4444 -s /bin/bash ansible
     echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
     sudo -Hsu ansible -- <<-ANSIBLE
-          cd
-          umask 077
-          mkdir .ssh
-          echo "${ansible_public_key}" >> .ssh/authorized_keys
-    ANSIBLE
+    cd
+    umask 077
+    mkdir .ssh
+    echo "${ansible_public_key}" >> .ssh/authorized_keys
+ANSIBLE
 fi
 
 ### Install packages required for mail configuration 
