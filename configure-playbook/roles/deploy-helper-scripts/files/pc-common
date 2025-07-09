@@ -511,6 +511,14 @@ format_seconds() {
     date -ud "@$SECONDS" +"$(( SECONDS/3600/24 )):%H:%M:%S (D:H:M:S)"
 }
 
+# Given a number of seconds, convert that to Y-m-d D:H:M:S format
+# Args:
+#   $1: (int) number of seconds
+format_seconds_as_date() {
+    SECONDS=$1
+    date -d "@$SECONDS" +"%Y-%m-%d %H:%M:%S"
+}
+
 # Check if this script is being run in a screen session
 # If not, ask the user to confirm if they want to continue
 warn_if_not_in_screen() {
@@ -521,4 +529,21 @@ warn_if_not_in_screen() {
             die "${RED}Cancelling import${RESET}"
         fi
     fi
+}
+
+# Send an email
+# Args:
+#   $1: (str) subject
+#   $2: (str) body
+#   $3: (str) recipient
+send_email() {
+    local subject="$1"
+    local body="$2"
+    local recipient="$3"
+
+    # Strip ANSI escape codes
+    local clean_body
+    clean_body=$(printf "%b" "$body" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+
+    echo "$clean_body" | mail -s "$subject" "$recipient"
 }
