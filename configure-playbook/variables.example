@@ -1,0 +1,46 @@
+---
+
+# (optional) MSUL specific: Version of https://gitlab.msu.edu/msu-libraries/systems/conreboot
+# that should be installed that handles automatic reboots of servers under certain
+# conditions. Default: "" (not installed)
+CONREBOOT_VERSION: ""
+
+# GitLab group level access token with read-registry permissions
+# Used to pull Docker images to the nodes
+REGISTRY_ACCESS_TOKEN: "$REGISTRY_ACCESS_TOKEN"
+
+# Create users config
+# - name: user ID to the server
+# - comment: Typically the first and last name of the user
+# - groups: All of the user groups on the server they should be added to
+#           such as `docker` if they will need to manage the Docker swarm
+# - chezmoi_repository: (optional) URL to a public git repository containing
+                        files for a https://www.chezmoi.io/ dotfiles to be setup
+                        for the user (like `.bashrc` or `.vimrc` files)
+# - pw_lock: (optional) If the user should have their password login locked
+             Default: false
+# - node_ssh_access: (optional) If the user should have SSH access setup accross
+                     all of the nodes in the cluster. Typically only set for the
+                     root user. Default: false
+# public_keys: (optional): Any public keys that should be added to the user's
+               authorized keys file to allow SSH access to the server with
+create_users:
+ - name: deploy
+   comment: 'Deploy'
+   groups: docker,ubuntu
+   public_keys:
+     - ssh-ed25519 XXXXXSAMPLEXXXXXX deploy@catalog
+   pw_lock: true
+   node_ssh_access: true
+ 
+ - name: root
+   comment: 'root'
+   groups:
+   node_ssh_access: true
+
+ - name: userid
+   comment: 'User Name'
+   groups: sudo,adm,docker,deploy,ubuntu
+   chezmoi_repository: https://github.com/userid/dotfiles.git
+   public_keys:
+     - ssh-ed25519 XXXXXSAMPLEXXXXXX userid@catalog
