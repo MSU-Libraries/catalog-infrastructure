@@ -3,6 +3,9 @@
 - name: Install conreboot
   ansible.builtin.apt:
     deb: "https://github.com/MSU-Libraries/conreboot/releases/download/{{CONREBOOT_VERSION}}/conreboot-{{CONREBOOT_VERSION}}.deb"
+  when:
+    - CONREBOOT_VERSION is defined
+    - CONREBOOT_VERSION != ''
 
 - name: Copy conreboot config
   ansible.builtin.template:
@@ -13,3 +16,6 @@
     mode: '0644'
   tags:
     - configure-conreboot
+  when:
+    - CONREBOOT_VERSION is defined
+    - CONREBOOT_VERSION != ''
