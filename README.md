@@ -44,9 +44,12 @@ each environment, so you can have a `DEPLOY_HOST_1,2,3` for devel and for prod.
 * `DEPLOY_HOST_1`: The first node in the cluster (i.e. catalog-1.aws.lib.msu.edu)
 * `DEPLOY_HOST_2`: The second node in the cluster
 * `DEPLOY_HOST_3`: The third node in the cluster
+* `VARIABLES_YAML_FILE`:  Containing the completed contents of the  `configure-playbook/variables.yml.example`
+  file leaving in `$` variable references like `REGISTRY_ACCESS_TOKEN`. Concentrate on completeing the
+  `create_users` section with all the users that should have access to the nodes and their `public_keys` they will use.
 
 ### Deploy User setup
-A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` file with 
+A deploy key has been created and it's public key is stored in the `configure-playbook/variables.yml` CI variable, `VARIABLE_YAML_FILE` with
 a corresponding private key in the CI/CD variables of the
 [catalog project's repository](https://gitlab.msu.edu/msu-libraries/catalog/catalog/-/settings/ci_cd). Should that key ever need to change,
 both locations will need to be updated in the `DEPLOY_PRIVATE_KEY` variable there.
@@ -63,8 +66,8 @@ For more information on this share see the
 **Permissions on Server**  
 The shared storage on the server will need to be writable by the connecting user. For example, if the
 storage us group writable by the `ubuntu` user, the user on the server will needt o be in the `ubuntu`
-group. This can be done by adding the group to the user in `configure-playbook/variables.yml` and then
-triggering the CI process.
+group. This can be done by adding the group to the user in `configure-playbook/variables.yml` CI
+variable, `VARIABLE_YAML_FILE` and then triggering the CI process.
 ```
  - name: myuser
    comment: 'Myu Ser'
