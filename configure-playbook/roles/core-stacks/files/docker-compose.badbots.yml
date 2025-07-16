@@ -2,7 +2,7 @@
 version: "3.8"
 services:
   badbot:
-    image: registry.gitlab.msu.edu/msu-libraries/catalog/catalog-limited-access:latest
+    image: ${BADBOTS_IMAGE}
     networks:
       - public
     logging:
@@ -267,7 +267,7 @@ services:
         #    - 221.207.64.0/16
         #    - 221.208.0.0/13
         #    - 223.11.0.0/16
-        ### EXCEPTION: Chrome 116 allowed for Peter Berg
+        ### EXCEPTION: Chrome 116 allowed based on request from retired staff
         # >> User-Agent bot matching: (?i) means case-insensitive match
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.badbot-https-router.rule=\

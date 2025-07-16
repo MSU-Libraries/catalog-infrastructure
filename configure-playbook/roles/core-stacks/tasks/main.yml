@@ -48,6 +48,21 @@
     mode: '0644'
     owner: deploy
     group: deploy
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''
+
+- name: Run envsubst on badbots docker-compose
+  ansible.builtin.shell:
+    cmd: |
+      export BADBOTS_IMAGE='{{ BADBOTS_IMAGE }}'
+      envsubst < docker-compose.badbots.yml | sponge docker-compose.badbots.yml
+      chown deploy:deploy docker-compose.badbots.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''
 
 - name: Run envsubst on traefik docker-compose
   ansible.builtin.shell:
@@ -113,3 +128,6 @@
   run_once: true
   become: true
   become_user: deploy
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''
