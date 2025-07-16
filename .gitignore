@@ -5,3 +5,4 @@
 *.tfvars.json
 # PHPStorm folder
 .idea/
+env/*/main.tf
