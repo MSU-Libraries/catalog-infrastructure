@@ -36,10 +36,12 @@ Save the AWS Key and Secret for this user to be set in the GitLab CI/CD variable
 GitLab is not required for using this repository -- it simply helps call all of the steps in
 the correct order with the right parameters. If you want to use this repository without
 GitLab you can still references the `.gitlab-ci.yml` file to help understand what steps
-you would need to manually run in order to spin up your cluster(s).
+you would need to manually run in order to spin up your cluster(s). Like how to use the
+below variables that would be in the CI/CD settings.
 
 The following CI/CD variables must also be created: (note that GitLab supports defining different values for the same variable for
-each environment, so you can have a `DEPLOY_HOST_1,2,3` for devel and for prod.
+each environment, so you can have a `DEPLOY_HOST_1,2,3` for devel and different values for prod (and different values of
+the `MAIN_TF_FILE` for shared).
 
 * `AWS_KEY`: The AWS Key for the user with the above user-policy
 * `AWS_SECRET`: The AWS Secret for the user with the above user-policy
@@ -50,6 +52,7 @@ each environment, so you can have a `DEPLOY_HOST_1,2,3` for devel and for prod.
 * `VARIABLES_YAML_FILE`:  Containing the completed contents of the  `configure-playbook/variables.yml.example`
   file leaving in `$` variable references like `REGISTRY_ACCESS_TOKEN`. Concentrate on completeing the
   `create_users` section with all the users that should have access to the nodes and their `public_keys` they will use.
+* `MAIN_TF_FILE`: Containing the completed contents of `terraform/env/{devel,prod,shared}/main.tf.example` (remember, this can be a scoped variable)
 
 #### MSUL Users
 The user running the pipeline needs to have access to read from the following repositories:  
