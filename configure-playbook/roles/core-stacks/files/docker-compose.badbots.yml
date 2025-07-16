@@ -201,6 +201,16 @@ services:
         #    - 222.92.0.0/14
         #    - 222.136.0.0/13
         #    - 222.240.0.0/13
+        #    - 1.192.0.0/13
+        #    - 112.100.0.0/14
+        #    - 115.204.0.0/15
+        #    - 116.78.0.0/15
+        #    - 118.112.0.0/13
+        #    - 119.112.0.0/13
+        #    - 119.120.0.0/13
+        #    - 123.184.0.0/14
+        #    - 171.80.0.0/14
+        #    - 211.141.160.0/17
         ### EXCEPTION: Chrome 116 allowed for Peter Berg
         # >> User-Agent bot matching: (?i) means case-insensitive match
         - "traefik.http.routers.badbot-https-router.entrypoints=msul-https-ent"
@@ -260,6 +270,10 @@ services:
           ClientIP(`219.128.0.0/12`) || ClientIP(`220.249.144.0/20`) || ClientIP(`221.192.0.0/14`) || \
           ClientIP(`221.206.0.0/16`) || ClientIP(`221.216.0.0/13`) || ClientIP(`222.85.0.0/17`) || \
           ClientIP(`222.92.0.0/14`) || ClientIP(`222.136.0.0/13`) || ClientIP(`222.240.0.0/13`) || \
+          ClientIP(`1.192.0.0/13`) || ClientIP(`112.100.0.0/14`) || ClientIP(`115.204.0.0/15`) || \
+          ClientIP(`116.78.0.0/15`) || ClientIP(`118.112.0.0/13`) || ClientIP(`119.112.0.0/13`) || \
+          ClientIP(`119.120.0.0/13`) || ClientIP(`123.184.0.0/14`) || ClientIP(`171.80.0.0/14`) || \
+          ClientIP(`211.141.160.0/17`) || \
           HeadersRegexp(`User-Agent`, `Firefox/[0-9]{1,2}\\.`) || \
           HeadersRegexp(`User-Agent`, `Firefox/1[0-1][0-9]\\.`) || \
           HeadersRegexp(`User-Agent`, `Opera/[0-9]\\.`) || \
