@@ -25,7 +25,7 @@ services:
       - "--providers.docker.swarmMode=true"
       - "--providers.docker.exposedByDefault=false"
       - "--providers.docker.network=public"
-      - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.aws.lib.msu.edu`)'
+      - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.${DOMAIN}`)'
       - "--entrypoints.msul-http-ent.address=:80"
       - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entrypoints.msul-http-ent.http.redirections.entryPoint.to=msul-https-ent"
@@ -47,11 +47,11 @@ services:
       - "--ping.entrypoint=health-ent"
       - "--global.checknewversion=false"
       - "--global.sendanonymoususage=false"
-      - "--certificatesresolvers.msul-letsencrypt.acme.email=LIB.DL.DDaS@msu.edu"
+      - "--certificatesresolvers.msul-letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.msul-letsencrypt.acme.storage=/etc/traefik/acme.json"
       - "--certificatesresolvers.msul-letsencrypt.acme.httpchallenge=true"
       - "--certificatesresolvers.msul-letsencrypt.acme.httpchallenge.entrypoint=msul-http-ent"
-      - "--certificatesresolvers.msul-letsencrypt-dns.acme.email=LIB.DL.DDaS@msu.edu"
+      - "--certificatesresolvers.msul-letsencrypt-dns.acme.email=${EMAIL}"
       - "--certificatesresolvers.msul-letsencrypt-dns.acme.storage=/etc/traefik/acme-dns.json"
       - "--certificatesresolvers.msul-letsencrypt-dns.acme.dnschallenge=true"
       - "--certificatesresolvers.msul-letsencrypt-dns.acme.dnschallenge.provider=route53"
@@ -101,7 +101,7 @@ services:
         - "traefik.http.middlewares.remove-prefix.redirectregex.replacement=$${1}$${2}"
         - "traefik.http.middlewares.remove-prefix.redirectregex.permanent=true"
         # IP restrictions middleware
-        - "traefik.http.middlewares.ip-campus.ipallowlist.sourcerange=35.8.0.0/13,35.20.0.0/14"
+        - "traefik.http.middlewares.ip-campus.ipallowlist.sourcerange=${CAMPUS_IPS}"
         # Emergency brakes on overload situation
         # - median request time over 60 seconds (all requests, not just VuFind pages)
         # - 50% or higher network failure (e.g. timeout or dropped packet)
