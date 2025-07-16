@@ -7,7 +7,23 @@ CONREBOOT_VERSION: ""
 
 # GitLab group level access token with read-registry permissions
 # Used to pull Docker images to the nodes
+# The GitLab CI will replace this variable if it is left as-is
 REGISTRY_ACCESS_TOKEN: "$REGISTRY_ACCESS_TOKEN"
+
+# The domain to use for the Traefik defaultRule domain
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+DOMAIN: "domain.edu"
+
+# The email to use for Acme certificates
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+EMAIL: "myemail@domain.edu"
+
+# Comma-separated CIDR ranges that represent campus IPs for the ip-campus
+# Traefik middleware that is applied to non-production environments to restrict
+# access to them.
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+# and https://github.com/MSU-Libraries/catalog/blob/main/cicd/deploy-compose-files
+CAMPUS_IPS: "0.0.0.0/0,0.0.0.0/0"
 
 # Create users config
 # - name: user ID to the server

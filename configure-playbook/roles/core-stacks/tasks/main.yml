@@ -56,6 +56,9 @@
       export DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
       export DEPLOY_HOST_2='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_2') }}'
       export DEPLOY_HOST_3='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_3') }}'
+      export DOMAIN='{{ DOMAIN }}'
+      export EMAIL='{{ EMAIL }}'
+      export CAMPUS_IPS='{{ CAMPUS_IPS }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
       chown deploy:deploy docker-compose.traefik.yml
   args:
