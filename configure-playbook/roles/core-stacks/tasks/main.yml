@@ -1,9 +1,9 @@
 ---
 
-- name: Log into MSU GitLab container registry
+- name: Log into GitLab container registry
   community.docker.docker_login:
-    registry_url: registry.gitlab.msu.edu
-    username: cicd
+    registry_url: "{{ REGISTRY_URL }}"
+    username: "{{ REGISTRY_USER }}"
     password: "{{ REGISTRY_ACCESS_TOKEN }}"
     reauthorize: true
   become: true
