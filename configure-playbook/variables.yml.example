@@ -25,6 +25,13 @@ EMAIL: "myemail@domain.edu"
 # and https://github.com/MSU-Libraries/catalog/blob/main/cicd/deploy-compose-files
 CAMPUS_IPS: "0.0.0.0/0,0.0.0.0/0"
 
+# Docker image to use for the badbots service, it should be a simple HTTP page that
+# suspected bots will be directed to. It can provide users information on who to
+# contact if they believe they were incorrectly blocked.
+# If left blank, the bot blocking service will not be deployed.
+# See configure-playbook/roles/core-stacks/files/docker-compose.badbots.yml
+BADBOTS_IMAGE: ""
+
 # Create users config
 # - name: user ID to the server
 # - comment: Typically the first and last name of the user
