@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "terraform-states"
+        bucket = "EXAMPLE-terraform-states"
         key    = "catalog/cluster-devel.tfstate"
         region = "us-east-2"
     }
@@ -52,7 +52,7 @@ variable "smtp_password" {
 }
 
 variable "domain" {
-  # example: domain.edu
+  # example: example.edu
   description = "The domain within which the servers will reside"
   type = string
 }
@@ -77,7 +77,7 @@ module "cluster" {
   smtp_user = var.smtp_username
   smtp_password = var.smtp_password
   root_public_key = "ssh-ed25519 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX root @ catalog nodes"
-  ansible_public_key = "ssh-ed25519 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ansible@ansible.domain.edu"
+  ansible_public_key = "ssh-ed25519 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ansible@ansible.example.edu"
   net_allow_inbound_ssh = [
     "0.0.0.0/0",
   ]
