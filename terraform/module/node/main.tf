@@ -39,9 +39,8 @@ resource "aws_eip" "node_eip" {
 
 # Create a hostname for the public IP for this node machine
 resource "aws_route53_record" "node_dnsrec" {
-  # Zone: aws.lib.msu.edu
-  zone_id = "Z0159018169CCNUQINNQG"
-  name    = "${var.server_name}.aws.lib.msu.edu"
+  zone_id = var.zone_id
+  name    = "${var.server_name}.${var.domain}"
   type    = "A"
   ttl     = "300"
   records = [aws_eip.node_eip.public_ip]
@@ -69,6 +68,9 @@ resource "aws_instance" "node_instance" {
   # Script to run upon provisioning
   user_data = templatefile("${path.module}/user_data.sh", 
     {
+      root_public_key = var.root_public_key,
+      ansible_public_key = var.ansible_public_key,
+      mail_name = "${var.cluster_name}.${var.domain}",
       smtp_host = var.smtp_host,
       smtp_user = var.smtp_user,
       smtp_password = var.smtp_password

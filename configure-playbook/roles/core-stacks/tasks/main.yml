@@ -1,9 +1,9 @@
 ---
 
-- name: Log into MSU GitLab container registry
+- name: Log into GitLab container registry
   community.docker.docker_login:
-    registry_url: registry.gitlab.msu.edu
-    username: cicd
+    registry_url: "{{ REGISTRY_URL }}"
+    username: "{{ REGISTRY_USER }}"
     password: "{{ REGISTRY_ACCESS_TOKEN }}"
     reauthorize: true
   become: true
@@ -48,6 +48,21 @@
     mode: '0644'
     owner: deploy
     group: deploy
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''
+
+- name: Run envsubst on badbots docker-compose
+  ansible.builtin.shell:
+    cmd: |
+      export BADBOTS_IMAGE='{{ BADBOTS_IMAGE }}'
+      envsubst < docker-compose.badbots.yml | sponge docker-compose.badbots.yml
+      chown deploy:deploy docker-compose.badbots.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''
 
 - name: Run envsubst on traefik docker-compose
   ansible.builtin.shell:
@@ -56,6 +71,9 @@
       export DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
       export DEPLOY_HOST_2='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_2') }}'
       export DEPLOY_HOST_3='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_3') }}'
+      export DOMAIN='{{ DOMAIN }}'
+      export EMAIL='{{ EMAIL }}'
+      export CAMPUS_IPS='{{ CAMPUS_IPS }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
       chown deploy:deploy docker-compose.traefik.yml
   args:
@@ -110,3 +128,6 @@
   run_once: true
   become: true
   become_user: deploy
+  when:
+  - BADBOTS_IMAGE is defined
+  - BADBOTS_IMAGE != ''

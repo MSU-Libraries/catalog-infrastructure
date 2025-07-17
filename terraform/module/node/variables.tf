@@ -76,3 +76,29 @@ variable "smtp_password" {
   description = "SMTP password"
   type = string
 }
+
+variable "zone_id" {
+  description = "DNS Zone ID"
+  type = string
+}
+
+variable "domain" {
+  description = "DNS Domain (i.e. aws.lib.msu.edu)"
+  type = string
+}
+
+variable "root_public_key" {
+  description = "The public key to add to the root user's authorized keys file"
+  type = string
+}
+
+variable "ansible_public_key" {
+  description = "(Optional) The public key to add to the ansible user's authorized keys file"
+  type = string
+  default = ""
+}
+
+variable "cluster_name" {
+  description = "Name of cluster to be used in vars and tags"
+  type = string
+}

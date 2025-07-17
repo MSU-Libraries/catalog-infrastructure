@@ -7,11 +7,7 @@
     owner: root
     group: www-data
     mode: '0755'
-  loop:
-    - devel-authentication
-    - catalog-beta
-    - catalog-prod
-    - catalog-preview
+  loop: "{{ SAML_ENVS }}"
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -21,11 +17,7 @@
     owner: root
     group: www-data
     mode: '0640'
-  loop:
-    - devel-authentication
-    - catalog-beta
-    - catalog-prod
-    - catalog-preview
+  loop: "{{ SAML_ENVS }}"
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -33,15 +25,11 @@
   community.crypto.openssl_csr:
     path: "samlcerts/{{ item }}/sp.csr"
     privatekey_path: "samlcerts/{{ item }}/sp-private.pem"
-    country_name: US
-    organization_name: Michigan State University Libraries
-    common_name: catalog.lib.msu.edu
-    subject_alt_name: "DNS:catalog-prod.lib.msu.edu,DNS:catalog-beta.lib.msu.edu,DNS:devel-authentication.lib.msu.edu,DNS:catalog-preview.lib.msu.edu"
-  loop:
-    - devel-authentication
-    - catalog-beta
-    - catalog-prod
-    - catalog-preview
+    country_name: "{{ SAML_COUNTRY }}"
+    organization_name: "{{ SAML_ORG_NAME }}"
+    common_name: "{{ SAML_COMMON_NAME }}"
+    subject_alt_name: "{{ SAML_ALT_NAME }}"
+  loop: "{{ SAML_ENVS }}"
   delegate_to: 127.0.0.1
   run_once: true
 
@@ -51,11 +39,7 @@
     privatekey_path: "samlcerts/{{ item }}/sp-private.pem"
     csr_path: "samlcerts/{{ item }}/sp.csr"
     provider: selfsigned
-  loop:
-    - devel-authentication
-    - catalog-beta
-    - catalog-prod
-    - catalog-preview
+  loop: "{{ SAML_ENVS }}"
   delegate_to: 127.0.0.1
   run_once: true
 

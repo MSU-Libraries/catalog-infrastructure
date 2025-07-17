@@ -46,11 +46,6 @@ variable "net_allow_inbound_ssh" {
   type = list(string)
 }
 
-variable "net_allow_inbound_ssh_alt" {
-  description = "Allow inbound to SSH alt port (222) these CIDRs"
-  type = list(string)
-}
-
 variable "net_allow_inbound_ncpa" {
   description = "Allow inbound to Nagios NCPA port these CIDRs"
   type = list(string)
@@ -82,6 +77,17 @@ variable "smtp_password" {
   type = string
 }
 
+variable "root_public_key" {
+  description = "The public key to add to the root user's authorized keys file"
+  type = string
+}
+
+variable "ansible_public_key" {
+  description = "(Optional) The public key to add to the ansible user's authorized keys file"
+  type = string
+  default = ""
+}
+
 variable "nodes" {
   description = "The list of variables used to create catalog nodes"
   type = map(object({
@@ -94,5 +100,7 @@ variable "nodes" {
     subnet_id = string
     cpu_balance_threshold = optional(number)    # CPU Credit balance below which alarm is raised
     ebs_balance_threshold = optional(number)    # EBS Burst balance below which alarm is raised
+    zone_id = string
+    domain = string
   }))
 }
