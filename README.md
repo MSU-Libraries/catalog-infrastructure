@@ -109,6 +109,10 @@ and start modifying them. Here are the values you are most likely going to want 
       * `cpu_balance_threshold`: What CPU credit balance threshold must be met for an alert to be sent
       * `ebs_balance_threshold`: What percentage threshold of the burst balance for an alert to be sent
 
+Also of note, we have two cases where we have `prevent_destroy` set to avoid accidently destroying critical
+resources (our EFS share and the EC2 instances), such as a bad commit in a CI deploy. But if you are testing
+and want to be able to remove those, you will need to look for those references and set it to `false`.
+
 ### DNS Setup
 Since this terraform playbook only creates DNS entries in the `.aws.lib.msu.edu`
 domain (see the `domain` variable in the terraform files), and we want our site

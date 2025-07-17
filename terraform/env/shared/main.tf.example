@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "terraform-states"
+        bucket = "EXAMPLE-terraform-states"
         key    = "catalog/shared.tfstate"
         region = "us-east-2"
     }
@@ -12,7 +12,7 @@ module "shared" {
   mail_instance   = "catalog-prod"
   shared_name     = "catalog"
   alert_emails    = [
-    "myemail@domain.edu"
+    "myemail@example.edu"
   ]
   vpc_cidr        = "10.1.0.0/16"
   zone_subnets    = {
@@ -21,7 +21,7 @@ module "shared" {
     "c" = "10.1.3.0/24"
   }
   zone_id         = "ZXXXXXXXXXXXXXXXXXXX"
-  domain          = "domain.edu"
+  domain          = "example.edu"
 }
 
 output "smtp_host" {

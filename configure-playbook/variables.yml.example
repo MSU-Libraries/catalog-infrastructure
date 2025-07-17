@@ -10,20 +10,20 @@ CONREBOOT_VERSION: ""
 # See configure-playbook/roles/core-stacks/tasks/main.yml
 REGISTRY_ACCESS_TOKEN: "XXXXXXX"
 REGISTRY_USER: "cicd"
-REGISTRY_URL: "registry.gitlab.domain.edu"
+REGISTRY_URL: "registry.gitlab.example.edu"
 
 # DockerHub registry server
 # See documentation here: https://docs.gitlab.com/runner/configuration/speed_up_job_execution/#docker-hub-registry-mirror
 # See configure-playbook/roles/configure-swarm/templates/daemon.json.j2
-DOCKERHUB_REGISTRY_URL: "http://registry.domain.edu:6000"
+DOCKERHUB_REGISTRY_URL: "http://registry.example.edu:6000"
 
 # The domain to use for the Traefik defaultRule domain
 # See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
-DOMAIN: "domain.edu"
+DOMAIN: "example.edu"
 
 # The email to use for Acme certificates
 # See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
-EMAIL: "myemail@domain.edu"
+EMAIL: "myemail@example.edu"
 
 # Comma-separated CIDR ranges that represent campus IPs for the ip-campus
 # Traefik middleware that is applied to non-production environments to restrict
@@ -43,8 +43,8 @@ BADBOTS_IMAGE: ""
 # See configure-playbook/roles/saml-setup/tasks/main.yml
 SAML_ORG_NAME: "My University"
 SAML_COUNTRY: "US"
-SAML_COMMON_NAME: "site.domain.edu"
-SAML_ALT_NAME: "DNS:catalog-prod.domain.edu,DNS:catalog-beta.domain.edu,DNS:devel-authentication.domain.edu,DNS:catalog-preview.domain.edu"
+SAML_COMMON_NAME: "site.example.edu"
+SAML_ALT_NAME: "DNS:catalog-prod.example.edu,DNS:catalog-beta.example.edu,DNS:devel-authentication.example.edu,DNS:catalog-preview.example.edu"
 SAML_ENVS:
   - devel-authentication
   - catalog-beta

@@ -151,7 +151,7 @@ Provision Shared Resources:
   script:
     - |
       # Copy the main.tf file into the correct location from the CI variable
-      mv $MAIN_TF_VAR terraform/env/${TERRAFORM_ENV}/main.tf
+      mv $MAIN_TF_FILE terraform/env/${TERRAFORM_ENV}/main.tf
       # Run the playbook to provision
       cat provision-playbook/variables.yml | envsubst | sponge provision-playbook/variables.yml;
       [[ -f terraform.tfvars.json ]] && mv terraform.tfvars.json terraform/env/${TERRAFORM_ENV}/;
