@@ -5,3 +5,5 @@
 *.tfvars.json
 # PHPStorm folder
 .idea/
+env/*/main.tf
+configure-playbook/variables.yml

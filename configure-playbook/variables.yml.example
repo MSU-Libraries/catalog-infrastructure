@@ -1,0 +1,88 @@
+---
+
+# (optional) Version of https://github.com/MSU-Libraries/conreboot/
+# that should be installed that handles automatic reboots of servers under certain
+# conditions. Default: "" (not installed)
+CONREBOOT_VERSION: ""
+
+# GitLab group level access token with read-registry permissions
+# Used to pull Docker images to the nodes
+# See configure-playbook/roles/core-stacks/tasks/main.yml
+REGISTRY_ACCESS_TOKEN: "XXXXXXX"
+REGISTRY_USER: "cicd"
+REGISTRY_URL: "registry.gitlab.example.edu"
+
+# DockerHub registry server
+# See documentation here: https://docs.gitlab.com/runner/configuration/speed_up_job_execution/#docker-hub-registry-mirror
+# See configure-playbook/roles/configure-swarm/templates/daemon.json.j2
+DOCKERHUB_REGISTRY_URL: "http://registry.example.edu:6000"
+
+# The domain to use for the Traefik defaultRule domain
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+DOMAIN: "example.edu"
+
+# The email to use for Acme certificates
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+EMAIL: "myemail@example.edu"
+
+# Comma-separated CIDR ranges that represent campus IPs for the ip-campus
+# Traefik middleware that is applied to non-production environments to restrict
+# access to them.
+# See configure-playbook/roles/core-stacks/files/docker-compose.traefik.yml
+# and https://github.com/MSU-Libraries/catalog/blob/main/cicd/deploy-compose-files
+CAMPUS_IPS: "0.0.0.0/0,0.0.0.0/0"
+
+# Docker image to use for the badbots service, it should be a simple HTTP page that
+# suspected bots will be directed to. It can provide users information on who to
+# contact if they believe they were incorrectly blocked.
+# If left blank, the bot blocking service will not be deployed.
+# See configure-playbook/roles/core-stacks/files/docker-compose.badbots.yml
+BADBOTS_IMAGE: ""
+
+# SAML certificate variables
+# See configure-playbook/roles/saml-setup/tasks/main.yml
+SAML_ORG_NAME: "My University"
+SAML_COUNTRY: "US"
+SAML_COMMON_NAME: "site.example.edu"
+SAML_ALT_NAME: "DNS:catalog-prod.example.edu,DNS:catalog-beta.example.edu,DNS:devel-authentication.example.edu,DNS:catalog-preview.example.edu"
+SAML_ENVS:
+  - devel-authentication
+  - catalog-beta
+  - catalog-prod
+  - catalog-preview
+
+# Create users config
+# - name: user ID to the server
+# - comment: Typically the first and last name of the user
+# - groups: All of the user groups on the server they should be added to
+#           such as `docker` if they will need to manage the Docker swarm
+# - chezmoi_repository: (optional) URL to a public git repository containing
+#                       files for a https://www.chezmoi.io/ dotfiles to be setup
+#                       for the user (like `.bashrc` or `.vimrc` files)
+# - pw_lock: (optional) If the user should have their password login locked
+#            Default: false
+# - node_ssh_access: (optional) If the user should have SSH access setup accross
+#                    all of the nodes in the cluster. Typically only set for the
+#                    root user. Default: false
+# - public_keys: (optional): Any public keys that should be added to the user's
+#                authorized keys file to allow SSH access to the server with
+create_users:
+ - name: deploy
+   comment: 'Deploy'
+   groups: docker,ubuntu
+   public_keys:
+     - ssh-ed25519 XXXXXSAMPLEXXXXXX deploy@catalog
+   pw_lock: true
+   node_ssh_access: true
+
+ - name: root
+   comment: 'root'
+   groups:
+   node_ssh_access: true
+
+ - name: userid
+   comment: 'User Name'
+   groups: sudo,adm,docker,deploy,ubuntu
+   chezmoi_repository: https://github.com/userid/dotfiles.git
+   public_keys:
+     - ssh-ed25519 XXXXXSAMPLEXXXXXX userid@catalog

@@ -27,3 +27,16 @@ variable "zone_subnets" {
   description = "Subnet for each availability zone"
   type = map(string)
 }
+
+variable "domain" {
+  # TODO Can we pull this value from AWS given the zone_id below instead of passing it?
+  # example: aws.lib.msu.edu
+  description = "The domain within which the servers will reside"
+  type = string
+}
+
+variable "zone_id" {
+  # example: Z01234567890ABCDEFGHI
+  description = "The zone_id in AWS Route53 for which the domain is associated"
+  type = string
+}
