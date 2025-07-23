@@ -49,9 +49,9 @@ GitHub Release:
   before_script:
     - apk add git curl
   script:
-    - rm -rf catalog.git
+    - rm -rf catalog-infrastructure.git
     - git clone --mirror https://RW_CICD_TOKEN:$RW_CICD_TOKEN@gitlab.msu.edu/msu-libraries/catalog/catalog-infrastructure.git
-    - cd catalog.git
+    - cd catalog-infrastructure.git
     - git push --force --mirror https://$GITHUB_USER_TOKEN@github.com/MSU-Libraries/catalog-infrastructure.git
     - echo "{\"tag_name\":\"${TAG}\", \"target_commitish\":\"${CI_COMMIT_SHA}\"}" > data.json
     - "curl -X POST -H 'Accept: application/vnd.github.v3+json' -u $GITHUB_USER_TOKEN https://api.github.com/repos/MSU-Libraries/catalog-infrastructure/releases -d '@data.json'"
