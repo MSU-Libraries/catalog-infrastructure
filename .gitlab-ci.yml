@@ -5,6 +5,7 @@ stages:
   - devel
   - prod
   - optional
+  - Release
 
 variables:
   TZ: America/Detroit
@@ -191,3 +192,4 @@ Provision Shared Resources:
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
   - template: Jobs/SAST-IaC.gitlab-ci.yml
+  - 'gitlab-templates/*.gitlab-ci.yml'

@@ -1,0 +1,43 @@
+site_name: MSU Libraries Public Catalog Infrastructure Technical Documentation
+repo_url: https://github.com/MSU-Libraries/catalog-infrastructure
+repo_name: MSU-Libraries/catalog-infrastructure
+
+theme:
+  name: "material"
+  features:
+    - navigation.expand
+    - navigation.instant
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
+
+markdown_extensions:
+- tables
+- footnotes
+- admonition
+- pymdownx.highlight:
+    anchor_linenums: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+- search:
+
+nav:
+- Welcome: index.md
+- First Time Setup: first-time-setup.md
+- How To Guides:
+  - Manually run terraform commands: mannually-run-terraform-commands.md
+  - Increasing node root partition size: increasing-node-root-partition-size.md
+  - Force recreation of a node: force-recreation-of-a-node.md
+  - Mounting the shared storage: mounting-the-shared-storage.md
+- Troubleshooting:
+  - Traefik Let's Encrypt certificates not renewing automatically: traefik-lets-encrypt-certificates-not-renewing-automatically.md  
+- Developing:
+    - Documentation: documentation.md
