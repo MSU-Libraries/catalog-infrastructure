@@ -10,7 +10,9 @@ Tag Release:
   interruptible: true
   timeout: 5m
   rules:
-    - if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"'
+    # TODO after testing, and before merging, revert this back
+    #- if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
       when: manual
   before_script:
     - apk add git
@@ -38,7 +40,9 @@ GitHub Release:
   timeout: 5m
   interruptible: true
   rules:
-    - if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"'
+    # TODO after testing, and before merging, revert this back
+    #- if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
   needs:
     - job: Tag Release
       artifacts: true
