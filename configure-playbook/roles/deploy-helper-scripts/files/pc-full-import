@@ -415,9 +415,9 @@ copy_hlm_harvest_files() {
     fi
 
     print_verbose "        -- Copying of the harvest files to harvest_hlm_build"
-    CMD="cp /mnt/shared/hlm/${ARG_STACK}/harvest_hlm/processed/* /mnt/shared/hlm/${ARG_STACK}/harvest_hlm_build/"
+    CMD="cp /mnt/shared/hlm/${ARG_STACK}/harvest_hlm/processed/*.{marc,delete} /mnt/shared/hlm/${ARG_STACK}/harvest_hlm_build/"
     print_verbose "$CMD"
-    ${CMD}
+    eval ${CMD}
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to copy the harvest files${RESET}. Exit code: $EC. Command: \n$CMD"
