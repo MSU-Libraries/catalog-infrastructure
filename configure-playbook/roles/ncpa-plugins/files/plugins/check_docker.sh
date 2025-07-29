@@ -154,6 +154,7 @@ declare -A EXPECTED_REPLICAS
 EXPECTED_REPLICAS=(
     ["${DEPLOYMENT}-internal_health"]=1
     ["${DEPLOYMENT}-catalog_catalog"]=3
+    ["${DEPLOYMENT}-catalog_captcha"]=3
     ["${DEPLOYMENT}-catalog_legacylinks"]=3
     ["${DEPLOYMENT}-mariadb_galera"]=3
     ["${DEPLOYMENT}-solr_cron"]=3
@@ -219,6 +220,10 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
     if ! is_main && [[ "$SERVICE" == "${DEPLOYMENT}-catalog_catalog" && "$FOUND_REPLICAS" -eq 1 ]]; then
         # We're okay with devel environments being scaled down to 1 catalog replica
         MESSAGES+=("catalog scaled to 1")
+        continue
+    fi
+    if ! is_main && [[ "$SERVICE" == "${DEPLOYMENT}-catalog_captcha" && "$FOUND_REPLICAS" -eq 1 ]]; then
+        MESSAGES+=("captcha scaled to 1")
         continue
     fi
     TARGET_REPLICAS="${EXPECTED_REPLICAS[$SERVICE]}"
