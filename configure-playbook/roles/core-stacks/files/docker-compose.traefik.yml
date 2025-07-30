@@ -104,10 +104,8 @@ services:
         - "traefik.http.middlewares.ip-campus.ipallowlist.sourcerange=${CAMPUS_IPS}"
         # Emergency brakes on overload situation
         # - median request time over 60 seconds (all requests, not just VuFind pages)
-        # - 50% or higher network failure (e.g. timeout or dropped packet)
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.expression=\
-          LatencyAtQuantileMS(50.0) > 60000 \
-          || NetworkErrorRatio() > 0.50"
+          LatencyAtQuantileMS(50.0) > 60000"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.checkperiod=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.fallbackduration=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.recoveryduration=15s"
