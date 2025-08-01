@@ -696,7 +696,7 @@ alphabrowse_rebuild() {
 add_generated_call_numbers() {
     print_verbose "         -- Adding the generated call numbers to Solr"
     CMD="python3 ./add_generated_call_numbers.py"
-    run_in_node_service 1 "$ARG_STACK" "solr_solr" "python3 ./add_generated_call_numbers.py"
+    run_in_node_service 1 "$ARG_STACK" "solr_solr" "$CMD"
     return $?
 }
 
