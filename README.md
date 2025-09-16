@@ -1,4 +1,4 @@
-# Catalog Infrastructure
+# MSU Libraries Public Catalog Infrastructure
 
 ## Installation and Configuration
 
