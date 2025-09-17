@@ -47,6 +47,9 @@
 - name: Debug what IPs will be used for Docker Swarm nodes
   debug:
     msg: "SWARM NODE IP: {{ swarm_join_ip }}"
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ ansible_play_hosts_all }} "
 
 - name: Set variables needed for joining swarm
   ansible.builtin.set_fact:
