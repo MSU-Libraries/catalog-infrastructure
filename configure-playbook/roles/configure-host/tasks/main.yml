@@ -10,11 +10,11 @@
   tags:
     - configure-host
 
- - name: Full hostname resolve to public IP for cluster
-   ansible.builtin.lineinfile:
-     path: /etc/hosts
-     line: "{{ lookup('community.general.dig', item, qtype='A', fail_on_error=true) | trim('.') }} {{ item }}"
-     state: present
-   loop: "{{ ansible_play_hosts }}"
-   tags:
-     - configure-host
+- name: Full hostname resolve to public IP for cluster
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ lookup('community.general.dig', item, qtype='A', fail_on_error=true) | trim('.') }} {{ item }}"
+    state: present
+  loop: "{{ ansible_play_hosts }}"
+  tags:
+    - configure-host
