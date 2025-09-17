@@ -44,6 +44,10 @@
   - ansible_play_hosts_all.index(inventory_hostname) == 0
   - item.startswith('10.1.')
 
+- name: Debug what IPs will be used for Docker Swarm nodes
+  debug:
+    msg: "SWARM NODE IP: {{ swarm_join_ip }}"
+
 - name: Set variables needed for joining swarm
   ansible.builtin.set_fact:
     join_token: "{{ swarm_data.swarm_facts.JoinTokens.Manager }}"
