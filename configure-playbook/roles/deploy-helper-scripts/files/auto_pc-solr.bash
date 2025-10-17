@@ -1,4 +1,4 @@
-_pc-locate-hlm()
+_pc-solr()
 {
     shopt -s nullglob
     COMPREPLY=()
