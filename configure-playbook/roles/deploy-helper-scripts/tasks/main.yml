@@ -183,3 +183,19 @@
     mode: '0644'
     owner: root
     group: root
+
+- name: Deploy pc-solr script
+  ansible.builtin.copy:
+    src: pc-solr
+    dest: /usr/local/bin/
+    mode: '0755'
+    owner: root
+    group: deploy
+
+- name: Deploy pc-solr autocomplete script
+  ansible.builtin.copy:
+    src: auto_pc-solr.bash
+    dest: /etc/bash_completion.d/pc-solr
+    mode: '0644'
+    owner: root
+    group: root

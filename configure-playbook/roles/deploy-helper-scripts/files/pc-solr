@@ -1,0 +1,134 @@
+#!/bin/bash
+
+# shellcheck disable=SC2034,SC1091
+
+SCRIPT_DIR=$( dirname "$0" )
+source "${SCRIPT_DIR}/pc-common"
+
+init_log_level
+
+run_help_solr() {
+    run_help "Helper script for Solr tasks"
+}
+
+### Help examples
+help_examples_solr_create_collections() {
+    echo "# Create any missing Solr collections for the stack"
+    echo "./$SCRIPT_NAME catalog-prod -c"
+}
+help_examples_solr_check_missing_collections() {
+    echo "# Determine if any Solr collections are missing for the stack"
+    echo "./$SCRIPT_NAME catalog-prod -c -n"
+}
+
+parse_flags_dry_run() {
+    VAR_NAME=DRY_RUN
+    FLAG_PATTERN="-n|--dry-run"
+    HELP_TEXT="Dry run the command; print what would happen, but make no changes."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+parse_flags_create() {
+    VAR_NAME=CREATE
+    FLAG_PATTERN="-c|--create"
+    HELP_TEXT="Create any missing Solr collections for the stack."
+    VAR_DEFAULT=0
+    VAR_IS_BOOL=1
+    format_flag_info
+}
+
+load_flags
+
+# Capture all the common pleads for help
+if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
+    run_help_solr
+    exit 0
+fi
+
+get_cluster_status() {
+    run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=clusterstatus" | jq '.cluster.live_nodes | length'
+}
+
+get_collections() {
+    run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=clusterstatus" | jq '.cluster.collections | keys[]'
+}
+
+get_aliases() {
+    run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES&wt=json"
+}
+
+create_solr_collections() {
+    print_info "Making sure Solr is available for ${ARG_STACK}"
+    SOLR_CLUSTER_SIZE=$(get_cluster_status)
+    while [[ "$SOLR_CLUSTER_SIZE" -lt 1 ]]; do
+        print_debug "No Solr nodes online yet. Waiting..."
+        sleep 5
+        SOLR_CLUSTER_SIZE=$(get_cluster_status)
+    done
+    print_info "${SOLR_CLUSTER_SIZE} Solr node(s) online."
+    
+    print_info "Determine if any Solr collections are missing for ${ARG_STACK}" 
+    # biblio needs to be done first in order to initialize the ICUTokenizerFactory
+    COLLS=("biblio1" "biblio2" "authority" "reserves" "website")
+    for COLL in "${COLLS[@]}"
+    do
+        # See if the collection already exists in Solr
+        MATCHED_COLL=$(get_collections | grep "${COLL}")
+        while [[ -z "${MATCHED_COLL}" ]]; do
+            # Create collection
+            if [[ ${ARG_DRY_RUN} -eq 0 ]]; then
+                OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATE\&name=${COLL}\&numShards=1\&replicationFactor=3\&wt=xml\&collection.configName=${COLL}")
+                HAS_ERROR=$(echo "${OUTPUT}" | grep -c "SolrException")
+
+                if [[ ${HAS_ERROR} -gt 0 ]]; then
+                    print_error "Failed to create Solr collection ${COLL}. ${OUTPUT}"
+                    sleep 5
+                else
+                    print_info "Created Solr collection for ${COLL}."
+                    # Not breaking here so we can do a final curl call to verify it is showing in the cluster status properly
+                fi
+            else
+                print_info "(dry-run) Create ${COLL}"
+                break
+            fi
+            MATCHED_COLL=$(get_collections | grep "${COLL}")
+        done
+        print_info "Verified that Solr collection ${COLL} exists."
+
+    done
+
+    print_info "Determining if the collection aliases exist."
+    if ! ALIASES=$(get_aliases); then
+        die "Failed to query to the collection aliases in Solr. Exiting. ${ALIASES}"
+    fi
+    if ! [[ "${ALIASES}" =~ .*"biblio".* ]]; then
+        if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS&name=biblio&collections=biblio1"); then
+            die "Failed to create biblio alias pointing to biblio1. Exiting. ${OUTPUT}"
+        fi
+        if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS&name=biblio-build&collections=biblio2"); then
+            die "Failed to create biblio-build alias pointing to biblio2. Exiting. ${OUTPUT}"
+        fi
+    fi
+    print_info "Verifed that the collection aliases exist."
+}
+
+main() {
+    print_info "Running pc-solr with: STACK: ${ARG_STACK}, CREATE: ${ARG_CREATE}, DRY_RUN: ${ARG_DRY_RUN}"
+
+    # Make sure we have a stack
+    if [[ -z ${ARG_STACK} ]]; then
+        die "STACK is a required parameter"
+    fi
+
+    # check if -c|--create
+    if [[ "${ARG_CREATE}" -eq 1 ]]; then
+        create_solr_collections
+    fi
+}
+
+# shellcheck disable=SC2046
+parse_args $(split_flags "$@")
+
+main
