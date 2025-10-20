@@ -103,17 +103,28 @@ create_solr_collections() {
     if ! ALIASES=$(get_aliases); then
         die "Failed to query to the collection aliases in Solr. Exiting. ${ALIASES}"
     fi
-    if ! [[ "${ALIASES}" =~ .*"biblio1".* ]] || ! [[ "${ALIASES}" =~ .*"biblio2".* ]]; then
-        print_info "Creating aliases"
+    while ! [[ "${ALIASES}" =~ .*"biblio1".* ]]; do
+        print_info "Creating biblio1 aliases"
         if [[ ${ARG_DRY_RUN} -eq 0 ]]; then
             if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio\&collections=biblio1"); then
                 die "Failed to create biblio alias pointing to biblio1. Exiting. ${OUTPUT}"
             fi
+        fi
+        if ! ALIASES=$(get_aliases); then
+            die "Failed to query to the collection aliases in Solr. Exiting. ${ALIASES}"
+        fi
+    done
+    while ! [[ "${ALIASES}" =~ .*"biblio2".* ]]; do
+        print_info "Creating biblio2 aliases"
+        if [[ ${ARG_DRY_RUN} -eq 0 ]]; then
             if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio-build\&collections=biblio2"); then
                 die "Failed to create biblio-build alias pointing to biblio2. Exiting. ${OUTPUT}"
             fi
         fi
-    fi
+        if ! ALIASES=$(get_aliases); then
+            die "Failed to query to the collection aliases in Solr. Exiting. ${ALIASES}"
+        fi
+    done
     print_info "Verifed that the collection aliases exist."
 }
 
