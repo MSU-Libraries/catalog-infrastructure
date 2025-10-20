@@ -56,12 +56,13 @@ get_collections() {
 }
 
 get_aliases() {
-    run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES&wt=json"
+    run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=LISTALIASES\&wt=json"
 }
 
 create_solr_collections() {
     print_info "Making sure Solr is available for ${ARG_STACK}"
     SOLR_CLUSTER_SIZE=$(get_cluster_status)
+
     while [[ "$SOLR_CLUSTER_SIZE" -ne 3 ]]; do
         print_debug "Not all Solr nodes online yet (${SOLR_CLUSTER_SIZE}/3). Waiting..."
         sleep 5
@@ -104,11 +105,16 @@ create_solr_collections() {
         die "Failed to query to the collection aliases in Solr. Exiting. ${ALIASES}"
     fi
     if ! [[ "${ALIASES}" =~ .*"biblio".* ]]; then
-        if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS&name=biblio&collections=biblio1"); then
-            die "Failed to create biblio alias pointing to biblio1. Exiting. ${OUTPUT}"
-        fi
-        if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS&name=biblio-build&collections=biblio2"); then
-            die "Failed to create biblio-build alias pointing to biblio2. Exiting. ${OUTPUT}"
+        print_info "Creating aliases"
+        if [[ ${ARG_DRY_RUN} -eq 0 ]]; then
+            if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio\&collections=biblio1"); then
+                die "Failed to create biblio alias pointing to biblio1. Exiting. ${OUTPUT}"
+            fi
+            print_info "${OUTPUT}"
+            if ! OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr:8983/solr/admin/collections?action=CREATEALIAS\&name=biblio-build\&collections=biblio2"); then
+                die "Failed to create biblio-build alias pointing to biblio2. Exiting. ${OUTPUT}"
+            fi
+            print_info "${OUTPUT}"
         fi
     fi
     print_info "Verifed that the collection aliases exist."
