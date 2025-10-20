@@ -62,8 +62,8 @@ get_aliases() {
 create_solr_collections() {
     print_info "Making sure Solr is available for ${ARG_STACK}"
     SOLR_CLUSTER_SIZE=$(get_cluster_status)
-    while [[ "$SOLR_CLUSTER_SIZE" -lt 1 ]]; do
-        print_debug "No Solr nodes online yet. Waiting..."
+    while [[ "$SOLR_CLUSTER_SIZE" -ne 3 ]]; do
+        print_debug "Not all Solr nodes online yet (${SOLR_CLUSTER_SIZE}/3). Waiting..."
         sleep 5
         SOLR_CLUSTER_SIZE=$(get_cluster_status)
     done
