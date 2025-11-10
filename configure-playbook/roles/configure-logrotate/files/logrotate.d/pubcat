@@ -1,11 +1,11 @@
-/var/lib/docker/volumes/*_logs/_data/*/*.log /var/lib/docker/volumes/traefik_logs/_data/*.log {
+/var/lib/docker/volumes/*_logs/_data/alphabrowse/*.log /var/lib/docker/volumes/*_logs/_data/apache/*.log /var/lib/docker/volumes/*_logs/_data/backups/*.log /var/lib/docker/volumes/*_logs/_data/harvests/*.log /var/lib/docker/volumes/*_logs/_data/mariadb/*.log /var/lib/docker/volumes/*_logs/_data/simplesamlphp/*.log /var/lib/docker/volumes/*_logs/_data/vufind/*.log /var/lib/docker/volumes/traefik_logs/_data/*.log {
   rotate 14
   daily
   compress
   missingok
   delaycompress
   prerotate
-    bash -c "[[ ! $1 =~ _latest && ! $1 =~ /_data/solr/ ]]"
+    bash -c "[[ ! $1 =~ _latest ]]"
   endscript
   lastaction
     docker ps --format '{{.Names}}' --filter name=traefik | xargs -I {} sh -c "docker kill --signal=USR1 {}"
