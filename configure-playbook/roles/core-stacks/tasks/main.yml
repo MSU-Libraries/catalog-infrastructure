@@ -57,6 +57,14 @@
     owner: deploy
     group: deploy
 
+- name: Copy cert-sync docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.cert-sync.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
 - name: Copy badbots docker-compose
   ansible.builtin.copy:
     src: docker-compose.badbots.yml
@@ -92,6 +100,34 @@
       export CAMPUS_IPS='{{ CAMPUS_IPS }}'
       envsubst < docker-compose.traefik.yml | sponge docker-compose.traefik.yml
       chown deploy:deploy docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+# TODO -- this could cause problems if/when we have more than just dev/prod clusters
+- name: Determine environment (dev/prod) based on hostname
+  set_fact:
+    environment_type: >
+      {% if inventory_hostname | search('-dev') %}
+      dev
+      {% else %}
+      prod
+      {% endif %}
+
+# TODO -- ownership??
+- name: Ensure shared cert dir exists
+  ansible.builtin.file:
+    path: /mnt/shared/certs/{{ environment_type }}
+    state: directory
+    mode: '0755'
+    owner: deploy
+    group: deploy
+
+- name: Run envsubst on cert-sync docker-compose
+  ansible.builtin.shell:
+    cmd: |
+      export CLUSTER='{{ environment_type }}'
+      envsubst < docker-compose.cert-sync.yml | sponge docker-compose.cert-sync.yml
+      chown deploy:deploy docker-compose.cert-sync.yml
   args:
     chdir: /home/deploy/core-stacks/
 
