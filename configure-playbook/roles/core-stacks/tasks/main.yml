@@ -41,6 +41,22 @@
     owner: deploy
     group: deploy
 
+- name: Copy traefik-keymaster docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.traefik-keymaster.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
+- name: Copy traefik-follower docker-compose
+  ansible.builtin.copy:
+    src: docker-compose.traefik-follower.yml
+    dest: /home/deploy/core-stacks/
+    mode: '0644'
+    owner: deploy
+    group: deploy
+
 - name: Copy badbots docker-compose
   ansible.builtin.copy:
     src: docker-compose.badbots.yml
@@ -93,6 +109,31 @@
   args:
     chdir: /home/deploy/core-stacks/
 
+- name: Merge traefik compose files to create keymaster
+  ansible.builtin.shell:
+    cmd: yq eval-all '. as $item ireduce ({}; . *+ $item )' docker-compose.traefik.yml docker-compose.traefik-keymaster.yml | sponge docker-compose.traefik-keymaster.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+- name: Rename service for traefik-keymaster
+  ansible.builtin.command:
+    cmd: yq -i '.services.traefik-keymaster = .services.traefik | del(.services.traefik)' docker-compose.traefik-keymaster.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+- name: Merge traefik compose files to create follower
+  ansible.builtin.shell:
+    cmd: yq eval-all '. as $item ireduce ({}; . *+ $item )' docker-compose.traefik.yml docker-compose.traefik-follower.yml | sponge docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+- name: Cleanup partial traefik compose files
+  ansible.builtin.file:
+    path: docker-compose.traefik-follower.yml
+    state: absent
+  args:
+    chdir: /home/deploy/core-stacks/
+
 - name: Deploy public network stack
   ansible.builtin.command:
     cmd: docker stack deploy --prune -c docker-compose.public.yml public
@@ -109,6 +150,13 @@
 - name: Deploy swarm-cleanup stack
   ansible.builtin.command:
     cmd: docker stack deploy --prune -c docker-compose.swarm-cleanup.yml swarm-cleanup
+  args:
+    chdir: /home/deploy/core-stacks/
+  run_once: true
+
+- name: Deploy traefik-keymaster stack
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.traefik-keymaster.yml traefik-keymaster
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true

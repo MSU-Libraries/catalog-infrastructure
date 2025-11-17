@@ -1,0 +1,12 @@
+---
+services:
+  traefik:
+    command:
+      - "--certificatesresolvers.msul-letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.msul-letsencrypt.acme.httpchallenge.entrypoint=msul-http-ent"
+      - "--certificatesresolvers.msul-letsencrypt-dns.acme.dnschallenge=true"
+      - "--certificatesresolvers.msul-letsencrypt-dns.acme.dnschallenge.provider=route53"
+    deploy:
+      placement:
+        constraints:
+          - 'node.labels.nodeid == 1'

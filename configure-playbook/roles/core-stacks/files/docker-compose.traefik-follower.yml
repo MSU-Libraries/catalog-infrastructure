@@ -1,0 +1,7 @@
+---
+services:
+  traefik:
+    deploy:
+      placement:
+        constraints:
+          - 'node.labels.nodeid != 1'
