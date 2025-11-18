@@ -116,7 +116,7 @@
 - name: Determine environment (dev/prod) based on hostname
   set_fact:
     environment_type: >
-      {% if inventory_hostname | search('-dev') %}
+      {% if inventory_hostname | regex_search('-dev') %}
       dev
       {% else %}
       prod
