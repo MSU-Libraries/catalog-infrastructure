@@ -174,10 +174,8 @@
 
 - name: Cleanup partial traefik compose files
   ansible.builtin.file:
-    path: docker-compose.traefik-follower.yml
+    path: /home/deploy/core-stacks/docker-compose.traefik-follower.yml
     state: absent
-  args:
-    chdir: /home/deploy/core-stacks/
 
 - name: Deploy public network stack
   ansible.builtin.command:
