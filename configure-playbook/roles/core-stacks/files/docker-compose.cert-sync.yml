@@ -9,7 +9,7 @@ services:
     # - If not the keymaster node, sync files from shared location to the traefik cert volume
     # TODO
     # - Remove dry-run
-    command: ["sh", "-c", "echo \"I am node $$NODE_ID\"; SOURCE_DIR=$$CERTS; TARGET_DIR=$$TRAEFIK; if [[ $$NODE_ID -eq 1 ]]; then SOURCE_DIR=$$TRAEFIK; TARGET_DIR=$$CERTS; fi; echo \"Syncing $$SOURCE_DIR to $$TARGET_DIR\"; rsync -aivn $$SOURCE_DIR $$TARGET_DIR;"]
+    command: ["sh", "-c", "apk add rsync; echo \"I am node $$NODE_ID\"; SOURCE_DIR=$$CERTS; TARGET_DIR=$$TRAEFIK; if [[ $$NODE_ID -eq 1 ]]; then SOURCE_DIR=$$TRAEFIK; TARGET_DIR=$$CERTS; fi; echo \"Syncing $$SOURCE_DIR to $$TARGET_DIR\"; rsync -aivn $$SOURCE_DIR $$TARGET_DIR;"]
     environment:
       NODE_ID: {{slice .Node.Hostname 8 9}}
       CERTS: "/certs/"

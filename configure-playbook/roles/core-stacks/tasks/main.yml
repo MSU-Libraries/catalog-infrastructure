@@ -190,6 +190,13 @@
     chdir: /home/deploy/core-stacks/
   run_once: true
 
+- name: Deploy cert-sync stack
+  ansible.builtin.command:
+    cmd: docker stack deploy --prune -c docker-compose.cert-sync.yml cert-sync
+  args:
+    chdir: /home/deploy/core-stacks/
+  run_once: true
+
 - name: Deploy traefik-keymaster stack
   ansible.builtin.command:
     cmd: docker stack deploy --prune -c docker-compose.traefik-keymaster.yml traefik-keymaster
