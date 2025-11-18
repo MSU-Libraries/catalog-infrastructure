@@ -1,0 +1,46 @@
+---
+version: "3.8"
+
+services:
+  cert-sync:
+    image: docker
+    # Sync over the most recent certificates for traefik
+    # - If this is the keymaster node, sync from the traefik cert volume to shared location
+    # - If not the keymaster node, sync files from shared location to the traefik cert volume
+    # TODO
+    # - Remove dry-run
+    command: ["sh", "-c", "apk add rsync; echo \"I am node $$NODE_ID\"; SOURCE_DIR=$$CERTS; TARGET_DIR=$$TRAEFIK; if [[ $$NODE_ID -eq 1 ]]; then SOURCE_DIR=$$TRAEFIK; TARGET_DIR=$$CERTS; fi; echo \"Syncing $$SOURCE_DIR to $$TARGET_DIR\"; rsync -aivn $$SOURCE_DIR $$TARGET_DIR;"]
+    environment:
+      NODE_ID: {{slice .Node.Hostname 8 9}}
+      CERTS: "/certs/"
+      TRAEFIK: "/etc/traefik/"
+    cap_drop:
+      - CAP_NET_BIND_SERVICE
+      - CAP_KILL
+      - CAP_CHOWN
+      - CAP_FSETID
+      - CAP_SETGID
+      - CAP_SETUID
+    volumes:
+      - "var_lib_docker:/var/lib/docker"
+      - traefik:/etc/traefik
+      - "/mnt/shared/certs/${CLUSTER}:/certs"
+    deploy:
+      mode: global
+      placement:
+        max_replicas_per_node: 1
+      restart_policy:
+        delay: 24h
+      update_config:
+        failure_action: rollback
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
+
+volumes:
+  var_lib_docker:
+  traefik:
+    driver: local
+    external: true
+    name: "traefik"

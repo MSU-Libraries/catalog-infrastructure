@@ -1,0 +1,12 @@
+---
+services:
+  traefik:
+    deploy:
+      placement:
+        constraints:
+          - 'node.labels.nodeid != 1'
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.follower-http-router.entrypoints=msul-http-ent"
+        - "traefik.http.routers.follower-http-router.rule=PathPrefix(`/.well-known/acme-challenge/`)"
+        - "traefik.http.routers.follower-http-router.service=keymaster-app"
