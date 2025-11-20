@@ -1,12 +1,17 @@
 ---
 services:
   traefik:
+    command:
+      - "--entrypoints.msul-http-ent.allowACMEByPass=true"
+      - "--entrypoints.msul-https-ent.allowACMEByPass=true"
     deploy:
       placement:
         constraints:
           - 'node.labels.nodeid != 1'
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.follower-http-router.entrypoints=msul-http-ent"
+        # Router for redirecting cert renewal requests to keymaster
         - "traefik.http.routers.follower-http-router.rule=PathPrefix(`/.well-known/acme-challenge/`)"
+        - "traefik.http.routers.follower-http-router.priority=3000"
         - "traefik.http.routers.follower-http-router.service=keymaster-app"
+        - "traefik.http.services.keymaster-app.loadbalancer.server.url=http://${DEPLOY_HOST_1}/"
+        - "traefik.http.services.keymaster-app.loadbalancer.server.preservePath=true"
