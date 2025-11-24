@@ -103,12 +103,12 @@
   args:
     chdir: /home/deploy/core-stacks/
 
-- name: Run envsubst on traefik keymaster docker-compose
+- name: Run envsubst on traefik follower docker-compose
   ansible.builtin.shell:
     cmd: |
       DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
-      envsubst '$DEPLOY_HOST_1' < docker-compose.traefik-keymaster.yml | sponge docker-compose.traefik-keymaster.yml
-      chown deploy:deploy docker-compose.traefik-keymaster.yml
+      envsubst '$DEPLOY_HOST_1' < docker-compose.traefik-follower.yml | sponge docker-compose.traefik-follower.yml
+      chown deploy:deploy docker-compose.traefik-follower.yml
   args:
     chdir: /home/deploy/core-stacks/
 
@@ -149,12 +149,6 @@
 - name: Merge traefik compose files to create keymaster
   ansible.builtin.shell:
     cmd: yq eval-all '. as $item ireduce ({}; . *+ $item )' docker-compose.traefik.yml docker-compose.traefik-keymaster.yml | sponge docker-compose.traefik-keymaster.yml
-  args:
-    chdir: /home/deploy/core-stacks/
-
-- name: Rename service for traefik-keymaster
-  ansible.builtin.command:
-    cmd: yq -i '.services.traefik-keymaster = .services.traefik | del(.services.traefik)' docker-compose.traefik-keymaster.yml
   args:
     chdir: /home/deploy/core-stacks/
 
@@ -213,14 +207,14 @@
 
 - name: Deploy traefik-keymaster stack
   ansible.builtin.command:
-    cmd: docker stack deploy --prune -c docker-compose.traefik-keymaster.yml traefik-keymaster
+    cmd: docker stack deploy --prune --detach=true -c docker-compose.traefik-keymaster.yml keymaster
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
 
 - name: Deploy traefik stack
   ansible.builtin.command:
-    cmd: docker stack deploy --prune -c docker-compose.traefik.yml traefik
+    cmd: docker stack deploy --prune --detach=true -c docker-compose.traefik.yml traefik
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true

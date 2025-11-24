@@ -3,7 +3,6 @@ services:
   traefik:
     command:
       - "--entrypoints.msul-http-ent.allowACMEByPass=true"
-      - "--entrypoints.msul-https-ent.allowACMEByPass=true"
     deploy:
       placement:
         constraints:
