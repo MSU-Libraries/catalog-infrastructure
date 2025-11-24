@@ -10,6 +10,3 @@ services:
       placement:
         constraints:
           - 'node.labels.nodeid == 1'
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.services.keymaster-app.loadBalancer.servers[0].url=http://${DEPLOY_HOST_1}/"

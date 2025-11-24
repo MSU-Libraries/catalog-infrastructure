@@ -2,7 +2,7 @@
 version: "3.8"
 services:
   traefik:
-    image: traefik:v2.11
+    image: traefik:v3.6
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik:/etc/traefik
@@ -30,6 +30,7 @@ services:
       - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entrypoints.msul-http-ent.http.redirections.entryPoint.to=msul-https-ent"
       - "--entrypoints.msul-http-ent.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.msul-http-ent.http.redirections.entryPoint.priority=1000"
       - "--entrypoints.msul-https-ent.address=:443"
       - "--entrypoints.msul-https-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entryPoints.msul-https-ent.forwardedHeaders.trustedIPs=10.0.0.0/16"
@@ -82,9 +83,6 @@ services:
         - "traefik.http.services.traefik-public-traefik.loadbalancer.server.port=9999"
         # BasicAuth Middleware for restricted resources
         - "traefik.http.middlewares.restrict-auth.basicauth.users=${BASICAUTH_FOR_RESOURCES}"
-        # Redirect Middleware (TODO Deprecated - Traefik now configured to always redirect HTTP)
-        - "traefik.http.middlewares.http-redirect.redirectscheme.scheme=https"
-        - "traefik.http.middlewares.http-redirect.redirectscheme.permanent=true"
         # Middleware to add /vufind to path
         - "traefik.http.middlewares.fix-prefix.replacepathregex.regex=^/(vufind/)?(.*)"
         - "traefik.http.middlewares.fix-prefix.replacepathregex.replacement=/vufind/$$2"
@@ -109,7 +107,7 @@ services:
         - "traefik.http.routers.dashboard-https-router.tls=true"
         - "traefik.http.routers.dashboard-https-router.tls.certresolver=msul-letsencrypt-dns"
         - "traefik.http.routers.dashboard-https-router.rule=\
-            Host(`${DEPLOY_HOST_1}`,`${DEPLOY_HOST_2}`,`${DEPLOY_HOST_3}`) && \
+            (Host(`${DEPLOY_HOST_1}`) || Host(`${DEPLOY_HOST_2}`) || Host(`${DEPLOY_HOST_3}`)) && \
             (PathPrefix(`/dashboard`) || PathPrefix(`/api`) || PathPrefix(`/debug`))"
         - "traefik.http.routers.dashboard-https-router.service=api@internal"
 
@@ -121,6 +119,7 @@ networks:
 volumes:
   traefik:
     driver: local
+    name: "traefik_traefik"
   logs:
     external: true
     name: "traefik_logs"

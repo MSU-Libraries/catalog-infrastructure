@@ -103,26 +103,25 @@
   args:
     chdir: /home/deploy/core-stacks/
 
-- name: Run envsubst on traefik keymaster docker-compose
+- name: Run envsubst on traefik follower docker-compose
   ansible.builtin.shell:
     cmd: |
-      export DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
-      envsubst < docker-compose.traefik-keymaster.yml | sponge docker-compose.traefik-keymaster.yml
-      chown deploy:deploy docker-compose.traefik-keymaster.yml
+      DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
+      envsubst '$DEPLOY_HOST_1' < docker-compose.traefik-follower.yml | sponge docker-compose.traefik-follower.yml
+      chown deploy:deploy docker-compose.traefik-follower.yml
   args:
     chdir: /home/deploy/core-stacks/
 
 # TODO -- this could cause problems if/when we have more than just dev/prod clusters
 - name: Determine environment (dev/prod) based on hostname
   set_fact:
-    environment_type: >
-      {% if inventory_hostname | regex_search('-dev') %}
+    environment_type: >-
+      {%- if inventory_hostname | regex_search('-dev') -%}
       dev
-      {% else %}
+      {%- else -%}
       prod
-      {% endif %}
+      {%- endif -%}
 
-# TODO -- ownership??
 - name: Ensure shared cert dir exists
   ansible.builtin.file:
     path: /mnt/shared/certs/{{ environment_type }}
@@ -134,8 +133,8 @@
 - name: Run envsubst on cert-sync docker-compose
   ansible.builtin.shell:
     cmd: |
-      export CLUSTER='{{ environment_type }}'
-      envsubst < docker-compose.cert-sync.yml | sponge docker-compose.cert-sync.yml
+      CLUSTER='{{ environment_type }}'
+      envsubst '$CLUSTER' < docker-compose.cert-sync.yml | sponge docker-compose.cert-sync.yml
       chown deploy:deploy docker-compose.cert-sync.yml
   args:
     chdir: /home/deploy/core-stacks/
@@ -147,22 +146,9 @@
     chdir: /home/deploy/
     executable: /bin/bash
 
-# related to https://github.com/mikefarah/yq/issues/1191
-- name: Clean up empty lines from traefik docker-compose
-  ansible.builtin.command:
-    cmd: sed -i "/^$/d" docker-compose.traefik.yml
-  args:
-    chdir: /home/deploy/core-stacks/
-
 - name: Merge traefik compose files to create keymaster
   ansible.builtin.shell:
     cmd: yq eval-all '. as $item ireduce ({}; . *+ $item )' docker-compose.traefik.yml docker-compose.traefik-keymaster.yml | sponge docker-compose.traefik-keymaster.yml
-  args:
-    chdir: /home/deploy/core-stacks/
-
-- name: Rename service for traefik-keymaster
-  ansible.builtin.command:
-    cmd: yq -i '.services.traefik-keymaster = .services.traefik | del(.services.traefik)' docker-compose.traefik-keymaster.yml
   args:
     chdir: /home/deploy/core-stacks/
 
@@ -176,6 +162,21 @@
   ansible.builtin.file:
     path: /home/deploy/core-stacks/docker-compose.traefik-follower.yml
     state: absent
+
+# related to https://github.com/mikefarah/yq/issues/1191
+- name: Clean up empty lines from traefik docker-compose
+  ansible.builtin.command:
+    cmd: sed -i "/^$/d" docker-compose.traefik.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
+# related to https://github.com/mikefarah/yq/issues/1191
+- name: Clean up empty lines from keymaster traefik docker-compose
+  ansible.builtin.command:
+    cmd: sed -i "/^$/d" docker-compose.traefik-keymaster.yml
+  args:
+    chdir: /home/deploy/core-stacks/
+
 
 - name: Deploy public network stack
   ansible.builtin.command:
@@ -206,14 +207,14 @@
 
 - name: Deploy traefik-keymaster stack
   ansible.builtin.command:
-    cmd: docker stack deploy --prune -c docker-compose.traefik-keymaster.yml traefik-keymaster
+    cmd: docker stack deploy --prune --detach=true -c docker-compose.traefik-keymaster.yml keymaster
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
 
 - name: Deploy traefik stack
   ansible.builtin.command:
-    cmd: docker stack deploy --prune -c docker-compose.traefik.yml traefik
+    cmd: docker stack deploy --prune --detach=true -c docker-compose.traefik.yml traefik
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
