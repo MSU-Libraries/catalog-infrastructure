@@ -21,11 +21,10 @@ services:
     environment:
       # XXX: The environment will be replaced by traefik-env.yml during deploy
     command:
-      - "--providers.docker"
-      - "--providers.docker.swarmMode=true"
-      - "--providers.docker.exposedByDefault=false"
-      - "--providers.docker.network=public"
-      - '--providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.${DOMAIN}`)'
+      - "--providers.swarm"
+      - "--providers.swarm.exposedByDefault=false"
+      - "--providers.swarm.network=public"
+      - '--providers.swarm.defaultRule=Host(`{{ index .Labels "com.docker.stack.namespace" | trimSuffix "-catalog" }}.${DOMAIN}`)'
       - "--entrypoints.msul-http-ent.address=:80"
       - "--entrypoints.msul-http-ent.transport.respondingTimeouts.readTimeout=60s"
       - "--entrypoints.msul-http-ent.http.redirections.entryPoint.to=msul-https-ent"
