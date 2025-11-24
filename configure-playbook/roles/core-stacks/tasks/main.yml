@@ -106,8 +106,8 @@
 - name: Run envsubst on traefik follower docker-compose
   ansible.builtin.shell:
     cmd: |
-      DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
-      envsubst '$DEPLOY_HOST_1' < docker-compose.traefik-follower.yml | sponge docker-compose.traefik-follower.yml
+      export DEPLOY_HOST_1='{{ lookup('ansible.builtin.env', 'DEPLOY_HOST_1') }}'
+      envsubst < docker-compose.traefik-follower.yml | sponge docker-compose.traefik-follower.yml
       chown deploy:deploy docker-compose.traefik-follower.yml
   args:
     chdir: /home/deploy/core-stacks/
@@ -133,7 +133,7 @@
 - name: Run envsubst on cert-sync docker-compose
   ansible.builtin.shell:
     cmd: |
-      CLUSTER='{{ environment_type }}'
+      export CLUSTER='{{ environment_type }}'
       envsubst '$CLUSTER' < docker-compose.cert-sync.yml | sponge docker-compose.cert-sync.yml
       chown deploy:deploy docker-compose.cert-sync.yml
   args:
