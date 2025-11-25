@@ -128,6 +128,7 @@ STACK_NAMES=(
     "${DEPLOYMENT}-monitoring"
     "swarm-cleanup"
     "traefik"
+    "keymaster"
 )
 FOUND_STACKS=0
 while read -r LINE; do
@@ -164,7 +165,8 @@ EXPECTED_REPLICAS=(
     ["${DEPLOYMENT}-monitoring_monitoring"]=3
     ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
     ["swarm-cleanup_prune-nodes"]=0
-    ["traefik_traefik"]=3
+    ["traefik_traefik"]=2
+    ["keymaster_traefik"]=1
 )
 if is_main; then
     EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_cron"]=1
