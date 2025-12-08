@@ -34,7 +34,7 @@ services:
       resources:
         limits:
           cpus: '0.50'
-          memory: 50M
+          memory: 128M
 
 volumes:
   var_lib_docker:
