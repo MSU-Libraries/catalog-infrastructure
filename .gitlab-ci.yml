@@ -4,6 +4,7 @@ stages:
   - shared
   - devel
   - prod
+  - catprod
   - optional
   - Release
 
@@ -99,6 +100,27 @@ Provision Shared Resources:
       artifacts: true
   variables:
     TERRAFORM_ENV: prod
+
+1-Provision CatProd Cluster:
+  extends: .provision_template
+  stage: catprod
+  environment:
+    name: catprod
+  variables:
+    TERRAFORM_ENV: catprod
+
+2-Configure CatProd Cluster:
+  extends: .configure_template
+  stage: catprod
+  environment:
+    name: catprod
+  needs:
+    - job: Provision Shared Resources
+      artifacts: true
+    - job: 1-Provision CatProd Cluster
+      artifacts: true
+  variables:
+    TERRAFORM_ENV: catprod
 
 1-Ubuntu Setup Playbook Devel Cluster (Optional):
   extends: .ubuntu_setup_template

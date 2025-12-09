@@ -112,12 +112,13 @@
   args:
     chdir: /home/deploy/core-stacks/
 
-# TODO -- this could cause problems if/when we have more than just dev/prod clusters
-- name: Determine environment (dev/prod) based on hostname
+- name: Determine environment (dev/prod/catprod) based on hostname
   set_fact:
     environment_type: >-
       {%- if inventory_hostname | regex_search('-dev') -%}
       dev
+      {%- elif inventory_hostname | regex_search('catprod') -%}
+      catprod
       {%- else -%}
       prod
       {%- endif -%}
