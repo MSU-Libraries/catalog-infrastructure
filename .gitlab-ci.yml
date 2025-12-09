@@ -206,7 +206,7 @@ Provision Shared Resources:
       # Move artifact to correct location
       mv known_hosts ~/.ssh/known_hosts
       # Run the Ubuntu setup playbook
-      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" || $TERRAFORM_ENV == "catprod" ]]; then
         scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hosts";
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml";
@@ -221,7 +221,7 @@ Provision Shared Resources:
       # Move CI variable file to correct location
       mv $VARIABLES_YAML_FILE configure-playbook/variables.yml
       # Run the configure playbook
-      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" ]]; then
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" || $TERRAFORM_ENV == "catprod" ]]; then
         cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
         ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts;
         echo "Success! Servers for $TERRAFORM_ENV are now accessible.";
