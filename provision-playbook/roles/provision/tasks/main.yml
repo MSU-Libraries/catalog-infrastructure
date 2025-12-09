@@ -37,7 +37,7 @@
             efs_hostname: {{ tf.outputs.catalog_c_efs_hostname.value }}
   when:
    - terraform_env is defined
-   - terraform_env == "devel" or terraform_env == "prod"
+   - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
 
 - name: Create terraform tfvars files from shared resource outputs
   ansible.builtin.shell:
@@ -52,7 +52,7 @@
     seconds: 30
   when:
    - terraform_env is defined
-   - terraform_env == "devel" or terraform_env == "prod"
+   - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
 
 - name: Add to known hosts file
   ansible.builtin.shell: >
@@ -61,4 +61,4 @@
       ssh-keyscan {{ tf.outputs.catalog_c_fqdn.value }} >> ~/.ssh/known_hosts
   when:
    - terraform_env is defined
-   - terraform_env == "devel" or terraform_env == "prod"
+   - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
