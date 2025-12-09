@@ -9,6 +9,7 @@
       - zsh
       - xmlstarlet
     state: present
+    update_cache: yes
     lock_timeout: 999999
 
 - name: Install yq
