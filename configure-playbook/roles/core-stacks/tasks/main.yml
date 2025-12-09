@@ -9,14 +9,6 @@
   become: true
   become_user: deploy
 
-- name: Ensure Docker core-stacks dir exists
-  ansible.builtin.file:
-    path: /home/deploy/core-stacks/
-    state: directory
-    mode: '0755'
-    owner: deploy
-    group: deploy
-
 - name: Copy public network docker-compose
   ansible.builtin.copy:
     src: docker-compose.public.yml

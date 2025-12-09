@@ -45,9 +45,9 @@
     - include_role:
         name: deploy-variables
     - include_role:
-        name: core-stacks
-    - include_role:
         name: deploy-helper-scripts
+    - include_role:
+        name: core-stacks
     - include_role:
         name: restrict-ubuntu-user
     - include_role:

@@ -1,5 +1,13 @@
 ---
 
+- name: Ensure Docker core-stacks dir exists
+  ansible.builtin.file:
+    path: /home/deploy/core-stacks/
+    state: directory
+    mode: '0755'
+    owner: deploy
+    group: deploy
+
 - name: Create .env file for core stacks
   ansible.builtin.copy:
     content: ""
