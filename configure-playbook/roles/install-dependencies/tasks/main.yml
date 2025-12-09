@@ -9,6 +9,8 @@
       - zsh
       - xmlstarlet
       - postfix
+      - moreutils
+      - gettext-base
     state: present
     update_cache: yes
     lock_timeout: 999999
