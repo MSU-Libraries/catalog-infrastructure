@@ -22,9 +22,5 @@
 - name: Set hostname
   ansible.builtin.hostname:
     name: "{{ inventory_hostname }}"
-  when:
-   - not "." in remote_hostname['content']|b64decode
-   - "'.' in inventory_hostname"
-   - inventory_hostname | regex_search("^[a-z]")
   tags:
     - configure-host
