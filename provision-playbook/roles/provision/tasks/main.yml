@@ -39,6 +39,17 @@
    - terraform_env is defined
    - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
 
+- name: Create a file with the list of hostnames for ansible keyscan
+  copy:
+    dest: "../configure-playbook/hostnames"
+    content: |
+      {{ tf.outputs.catalog_a_fqdn.value }}:
+      {{ tf.outputs.catalog_b_fqdn.value }}:
+      {{ tf.outputs.catalog_c_fqdn.value }}:
+  when:
+   - terraform_env is defined
+   - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
+
 - name: Create terraform tfvars files from shared resource outputs
   ansible.builtin.shell:
     chdir: "../terraform/env/{{ terraform_env }}/"

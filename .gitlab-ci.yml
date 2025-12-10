@@ -208,8 +208,8 @@ Provision Shared Resources:
       # Run the Ubuntu setup playbook
       if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" || $TERRAFORM_ENV == "catprod" ]]; then
         scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
-        scp ~/.ssh/known_hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/known_hosts;
-        ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/known_hosts";
+        scp configure-playbook/hostnames ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hostnames;
+        ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hostnames";
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible ansible-playbook -i /home/ubuntusetup/hosts /home/ubuntusetup/ubuntu-setup/runsetup.yml";
       fi
 
