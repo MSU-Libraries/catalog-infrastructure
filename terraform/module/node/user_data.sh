@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/sh
+# NOTE: /bin/bash is not supported
 
 # shellcheck disable=SC2154
 
@@ -36,7 +37,6 @@ POSTSETUP
 
 ### Create ansible user if a key is provided,
 ### so that the ubuntu-setup-playbook can be run
-echo "${ansible_public_key}" > /root/ansible_public_key.txt
 if [ -z "${ansible_public_key}" ]; then
     exit 0
 fi

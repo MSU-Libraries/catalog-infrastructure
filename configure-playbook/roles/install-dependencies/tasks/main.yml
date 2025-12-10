@@ -8,7 +8,6 @@
       - nfs-common
       - zsh
       - xmlstarlet
-      - postfix
       - moreutils
       - gettext-base
     state: present
