@@ -43,9 +43,9 @@
   copy:
     dest: "../configure-playbook/hostnames"
     content: |
-      {{ tf.outputs.catalog_a_fqdn.value }}:
-      {{ tf.outputs.catalog_b_fqdn.value }}:
-      {{ tf.outputs.catalog_c_fqdn.value }}:
+      {{ tf.outputs.catalog_a_fqdn.value }}
+      {{ tf.outputs.catalog_b_fqdn.value }}
+      {{ tf.outputs.catalog_c_fqdn.value }}
   when:
    - terraform_env is defined
    - terraform_env == "devel" or terraform_env == "prod" or terraform_env == "catprod"
