@@ -36,7 +36,8 @@ POSTSETUP
 
 ### Create ansible user if a key is provided,
 ### so that the ubuntu-setup-playbook can be run
-if [[ -z ${ansible_public_key} ]]; then
+echo "${ansible_public_key}" > /root/ansible_public_key.txt
+if [ -z "${ansible_public_key}" ]; then
     exit 0
 fi
 useradd -m -u 4444 -s /bin/bash ansible
