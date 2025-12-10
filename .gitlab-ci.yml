@@ -186,6 +186,7 @@ Provision Shared Resources:
   artifacts:
     paths:
       - configure-playbook/hosts
+      - configure-playbook/hostnames
       - known_hosts
   script:
     - |
