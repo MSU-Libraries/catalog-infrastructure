@@ -81,7 +81,7 @@ resource "aws_instance" "node_instance" {
     ignore_changes = [
       user_data,
     ]
-    prevent_destroy = false # Avoid accidentally destroying the catalog
+    prevent_destroy = true # Avoid accidentally destroying the catalog
   }
 }
 
