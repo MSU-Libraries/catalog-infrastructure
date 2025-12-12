@@ -20,7 +20,7 @@ DEPLOYMENT="$1"
 declare -a MESSAGES
 
 is_main() {
-    [[ "$DEPLOYMENT" == "catalog"* ]]
+    [[ "$DEPLOYMENT" == "catalog"* || "$DEPLOYMENT" == "catprod"* ]]
     return $?
 }
 

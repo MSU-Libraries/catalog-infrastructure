@@ -14,7 +14,7 @@ fi
 DEPLOYMENT="$1"
 
 is_main() {
-    [[ "$DEPLOYMENT" == "catalog"* ]]
+    [[ "$DEPLOYMENT" == "catalog"* || "$DEPLOYMENT" == "catprod"* ]]
     return $?
 }
 
