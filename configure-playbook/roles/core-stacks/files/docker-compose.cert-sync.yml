@@ -7,7 +7,9 @@ services:
     # Sync over the most recent certificates for traefik
     # - If this is the keymaster node, sync from the traefik cert volume to shared location
     # - If not the keymaster node, sync files from shared location to the traefik cert volume
-    command: ["sh", "-c", "apk add rsync; echo \"I am node $$NODE_ID\"; SOURCE_DIR=$$CERTS; TARGET_DIR=$$TRAEFIK; if [[ $$NODE_ID -eq 1 ]]; then SOURCE_DIR=$$TRAEFIK; TARGET_DIR=$$CERTS; fi; echo \"Syncing $$SOURCE_DIR to $$TARGET_DIR\"; rsync -aiv $$SOURCE_DIR $$TARGET_DIR;"]
+    # XXX: The leading sleep is needed to prevent Docker from pausing the service if it exits
+    #      too quickly.
+    command: ["sh", "-c", "sleep 10; apk add rsync; echo \"I am node $$NODE_ID\"; SOURCE_DIR=$$CERTS; TARGET_DIR=$$TRAEFIK; if [[ $$NODE_ID -eq 1 ]]; then SOURCE_DIR=$$TRAEFIK; TARGET_DIR=$$CERTS; fi; echo \"Syncing $$SOURCE_DIR to $$TARGET_DIR\"; rsync -aiv $$SOURCE_DIR $$TARGET_DIR;"]
     environment:
       NODE_ID: "{{slice .Node.Hostname 8 9}}"
       CERTS: "/certs/"

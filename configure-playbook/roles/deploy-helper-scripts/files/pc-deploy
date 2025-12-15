@@ -15,7 +15,7 @@ default_args() {
     ARGS[VERBOSE]=0
     ARGS[DEBUG]=0
 
-    CORE_STACKS=("public" "swarm-cleanup" "traefik" "badbots")
+    CORE_STACKS=("public" "swarm-cleanup" "traefik" "badbots" "cert-sync")
     STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
 }
 default_args
