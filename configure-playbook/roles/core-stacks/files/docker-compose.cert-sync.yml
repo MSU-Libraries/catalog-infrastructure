@@ -1,9 +1,7 @@
 ---
-version: "3.8"
-
 services:
   cert-sync:
-    image: docker
+    image: alpine:3
     # Sync over the most recent certificates for traefik
     # - If this is the keymaster node, sync from the traefik cert volume to shared location
     # - If not the keymaster node, sync files from shared location to the traefik cert volume
@@ -22,7 +20,6 @@ services:
       - CAP_SETGID
       - CAP_SETUID
     volumes:
-      - "var_lib_docker:/var/lib/docker"
       - traefik_traefik:/etc/traefik
       - "/mnt/shared/certs/${CLUSTER}:/certs"
     deploy:
