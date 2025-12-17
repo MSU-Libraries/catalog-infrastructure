@@ -13,13 +13,13 @@ run_help_locate_hlm() {
 
 ### Help examples
 help_examples_locate_hlm() {
-    echo "# Locate a record based on the term '9781527558922' in catalog-prod files"
-    echo "./$SCRIPT_NAME catalog-prod -p 9781527558922"
+    echo "# Locate a record based on the term '9781527558922' in catprod-prod files"
+    echo "./$SCRIPT_NAME catprod-prod -p 9781527558922"
 }
 
 help_examples_locate_hlm_multiple_patterns() {
-    echo "# Locate a record based on the term '9781527558922' AND '123455678' in catalog-prod files"
-    echo "./$SCRIPT_NAME catalog-prod -p 9781527558922,123455678"
+    echo "# Locate a record based on the term '9781527558922' AND '123455678' in catprod-prod files"
+    echo "./$SCRIPT_NAME catprod-prod -p 9781527558922,123455678"
 }
 
 parse_flags_source() {

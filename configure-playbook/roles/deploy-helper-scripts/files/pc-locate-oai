@@ -5,7 +5,7 @@ SCRIPT_NAME=$( basename "$0" )
 init_var_defaults() {
     declare -g SEARCH_DIR="/mnt/shared/oai"
     declare -g SEARCH_SUBDIR="harvest_folio/processed" # within $SEARCH_DIR/[STACK]
-    declare -g ARG_STACK="catalog-prod"
+    declare -g ARG_STACK="catprod-prod"
     declare -g ARG_VERBOSE=0
     declare -g ARG_DEBUG=0
     declare -g ARG_EXTRACT=0
@@ -22,17 +22,17 @@ runhelp() {
     echo ""
     echo "Examples: "
     echo "   ./$SCRIPT_NAME in00005342798"
-    echo "     Locate the OAI file containing in00005342798 within catalog-prod's files"
-    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catalog-beta"
-    echo "     Locate the OAI files containing any of listed instances within catalog-beta's files"
-    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catalog-beta --extract"
-    echo "     Copy records matching instances from catalog-beta OAI files to a new temp XML file"
+    echo "     Locate the OAI file containing in00005342798 within catprod-prod's files"
+    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catprod-beta"
+    echo "     Locate the OAI files containing any of listed instances within catprod-beta's files"
+    echo "   ./$SCRIPT_NAME in00005342798,in00001442723 catprod-beta --extract"
+    echo "     Copy records matching instances from catprod-beta OAI files to a new temp XML file"
     echo ""
     echo "ARGS:"
     echo "  INSTANCE_IDS"
     echo "      Comma delimited list of instance ids; no spaces allowed. Required."
     echo "  STACK_NAME"
-    echo "      The stack under which to search for OAI file matches. Default: catalog-prod"
+    echo "      The stack under which to search for OAI file matches. Default: catprod-prod"
     echo "  -e|--extract"
     echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
     echo "  -r|--recent"

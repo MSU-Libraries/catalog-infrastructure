@@ -14,11 +14,11 @@ run_help_solr() {
 ### Help examples
 help_examples_solr_create_collections() {
     echo "# Create any missing Solr collections for the stack"
-    echo "./$SCRIPT_NAME catalog-prod -c"
+    echo "./$SCRIPT_NAME catprod-prod -c"
 }
 help_examples_solr_check_missing_collections() {
     echo "# Determine if any Solr collections are missing for the stack"
-    echo "./$SCRIPT_NAME catalog-prod -c -n"
+    echo "./$SCRIPT_NAME catprod-prod -c -n"
 }
 
 parse_flags_dry_run() {

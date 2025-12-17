@@ -277,7 +277,7 @@ parse_args() {
 }
 
 get_local_container() {
-    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catprod-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
     declare CONTAINER_NAME=
     while read -r LINE; do
@@ -291,7 +291,7 @@ get_local_container() {
 
 get_node_container() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
-    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catprod-beta
     declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
     declare CONTAINER_NAME=
     while read -r LINE; do
@@ -305,7 +305,7 @@ get_node_container() {
 
 get_service_image() {
     declare NODE_HOSTNAME=$(node_hostname 1) # The service command returns identical results on all nodes
-    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catprod-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
 
     # Due to docker service's filter parameter not accepting exact matches, we have to post process to make sure we're matching
@@ -318,7 +318,7 @@ get_service_image() {
 
 get_service_node() {
     declare NODE_HOSTNAME=$(node_hostname 1) # The service command returns identical results on all nodes
-    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catprod-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
 
     # Due to docker service's filter parameter not accepting exact matches, we have to post process to
@@ -392,7 +392,7 @@ run_on_all_nodes_with_retry() {
 }
 
 run_in_local_service() {
-    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catprod-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
     declare CMD="$3"
     declare CONTAINER_NAME=$(get_local_container "$DEPLOYMENT" "$SERVICE")
@@ -401,7 +401,7 @@ run_in_local_service() {
 }
 
 run_curl_in_local_service() {
-    declare DEPLOYMENT="$1" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$1" # E.g. devel-feature, catprod-beta
     declare SERVICE="$2"    # E.g. mariadb_galera, catalog_catalog
     declare CMD="$3"
     declare EXTRAS="$4"     # E.g. -H "Conent-type: text/xml"
@@ -413,7 +413,7 @@ run_curl_in_local_service() {
 
 run_in_node_service() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
-    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catprod-beta
     declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
     declare CMD="$4"
     declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")
@@ -423,7 +423,7 @@ run_in_node_service() {
 
 run_tty_in_node_service() {
     declare NODE_HOSTNAME=$(node_hostname "$1")
-    declare DEPLOYMENT="$2" # E.g. devel-feature, catalog-beta
+    declare DEPLOYMENT="$2" # E.g. devel-feature, catprod-beta
     declare SERVICE="$3"    # E.g. mariadb_galera, catalog_catalog
     declare CMD="${4:-bash}"
     declare CONTAINER_NAME=$(get_node_container "$1" "$DEPLOYMENT" "$SERVICE")

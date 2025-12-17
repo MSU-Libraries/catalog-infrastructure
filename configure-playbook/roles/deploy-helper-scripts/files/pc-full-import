@@ -149,27 +149,27 @@ parse_flags_email() {
 ## TODO make sure $SCRIPT_NAME works after moved to /usr/local/bin
 help_examples_full_import() {
     echo "# Run a full import from the first step"
-    echo "./$SCRIPT_NAME  catalog-prod"
+    echo "./$SCRIPT_NAME  catprod-prod"
 }
 
 help_examples_resume_import() {
     echo "# Run a full import from the third step with verbose messages"
-    echo "./$SCRIPT_NAME  catalog-prod --first-step 3 -vv"
+    echo "./$SCRIPT_NAME  catprod-prod --first-step 3 -vv"
 }
 
 help_examples_partial_import() {
     echo "# Show the dry run output of a full import from the third step through the ninth step"
-    echo "./$SCRIPT_NAME  catalog-prod --first-step 3 --last-step 9 --dry-run"
+    echo "./$SCRIPT_NAME  catprod-prod --first-step 3 --last-step 9 --dry-run"
 }
 
 help_examples_list() {
     echo "# List all of the full import steps"
-    echo "./$SCRIPT_NAME  catalog-prod --list"
+    echo "./$SCRIPT_NAME  catprod-prod --list"
 }
 
 help_examples_full_import_log_and_report() {
     echo "# Run a full import, saving the log, and emailing the team on completion"
-    echo "./$SCRIPT_NAME  catalog-prod --yes --debug --email LIB.DL.pubcat@msu.edu 2>&1 | tee /mnt/shared/logs/catalog-prod-import_\$(date -I).log"
+    echo "./$SCRIPT_NAME  catprod-prod --yes --debug --email LIB.DL.pubcat@msu.edu 2>&1 | tee /mnt/shared/logs/catprod-prod-import_\$(date -I).log"
 }
 
 ### Import step functions
@@ -546,7 +546,7 @@ show_collection_counts() {
 ## Not using this step at the moment; the stack rollsback, /opt/bitnami/scripts/solr/run.sh
 ## exits due to being killed (no additional information even with set -o xtrace enabled)
 increase_solr_memory() {
-    if [[ "$ARG_STACK" == "catalog-"* ]]; then
+    if [[ "$ARG_STACK" == "catprod-"* ]]; then
         print_verbose "         -- Deploying Solr with higher memory"
         sudo -Hu deploy bash -c "docker stack deploy --with-registry-auth -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud-highmem.yml\") \"$ARG_STACK-solr\""
         print_verbose "         -- Sleeping for 20s to give time for stack to update"
@@ -663,9 +663,9 @@ reset_solr_memory() {
 alphabrowse_rebuild() {
     # Determine which node is allowed to do the build (per logic in check_skip of alpha-browse.sh)
     NODE_ORDER=(1 2 3)
-    if [[ "$ARG_STACK" == "catalog-beta" ]]; then
+    if [[ "$ARG_STACK" == "catprod-beta" ]]; then
         NODE_ORDER=(2 1 3)
-    elif [[ "$ARG_STACK" == "catalog-preview" ]]; then
+    elif [[ "$ARG_STACK" == "catprod-preview" ]]; then
         NODE_ORDER=(3 1 2)
     fi
 

@@ -8,11 +8,11 @@
 ##   3: UNKNOWN
 
 if [[ -z "$1" ]]; then
-    echo "UNKNOWN: You must provide a deployment name (e.g. catalog-beta) as the first argument."
+    echo "UNKNOWN: You must provide a deployment name (e.g. catprod-beta) as the first argument."
     exit 3
 fi
 
-# Stack deployment name (e.g. catalog-beta, devel-nathan)
+# Stack deployment name (e.g. catprod-beta, devel-nathan)
 DEPLOYMENT="$1"
 
 if ! OUTPUT=$(pc-check-exit-code -f /home/nagios/"${DEPLOYMENT}"/logs/harvests/hlm_exit_code -l /home/nagios/"${DEPLOYMENT}"/logs/harvests/hlm.log -v 2>&1); then

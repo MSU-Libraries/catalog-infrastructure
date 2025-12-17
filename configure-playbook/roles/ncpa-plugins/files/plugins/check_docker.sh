@@ -9,11 +9,11 @@ docker_sudo() {
 }
 
 if [[ -z "$1" ]]; then
-    echo "UNKNOWN: You must provide a deployment name (e.g. catalog-beta) as the first argument."
+    echo "UNKNOWN: You must provide a deployment name (e.g. catprod-beta) as the first argument."
     exit 3
 fi
 
-# Stack deployment name (e.g. catalog-beta, devel-nathan)
+# Stack deployment name (e.g. catprod-beta, devel-nathan)
 DEPLOYMENT="$1"
 
 # Messages to add to the exit output
@@ -178,7 +178,7 @@ fi
 
 mapfile -t -d' ' EXPECTED_SERVICES < <( echo -n "${!EXPECTED_REPLICAS[@]}" )
 
-# Check if there are unknown containers running with given prefix (e.g. catalog-beta-strangeservice)
+# Check if there are unknown containers running with given prefix (e.g. catprod-beta-strangeservice)
 for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
     RUN_CONTAINER=$( echo "$RUNNING" | cut -d. -f1 )
     if ! array_contains EXPECTED_SERVICES "$RUN_CONTAINER"; then

@@ -10,7 +10,7 @@ do
     DOCKER_STATS+="$(docker stats --format '{{.Name}}: {{.CPUPerc}} {{.MemPerc}}' --no-stream)
 "
 done
-STACKS=$(echo "$DOCKER_STATS" | grep -P '^(devel|review|catalog)-' | sed -e 's/^\([^-]*-[^-]*\)-.*/\1/' | sort -u)
+STACKS=$(echo "$DOCKER_STATS" | grep -P '^(devel|review|catprod)-' | sed -e 's/^\([^-]*-[^-]*\)-.*/\1/' | sort -u)
 for STACK in $STACKS;
 do
     STATS_FOR_STACK=$(echo "$DOCKER_STATS" | grep "^$STACK" | sed -e 's/^[^-]*-[^-]*-\([^.]*\)\.[^:]*:\(.*\)$/\1\2/')

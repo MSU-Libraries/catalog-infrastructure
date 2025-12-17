@@ -300,7 +300,7 @@ handle_arguments() {
             action="$1"
             shift
             ;;
-        devel-* | catalog-*)
+        devel-* | catprod-*)
             if [[ -n "${execution_stack}" ]]; then
                 print_error "It seems the stack is already defined or you are passing the parameter several times."
                 print_error "Current : \"${execution_stack}\", passed parameter : \"$1\"."

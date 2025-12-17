@@ -12,11 +12,11 @@ docker_sudo() {
 }
 
 if [[ -z "$1" ]]; then
-    echo "UNKNOWN: You must provide a deployment name (e.g. catalog-beta) as the first argument."
+    echo "UNKNOWN: You must provide a deployment name (e.g. catprod-beta) as the first argument."
     exit 3
 fi
 
-# Stack deployment name (e.g. catalog-beta, devel-nathan)
+# Stack deployment name (e.g. catprod-beta, devel-nathan)
 DEPLOYMENT="$1"
 
 # Verify that the numerical stat output for the given resource is less than the

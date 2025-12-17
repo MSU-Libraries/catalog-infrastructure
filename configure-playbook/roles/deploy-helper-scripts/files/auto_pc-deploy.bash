@@ -9,7 +9,7 @@ _pc-deploy()
     if [[ $COMP_CWORD -eq 1 ]]; then
         # Get all the environment directory names in DEPLOY_DIR
         readarray -d '' DEPLOY_ENVS < <(find ${DEPLOY_DIR} \
-            -maxdepth 1 -mindepth 1 '(' -name "catalog-*" -o \
+            -maxdepth 1 -mindepth 1 '(' -name "catprod-*" -o \
             -name "devel-*" -o -name "core-stacks" -o -name "review-*" ')' \
             -exec realpath --relative-to ${DEPLOY_DIR} {} \; 2>/dev/null)
         
