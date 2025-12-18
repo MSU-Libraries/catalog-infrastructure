@@ -27,7 +27,7 @@ the `MAIN_TF_FILE` for shared).
 * `AWS_KEY`: The AWS Key for the user with the above user-policy
 * `AWS_SECRET`: The AWS Secret for the user with the above user-policy
 * `ROOT_PRIVATE_KEY`: This is the `base64` encoded private key, the public key is in the Terraform environment definititions
-* `DEPLOY_HOST_1`: The first node in the cluster (i.e. catalog-1.aws.lib.msu.edu)
+* `DEPLOY_HOST_1`: The first node in the cluster (i.e. catprod-1.aws.lib.msu.edu)
 * `DEPLOY_HOST_2`: The second node in the cluster
 * `DEPLOY_HOST_3`: The third node in the cluster
 * `GITHUB_USER_TOKEN`: Token used to publish releases to GitHub repository
@@ -108,7 +108,7 @@ For example, we have the following CNAME records:
 
 | Name                  | Type          | Target                       |
 |-----------------------|---------------|------------------------------|
-| catalog               | Alias (CNAME) | catalog.aws.lib.msu.edu.     |
-| catalog-beta          | Alias (CNAME) | catalog.aws.lib.msu.edu.     |
-| catalog-preview       | Alias (CNAME) | catalog.aws.lib.msu.edu.     |
-| catalog-prod          | Alias (CNAME) | catalog.aws.lib.msu.edu.     |
+| catalog               | Alias (CNAME) | catprod.aws.lib.msu.edu.     |
+| catalog-beta          | Alias (CNAME) | catprod.aws.lib.msu.edu.     |
+| catalog-preview       | Alias (CNAME) | catprod.aws.lib.msu.edu.     |
+| catalog-prod          | Alias (CNAME) | catprod.aws.lib.msu.edu.     |

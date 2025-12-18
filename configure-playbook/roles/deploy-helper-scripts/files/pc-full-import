@@ -29,15 +29,9 @@ STEPS=(
     "Import HLM data" \
     "Build the spellcheck indices" \
     "Show collection counts" \
-#    "Increase Solr memory"
-#    "Wait for the Solr service to update"
-#    "Wait for Solr to be healthy"
     "Run Solr collection swap" \
     "Reset the last_harvest file" \
     "Clear out swapped biblio-build" \
-#    "Reset Solr memory"
-#    "Wait for the Solr service to update with original memory"
-#    "Wait for Solr to be healthy with original memory"
     "Rebuild the alphabrowse databases" \
     "Add generated call numbers"
 )
@@ -56,15 +50,9 @@ STEP_FUNCS["Enable HLM cron"]="enable_hlm_cron"
 STEP_FUNCS["Import HLM data"]="import_hlm"
 STEP_FUNCS["Build the spellcheck indices"]="build_spellcheck"
 STEP_FUNCS["Show collection counts"]="show_collection_counts"
-#STEP_FUNCS["Increase Solr memory"]="increase_solr_memory"
-#STEP_FUNCS["Wait for the Solr service to update"]="wait_for_solr_update"
-#STEP_FUNCS["Wait for Solr to be healthy"]="run_solr_checks"
 STEP_FUNCS["Run Solr collection swap"]="solr_collection_swap"
 STEP_FUNCS["Reset the last_harvest file"]="reset_last_harvest"
 STEP_FUNCS["Clear out swapped biblio-build"]="reset_biblio_build"
-#STEP_FUNCS["Reset Solr memory"]="reset_solr_memory"
-#STEP_FUNCS["Wait for the Solr service to update with original memory"]="wait_for_solr_update"
-#STEP_FUNCS["Wait for Solr to be healthy with original memory"]="run_solr_checks"
 STEP_FUNCS["Rebuild the alphabrowse databases"]="alphabrowse_rebuild"
 STEP_FUNCS["Add generated call numbers"]="add_generated_call_numbers"
 
@@ -539,48 +527,6 @@ show_collection_counts() {
     fi
 
     return 0
-}
-
-## Deploy compose file with increased memory allocation required for
-## doing a collection swap.
-## Not using this step at the moment; the stack rollsback, /opt/bitnami/scripts/solr/run.sh
-## exits due to being killed (no additional information even with set -o xtrace enabled)
-increase_solr_memory() {
-    if [[ "$ARG_STACK" == "catprod-"* ]]; then
-        print_verbose "         -- Deploying Solr with higher memory"
-        sudo -Hu deploy bash -c "docker stack deploy --with-registry-auth -c <(source \"/home/deploy/$ARG_STACK/.env\"; envsubst < \"/home/deploy/$ARG_STACK/docker-compose.solr-cloud-highmem.yml\") \"$ARG_STACK-solr\""
-        print_verbose "         -- Sleeping for 20s to give time for stack to update"
-        sleep 20
-    else
-        print_verbose "         -- Skipping. Only do this on the production cluster"
-    fi
-    return 0
-}
-
-## Wait for Solr service to update
-wait_for_solr_update() {
-    print_verbose "         -- Waiting for the Solr service to update"
-    ATTEMPTS=1
-
-    print_verbose "(Attempt $ATTEMPTS/$ARG_MAX_ATTEMPTS) Attempting to check the update status of the Solr service"
-    while (( ATTEMPTS <= ARG_MAX_ATTEMPTS )); do
-        STATUS=$(run_on_node 1 "docker service inspect $ARG_STACK-solr_solr --format='{{.UpdateStatus.State}}'")
-        EC=$?
-        # Ignore empty status because it was the result of a template parse error
-        # that means the stack was not updated recently and is not in the service info anymore
-        if [[ "$STATUS" == "completed" ]] || [[ -z "$STATUS" ]]; then
-            print_info "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Stack successfully updated"
-            return 0
-        elif [[ $EC -ne 0 ]]; then
-            print_error "(Attempt $ATTEMPTS/$MAX_ATTEMPTS) Failed to run command on all hosts. Exit Code: $EC. Output: $STATUS"
-        fi
-        # Wait before retrying
-        sleep 1
-        ((ATTEMPTS++))
-    done
-
-    # If we reached this point, then we've gone past the max attempts
-    return 1
 }
 
 ## Perform the collection swap

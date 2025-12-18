@@ -1,33 +1,40 @@
 # Traefik Let's Encrypt certificates not renewing automatically
 
-Traefik runs as host network mode on each node and DNS is normally configured to round robin between all nodes on a cluster.
-This can lead to the situation where the Let's Encrypt certificate fails to renew before expiration
-due to the round robin DNS not resolving to the correct node when performing a HTTP challenge.
+Traefik runs as two separate services on the cluster, one as the keymaster, which requests
+the certificate, and another traefik service that simply serves certificates. Each Traefik
+container runs on only a single node, so only 1 node is assigned the responsibility
+of requesting certificates.
 
-This issue is something we have on our radar to investigate further and find a workaround for, but in
-the mean time it may require a manual intervention to get the certificates to renew before expiration.
+There is a separate service called cert-sync that copies the certificates nightly
+from the keymaster to shared storage and from the shared storage to each
+of the other Traefik container's volumes.
 
-For context, Let's Encrypt certificates last for 3 months. They normally attempt to renew after 2 months have expired. If a certificate isn't over 2 months old, Traefik will not attempt to renew it.
+Notes on this approach:
 
-To trigger the Let's Encrypt renewal process within Traefik to succeed for a given node (we'll
-use `catalog-beta.lib.msu.edu` for the certificate hostname and `catalog-2.aws.lib.msu.edu` for the
-node in this example):
+* If a new or renewed certificate is requested, it may take a few days
+  for the other nodes to get it because the first night will be
+  when it syncs it to the shared storage and the second night the other
+  containers will get it.
+* When new certificates are copied on to the non-keymaster containers,
+  they need to be restarted to recognize these new certificates. There is
+  currently not an automatic process for this because Let's Encypt requests
+  new certificates one month before they expire, so the logic being that we have
+  a month for those certificates to sync to the non-keymaster nodes and for those
+  containers to restart (due to re-deploy, Docker restart, or server reboot).
 
-* Change DNS for the hostname to the node where the certificate needs to be updated in your local DNS. In our case this is Libraries Windows DNS (manual process, requires Systems unit sysadmin to make change)
-  * Example: Update `catalog-beta.lib.msu.edu` from the round robin production DNS of `catalog.aws.lib.msu.edu` to the specific node DNS of `catalog-2.aws.lib.msu.edu`
-* If needing to update certs on multiple nodes, or to speed the DNS change back once completed, also reduce the DNS TTL for the record to 1 minute
-* Wait several minutes longer than the original TTL (up to 10 more in some cases) to let DNS changes propagate
-  * If the original TTL was 5 minutes, you may need to wait 10 to 15 minutes
-* Connect to the node in question and `docker stop` the `traefik_traefik.xyz...` container to force it to restart; restarting Traefik will make it perform a new challenge attempt right away
-  * Example: `ssh catalog-2.aws.lib.msu.edu` and `docker stop traefik_traefik.yqeqk81ltw.kaawo44qqtu`
-* Wait up to two minutes for Traefik to start and the Let's Encrypt challange to complete
-* Verify the new certificate is visible for the host
-  * Beware using a browser to verify, as they like to cache everything; consider using the command line.
-  * Example: `echo | openssl s_client -servername catalog-beta.lib.msu.edu -connect catalog-2.aws.lib.msu.edu:443 2>/dev/null | openssl x509 -nokeys -dates | head -n2`
-    * Note in the above command where it the certificate hostname _and_ the node hostname are set
-* If cert if not updated, be patient (10+ minutes) and try again restarting the Traefik container
-* Once the new certificate is verified, proceed to change DNS to update any other certs than need manual assistance
-* Once all certificates are okay, change DNS back to the round robin configuration and prior TTL
-  * Example: Update `catalog-beta.lib.msu.edu` back to `catalog.aws.lib.msu.edu` with a TTL of 5 minutes
+If you need to manually sync the certicates faster you can:
 
-That should be all that's required.
+* Run this command **three times** to re-deploy the sync service:
+
+```bash
+docker service rm cert-sync_cert-sync; sudo -Hu deploy docker stack deploy -c /home/deploy/core-stacks/docker-compose.cert-sync.yml cert-sync
+```
+
+* Restart the Traefik containers on the non-keymaster nodes:
+
+```bash
+# Run on nodes 2 and 3 in the cluster
+docker stop $(docker ps -q -f name=traefik_traefik)
+```
+
+

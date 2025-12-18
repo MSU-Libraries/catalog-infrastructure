@@ -3,7 +3,6 @@ stages:
   - build
   - shared
   - devel
-  - prod
   - catprod
   - optional
   - Release
@@ -80,27 +79,6 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: devel
 
-1-Provision Prod Cluster:
-  extends: .provision_template
-  stage: prod
-  environment:
-    name: prod
-  variables:
-    TERRAFORM_ENV: prod
-
-2-Configure Prod Cluster:
-  extends: .configure_template
-  stage: prod
-  environment:
-    name: prod
-  needs:
-    - job: Provision Shared Resources
-      artifacts: true
-    - job: 1-Provision Prod Cluster
-      artifacts: true
-  variables:
-    TERRAFORM_ENV: prod
-
 1-Provision CatProd Cluster:
   extends: .provision_template
   stage: catprod
@@ -137,19 +115,6 @@ Provision Shared Resources:
       artifacts: true
   variables:
     TERRAFORM_ENV: devel
-
-2-Ubuntu Setup Playbook Prod Cluster (Optional):
-  extends: .ubuntu_setup_template
-  stage: optional
-  environment:
-    name: prod
-  needs:
-    - job: Provision Shared Resources
-      artifacts: true
-    - job: 1-Provision Prod Cluster
-      artifacts: true
-  variables:
-    TERRAFORM_ENV: prod
 
 3-Ubuntu Setup Playbook CatProd Cluster (Optional):
   extends: .ubuntu_setup_template
@@ -207,7 +172,7 @@ Provision Shared Resources:
       # Move artifact to correct location
       mv known_hosts ~/.ssh/known_hosts
       # Run the Ubuntu setup playbook
-      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" || $TERRAFORM_ENV == "catprod" ]]; then
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "catprod" ]]; then
         scp configure-playbook/hosts ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hosts;
         scp configure-playbook/hostnames ubuntusetup@ansible.lib.msu.edu:/home/ubuntusetup/hostnames;
         ssh ubuntusetup@ansible.lib.msu.edu "sudo -Hu ansible /home/ubuntusetup/ubuntu-setup/add_host_keys /home/ubuntusetup/hostnames";
@@ -223,7 +188,7 @@ Provision Shared Resources:
       # Move CI variable file to correct location
       mv $VARIABLES_YAML_FILE configure-playbook/variables.yml
       # Run the configure playbook
-      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "prod" || $TERRAFORM_ENV == "catprod" ]]; then
+      if [[ $TERRAFORM_ENV == "devel" || $TERRAFORM_ENV == "catprod" ]]; then
         cat configure-playbook/variables.yml | envsubst | sponge configure-playbook/variables.yml;
         ansible-playbook configure-playbook/configure.yml -i configure-playbook/hosts;
         echo "Success! Servers for $TERRAFORM_ENV are now accessible.";

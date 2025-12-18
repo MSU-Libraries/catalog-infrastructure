@@ -39,7 +39,7 @@ From there you should be able to create a directory to mount from and mount as y
 # Only need to create the directory the first time
 mkdir ~/my-sshfs
 
-sshfs -o allow_other,default_permissions myuser@catalog-1.aws.lib.msu.edu:/mnt/shared/local ~/my-sshfs
+sshfs -o allow_other,default_permissions myuser@catprod-1.aws.lib.msu.edu:/mnt/shared/local ~/my-sshfs
 ```
 
 To unmount:
@@ -55,12 +55,12 @@ $ sudo apt install sshfs
 
 Here is an example of mounting the share (to and example `/mnt/point/` directory) for a single time (not auto-remounted):
 ```bash
-sudo sshfs -o allow_other,default_permissions [netid]@catalog-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point
+sudo sshfs -o allow_other,default_permissions [netid]@catprod-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point
 ```
 
 Here is an example of an `/etc/fstab` entry for mounting it:
 ```bash
-[netid]@catalog-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point fuse.sshfs noauto,x-systemd.automount,_netdev,reconnect,identityfile=/home/[netid]/.ssh/id_ed25519,allow_other,default_permissions 0 0
+[netid]@catprod-1.aws.lib.msu.edu:/mnt/shared/local /mnt/point fuse.sshfs noauto,x-systemd.automount,_netdev,reconnect,identityfile=/home/[netid]/.ssh/id_ed25519,allow_other,default_permissions 0 0
 ```
 
 To mount:
