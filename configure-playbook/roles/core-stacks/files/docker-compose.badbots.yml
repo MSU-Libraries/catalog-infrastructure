@@ -16,6 +16,9 @@ services:
         failure_action: rollback
       restart_policy:
         window: 15s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.static-pages.loadbalancer.server.port=80"
 
 networks:
   public:

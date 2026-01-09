@@ -99,6 +99,11 @@ services:
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.checkperiod=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.fallbackduration=15s"
         - "traefik.http.middlewares.emergency-brakes.circuitbreaker.recoveryduration=15s"
+        # Catalog unavailable page
+        # - If the catalog captcha would otherwise return a 502, show the unavailable page
+        - "traefik.http.middlewares.catalog-down-page.errors.status=502"
+        - "traefik.http.middlewares.catalog-down-page.errors.service=static-pages"
+        - "traefik.http.middlewares.catalog-down-page.errors.query=/site-unavailable/"
         # Traefik Dashboard HTTPS
         - "traefik.http.routers.dashboard-https-router.entrypoints=msul-https-ent"
         - "traefik.http.routers.dashboard-https-router.middlewares=restrict-auth"
