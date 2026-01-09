@@ -19,6 +19,10 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.services.static-pages.loadbalancer.server.port=80"
+        # Dummy router as to prevent default router being added
+        - "traefik.http.routers.no-access-dummy-router.entrypoints=msul-https-ent"
+        - "traefik.http.routers.no-access-dummy-router.tls=true"
+        - "traefik.http.routers.no-access-dummy-router.rule=ClientIP(`127.0.254.254`)"
 
 networks:
   public:
