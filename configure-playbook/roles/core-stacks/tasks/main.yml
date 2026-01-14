@@ -57,28 +57,28 @@
     owner: deploy
     group: deploy
 
-- name: Copy badbots docker-compose
+- name: Copy no-access docker-compose
   ansible.builtin.copy:
-    src: docker-compose.badbots.yml
+    src: docker-compose.no-access.yml
     dest: /home/deploy/core-stacks/
     mode: '0644'
     owner: deploy
     group: deploy
   when:
-  - BADBOTS_IMAGE is defined
-  - BADBOTS_IMAGE != ''
+  - NO_ACCESS_IMAGE is defined
+  - NO_ACCESS_IMAGE != ''
 
-- name: Run envsubst on badbots docker-compose
+- name: Run envsubst on no-access docker-compose
   ansible.builtin.shell:
     cmd: |
-      export BADBOTS_IMAGE='{{ BADBOTS_IMAGE }}'
-      envsubst < docker-compose.badbots.yml | sponge docker-compose.badbots.yml
-      chown deploy:deploy docker-compose.badbots.yml
+      export NO_ACCESS_IMAGE='{{ NO_ACCESS_IMAGE }}'
+      envsubst < docker-compose.no-access.yml | sponge docker-compose.no-access.yml
+      chown deploy:deploy docker-compose.no-access.yml
   args:
     chdir: /home/deploy/core-stacks/
   when:
-  - BADBOTS_IMAGE is defined
-  - BADBOTS_IMAGE != ''
+  - NO_ACCESS_IMAGE is defined
+  - NO_ACCESS_IMAGE != ''
 
 - name: Run envsubst on traefik docker-compose
   ansible.builtin.shell:
@@ -212,14 +212,14 @@
     chdir: /home/deploy/core-stacks/
   run_once: true
 
-- name: Deploy badbots stack
+- name: Deploy no-access stack
   ansible.builtin.command:
-    cmd: pc-deploy --detach --prune  core-stacks badbots
+    cmd: pc-deploy --detach --prune  core-stacks no-access
   args:
     chdir: /home/deploy/core-stacks/
   run_once: true
   become: true
   become_user: deploy
   when:
-  - BADBOTS_IMAGE is defined
-  - BADBOTS_IMAGE != ''
+  - NO_ACCESS_IMAGE is defined
+  - NO_ACCESS_IMAGE != ''

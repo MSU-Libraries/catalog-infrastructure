@@ -1,7 +1,7 @@
 ---
 services:
-  badbot:
-    image: ${BADBOTS_IMAGE}
+  pages:
+    image: ${NO_ACCESS_IMAGE}
     networks:
       - public
     logging:
