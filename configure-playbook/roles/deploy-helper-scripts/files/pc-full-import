@@ -470,16 +470,16 @@ build_spellcheck() {
     solrs=(solr1 solr2 solr3)
     for solr in "${solrs[@]}"; do
         print_verbose "        -- Building indicies on ${BOLD}${solr}${RESET}"
-        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr1:8983/solr/biblio-build/select?q=*:*\&spellcheck=true\&spellcheck.build=true")
+        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://${solr}:8983/solr/biblio-build/select?q=*:*\&spellcheck=true\&spellcheck.build=true")
         EC=$?
         if [[ $EC -ne 0 ]]; then
             print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
             return "$EC"
         fi
-        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://solr1:8983/solr/biblio-build/select?q=*:*\&spellcheck.dictionary=basicSpell\&spellcheck=true\&spellcheck.build=true")
+        OUTPUT=$(run_curl_in_local_service "$ARG_STACK" solr_solr "http://${solr}:8983/solr/biblio-build/select?q=*:*\&spellcheck.dictionary=basicSpell\&spellcheck=true\&spellcheck.build=true")
         EC=$?
         if [[ $EC -ne 0 ]]; then
-            print_error "${RED}Failed on step 1 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
+            print_error "${RED}Failed on step 2 of building the indicies${RESET}. Exit code: $EC. Output: $OUTPUT"
             return "$EC"
         fi
     done
