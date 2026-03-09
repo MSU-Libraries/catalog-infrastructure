@@ -726,7 +726,6 @@ reset_last_harvest() {
         print_error "${RED}Failed to restore the new FOLIO last_harvest file${RESET}. Exit code: $EC. Command: \n$CMD"
         return "$EC"
     fi
-    return 0
 
     CMD="mv /mnt/shared/dr/${ARG_STACK}/harvest_dr/last_harvest.txt /mnt/shared/dr/${ARG_STACK}/harvest_dr/last_harvest.txt.backup"
     ${CMD}
