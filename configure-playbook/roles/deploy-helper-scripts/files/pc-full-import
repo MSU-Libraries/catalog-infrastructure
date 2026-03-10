@@ -565,7 +565,7 @@ import_dr() {
     print_verbose "        -- Run the DR import"
     NODE=$(get_service_node "$ARG_STACK" "catalog_build")
     run_in_node_service "$NODE" "$ARG_STACK" "catalog_build" \
-        "pc-import-dr --verbose --import --quick"
+        "pc-import-dr --verbose --batch-import --quick"
     EC=$?
     if [[ $EC -ne 0 ]]; then
         print_error "${RED}Failed to import DR records into biblio-build${RESET}. Exit code: $EC."
