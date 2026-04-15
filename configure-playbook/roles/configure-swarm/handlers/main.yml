@@ -3,6 +3,7 @@
 - name: restart docker
   # Restart Docker, but only on 1 node at time and give nodes time to stop/start/resync cleanly
   ansible.builtin.shell: |
+    systemctl daemon-reload
     systemctl restart docker
     sleep 210
   throttle: 1
