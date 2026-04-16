@@ -20,6 +20,14 @@
     proto: udp
     port: '4789'
 
+- name: Delay start of docker service to let network become ready
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system/multi-user.target.wants/docker.service
+    regexp: '^ExecStartPre='
+    insertbefore: '^ExecStart='
+    line: 'ExecStartPre=/usr/bin/sleep 5'
+  notify: restart docker
+
 - name: Configure Docker daemon
   ansible.builtin.template:
     src: daemon.json.j2
