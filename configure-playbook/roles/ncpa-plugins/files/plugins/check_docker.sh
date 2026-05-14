@@ -126,6 +126,7 @@ STACK_NAMES=(
     "${DEPLOYMENT}-mariadb"
     "${DEPLOYMENT}-solr"
     "${DEPLOYMENT}-monitoring"
+    "${DEPLOYMENT}-redis"
     "swarm-cleanup"
     "traefik"
     "keymaster"
@@ -164,6 +165,7 @@ EXPECTED_REPLICAS=(
     ["${DEPLOYMENT}-solr_zk"]=3
     ["${DEPLOYMENT}-monitoring_monitoring"]=3
     ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
+    ["${DEPLOYMENT}-redis_redis"]=1
     ["swarm-cleanup_prune-nodes"]=0
     ["traefik_traefik"]=2
     ["keymaster_traefik"]=1
