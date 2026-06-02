@@ -116,7 +116,7 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: devel
 
-2-Ubuntu Setup Playbook CatProd Cluster (Optional):
+3-Ubuntu Setup Playbook CatProd Cluster (Optional):
   extends: .ubuntu_setup_template
   stage: optional
   environment:
@@ -129,7 +129,7 @@ Provision Shared Resources:
   variables:
     TERRAFORM_ENV: catprod
 
-3-Reload Traefik Certs Devel (Optional):
+2-Reload Traefik Certs Devel (Optional):
   extends: .traefik_reload_template
   stage: optional
   environment:
