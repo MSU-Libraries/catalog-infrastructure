@@ -32,4 +32,6 @@
         echo "$(date +'%m-%d-%Y %T %z') -- ${SERVICE} not healthy after max attempts. Failing job!";
         exit 1;
     fi;
+  args:
+    executable: /bin/bash
   run_once: true
