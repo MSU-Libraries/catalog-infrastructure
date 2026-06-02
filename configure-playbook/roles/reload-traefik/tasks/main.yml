@@ -2,7 +2,7 @@
 
 - name: Ensure docker services are happy
   ansible.builtin.command:
-    cmd: /usr/local/ncpa/plugins/check_docker.sh
+    cmd: /usr/local/ncpa/plugins/check_docker.sh --core-only
   run_once: true
 
 - name: Restart traefik followers

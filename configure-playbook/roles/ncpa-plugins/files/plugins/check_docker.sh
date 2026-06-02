@@ -2,19 +2,105 @@
 
 #TODO this script could benefit from refactoring
 
+runhelp() {
+    echo ""
+    echo "Usage: check_docker [OPTIONS] [STACK]"
+    echo ""
+    echo "    Checks if docker stacks/services are in an ideal state."
+    echo ""
+    echo "OPTIONS"
+    echo "  -h|--help"
+    echo "    Display this help information"
+    echo "  --core-only"
+    echo "    Only check infrastructure core stacks/services"
+    echo ""
+    echo "STACK:"
+    echo "  A stack name, like catprod-beta or devel-upgrade"
+    echo ""
+}
+
+print_stderr() {
+    1>&2 echo "$*"
+}
+
+die() {
+    print_error "$*"
+    exit 1
+}
+
+# Given an array of arguments, split apart single char args (but only before a --)
+# Example:
+#   Input:  "-v -vab --more -- -pq --less file.txt"
+#   Output: "-v -v -a -b --more -pq --less file.txt"
+#
+# $@ : Array of args to parse
+#
+# Output: Split args as a string
+split_args() {
+    declare stop_parse=0
+    declare -a newargs
+    while [[ $# -gt 0 ]]; do
+        if [[ $1 == '--' ]]; then
+            stop_parse=1
+        elif [[ $stop_parse -eq 0 && $1 =~ ^-([a-zA-Z0-9]*)$ ]]; then
+            while IFS= read -r -n1 arg; do
+                if [[ -n $arg ]]; then
+                    newargs+=("-${arg}")
+                fi
+            done <<< "${BASH_REMATCH[1]}"
+        else
+            newargs+=("$1")
+        fi
+        shift
+    done
+    printf "%s" "${newargs[*]}"
+}
+
+parse_args() {
+    declare -g DEPLOYMENT
+    declare position=0
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h|--help)
+            runhelp
+            exit 0
+            ;;
+        --core-only)
+            if [[ -n $DEPLOYMENT ]]; then
+                die "Cannot set to check only core infrastructure; already set to check '$DEPLOYMENT'."
+            fi
+            DEPLOYMENT="core-stacks"
+            shift
+            ;;
+        *)
+            case "${position}" in
+            0)
+                if [[ -n $DEPLOYMENT ]]; then
+                    die "Cannot set deployment to '$DEPLOYMENT'; already set to '$DEPLOYMENT'."
+                fi
+                DEPLOYMENT=$1
+                shift ;;
+            1)
+                die "Unknown argument: $1"
+            esac
+            (( position+=1 ))
+        esac
+    done
+}
+
+parse_args $( split_args "$@" )
+
 # Prepend sudo to a command if user is not in docker group
 docker_sudo() {
     if ! groups | grep -qw docker; then sudo "$@";
     else "$@"; fi
 }
 
-if [[ -z "$1" ]]; then
-    echo "UNKNOWN: You must provide a deployment name (e.g. catprod-beta) as the first argument."
+if [[ -z $DEPLOYMENT ]]; then
+    echo "UNKNOWN: You must provide a deployment name (e.g. catprod-beta) as an argument or set --core-only flag."
     exit 3
 fi
-
-# Stack deployment name (e.g. catprod-beta, devel-nathan)
-DEPLOYMENT="$1"
 
 # Messages to add to the exit output
 declare -a MESSAGES
@@ -121,16 +207,20 @@ verify_nodes 3 "Active" "availability"
 
 # Check appropriate stacks are deployed (both shared containers and prod containers)
 STACK_NAMES=(
-    "${DEPLOYMENT}-catalog"
-    "${DEPLOYMENT}-internal"
-    "${DEPLOYMENT}-mariadb"
-    "${DEPLOYMENT}-solr"
-    "${DEPLOYMENT}-monitoring"
-    "${DEPLOYMENT}-redis"
     "swarm-cleanup"
     "traefik"
     "keymaster"
 )
+if [[ $DEPLOYMENT != "core-stacks" ]]; then
+    STACK_NAMES+=(
+        "${DEPLOYMENT}-catalog"
+        "${DEPLOYMENT}-internal"
+        "${DEPLOYMENT}-mariadb"
+        "${DEPLOYMENT}-solr"
+        "${DEPLOYMENT}-monitoring"
+        "${DEPLOYMENT}-redis"
+    )
+fi
 FOUND_STACKS=0
 while read -r LINE; do
     if array_contains STACK_NAMES "$LINE"; then
@@ -154,27 +244,31 @@ done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYM
 
 declare -A EXPECTED_REPLICAS
 EXPECTED_REPLICAS=(
-    ["${DEPLOYMENT}-internal_health"]=1
-    ["${DEPLOYMENT}-catalog_catalog"]=3
-    ["${DEPLOYMENT}-catalog_captcha"]=3
-    ["${DEPLOYMENT}-catalog_legacylinks"]=3
-    ["${DEPLOYMENT}-mariadb_galera"]=3
-    ["${DEPLOYMENT}-solr_cron"]=3
-    ["${DEPLOYMENT}-solr_proxysolr"]=3
-    ["${DEPLOYMENT}-solr_solr"]=3
-    ["${DEPLOYMENT}-solr_zk"]=3
-    ["${DEPLOYMENT}-monitoring_monitoring"]=3
-    ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
-    ["${DEPLOYMENT}-redis_redis"]=1
     ["cert-sync_image-keeper"]=3
     ["swarm-cleanup_prune-nodes"]=0
     ["traefik_traefik"]=2
     ["keymaster_traefik"]=1
 )
+if [[ $DEPLOYMENT != "core-stacks" ]]; then
+    EXPECTED_REPLICAS+=(
+        ["${DEPLOYMENT}-internal_health"]=1
+        ["${DEPLOYMENT}-catalog_catalog"]=3
+        ["${DEPLOYMENT}-catalog_captcha"]=3
+        ["${DEPLOYMENT}-catalog_legacylinks"]=3
+        ["${DEPLOYMENT}-mariadb_galera"]=3
+        ["${DEPLOYMENT}-solr_cron"]=3
+        ["${DEPLOYMENT}-solr_proxysolr"]=3
+        ["${DEPLOYMENT}-solr_solr"]=3
+        ["${DEPLOYMENT}-solr_zk"]=3
+        ["${DEPLOYMENT}-monitoring_monitoring"]=3
+        ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
+        ["${DEPLOYMENT}-redis_redis"]=1
+    )
+fi
 if is_main; then
     EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_cron"]=1
     EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_build"]=1
-else
+elif [[ $DEPLOYMENT != "core-stacks" ]]; then
     EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_croncache"]=3
     EXPECTED_REPLICAS["${DEPLOYMENT}-catalog_mail-${DEPLOYMENT}"]=1
 fi
