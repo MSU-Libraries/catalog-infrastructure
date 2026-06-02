@@ -12,7 +12,7 @@
 
 - name: Verify docker core services remained happy
   ansible.builtin.shell: |
-    sleep 30;
+    sleep 100;
     SERVICE="docker core";
     HEALTHY=0;
     ATTEMPTS=0;
@@ -21,11 +21,10 @@
         if /usr/local/ncpa/plugins/check_docker.sh --core-only; then
             echo "$(date +'%m-%d-%Y %T %z') -- ${SERVICE} is healthy!";
             HEALTHY=1;
-            exit 1;
             break;
         fi
         echo "$(date +'%m-%d-%Y %T %z') -- ${SERVICE} not healthy yet. Waiting...";
-        sleep 15;
+        sleep 30;
         ATTEMPTS=$((ATTEMPTS+1));
     done;
     if [[ ${HEALTHY} -ne 1 ]]; then
