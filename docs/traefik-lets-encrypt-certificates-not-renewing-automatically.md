@@ -16,18 +16,29 @@ Notes on this approach:
   when it syncs it to the shared storage and the second night the other
   containers will get it.
 * When new certificates are copied on to the non-keymaster containers,
-  they need to be restarted to recognize these new certificates. There is
-  currently not an automatic process for this because Let's Encypt requests
-  new certificates one month before they expire, so the logic being that we have
-  a month for those certificates to sync to the non-keymaster nodes and for those
-  containers to restart (due to re-deploy, Docker restart, or server reboot).
+  they need to be restarted to recognize these new certificates. By default
+  there is not an automatic process for this. Certificates are renewed one
+  month before they expire, so if you perform certain actions which restart
+  those containres (re-deploy, Docker restart, or server reboot) then the
+  cert syncing may occur without any extra effort.
+* An automatic method for triggering the syncing can be accomplished via
+  CI pipelines. For example, in Gilab, setting up a pipeline to run
+  periodically (once or twice a day) can accomplish this by running the
+  CI on the `main` branch with the variable `TRAEFIK_CERT_RELOAD` set to `1`.
+  This will trigger a parital CI which provisions the cluster and then
+  runs a limited Ansible playbook to force reload of the Traefik followers.
 
 If you need to manually sync the certicates faster you can:
 
-* Run this command **three times** to re-deploy the sync service:
+* Run this command **up to three times** to re-deploy the sync service:
 
 ```bash
+# Service must be removed or the "timer" for restarting it will not reset
 docker service rm cert-sync_cert-sync; sudo -Hu deploy docker stack deploy -c /home/deploy/core-stacks/docker-compose.cert-sync.yml cert-sync
+
+# Running it multiple times allows for:
+#  1. Keymaster to sync to shared storage
+#  2. Traefik followers to sync from shared storage
 ```
 
 * Restart the Traefik containers on the non-keymaster nodes:
@@ -35,6 +46,9 @@ docker service rm cert-sync_cert-sync; sudo -Hu deploy docker stack deploy -c /h
 ```bash
 # Run on nodes 2 and 3 in the cluster
 docker stop $(docker ps -q -f name=traefik_traefik)
+
+# Or with a single command on any node
+docker service update --force traefik_traefik
 ```
 
 
