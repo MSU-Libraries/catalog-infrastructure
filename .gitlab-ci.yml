@@ -170,6 +170,10 @@ Provision Shared Resources:
 
 .provision_template:
   extends: .infra_template
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
+      when: manual
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $TRAEFIK_CERT_RELOAD == "1"'
   artifacts:
     paths:
       - configure-playbook/hosts
@@ -219,7 +223,9 @@ Provision Shared Resources:
 .traefik_reload_template:
   extends: .infra_template
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $TRAEFIK_CERT_RELOAD == "1"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
+      when: manual
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $TRAEFIK_CERT_RELOAD == "1"'
   script:
     - |
       # Move artifact to correct location
