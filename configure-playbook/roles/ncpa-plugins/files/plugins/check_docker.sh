@@ -23,6 +23,10 @@ print_stderr() {
     1>&2 echo "$*"
 }
 
+print_error() {
+    print_stderr "ERROR: $*"
+}
+
 die() {
     print_error "$*"
     exit 1
@@ -89,6 +93,7 @@ parse_args() {
     done
 }
 
+# shellcheck disable=SC2046
 parse_args $( split_args "$@" )
 
 # Prepend sudo to a command if user is not in docker group
