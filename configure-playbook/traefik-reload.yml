@@ -1,0 +1,10 @@
+---
+
+- name: Reload traefik instances
+  hosts: docker
+  gather_facts: true
+  any_errors_fatal: true
+
+  tasks:
+    - include_role:
+        name: reload-traefik

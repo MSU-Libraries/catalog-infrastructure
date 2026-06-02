@@ -166,6 +166,7 @@ EXPECTED_REPLICAS=(
     ["${DEPLOYMENT}-monitoring_monitoring"]=3
     ["${DEPLOYMENT}-monitoring_proxymon-${DEPLOYMENT}"]=3
     ["${DEPLOYMENT}-redis_redis"]=1
+    ["cert-sync_image-keeper"]=3
     ["swarm-cleanup_prune-nodes"]=0
     ["traefik_traefik"]=2
     ["keymaster_traefik"]=1
