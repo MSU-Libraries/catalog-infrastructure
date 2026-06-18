@@ -1,14 +1,5 @@
 ---
 services:
-  image-keeper:
-    # To prevent pruning of this image (specific hash), we keep this dummy service
-    # running which uses the same image as the cert-sync service.
-    image: alpine:latest
-    command: sleep inf
-    deploy:
-      mode: global
-      placement:
-        max_replicas_per_node: 1
   cert-sync:
     image: alpine:latest
     # Sync over the most recent certificates for traefik

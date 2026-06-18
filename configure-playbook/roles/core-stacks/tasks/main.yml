@@ -224,13 +224,7 @@
   - NO_ACCESS_IMAGE is defined
   - NO_ACCESS_IMAGE != ''
 
-# Forcing update to both cert-sync services at the same time so they use the same alpine image
-- name: Force update for cert-sync image-keeper service
-  ansible.builtin.command:
-    cmd: docker service update --force --update-parallelism 1 --update-delay 20s cert-sync_image-keeper
-  run_once: true
-
-- name: Force update for cert-sync cert-sync service
+- name: Force update for cert-sync service
   ansible.builtin.command:
     cmd: docker service update --force --update-parallelism 1 --update-delay 20s cert-sync_cert-sync
   run_once: true

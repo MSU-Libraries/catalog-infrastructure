@@ -249,7 +249,6 @@ done < <( docker_sudo docker container ls -f "status=running" -f "name=${DEPLOYM
 
 declare -A EXPECTED_REPLICAS
 EXPECTED_REPLICAS=(
-    ["cert-sync_image-keeper"]=3
     ["swarm-cleanup_prune-nodes"]=0
     ["traefik_traefik"]=2
     ["keymaster_traefik"]=1
