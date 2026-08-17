@@ -198,7 +198,7 @@ verify_build_container_image() {
     fi
 
     # Ask the user to confirm if the build image doesn't match the cron image
-    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]] && [[ $ARG_YES -eq 0 ]]; then
+    if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]]; then
         print_error "${RED}Build container image does not match the cron container image!${RESET}" \
             "\nBuild Image: ${BUILD_IMAGE}.\nCron Image: ${CRON_IMAGE}"
         return 1
