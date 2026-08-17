@@ -201,12 +201,7 @@ verify_build_container_image() {
     if [[ "$BUILD_IMAGE" != "$CRON_IMAGE" ]] && [[ $ARG_YES -eq 0 ]]; then
         print_error "${RED}Build container image does not match the cron container image!${RESET}" \
             "\nBuild Image: ${BUILD_IMAGE}.\nCron Image: ${CRON_IMAGE}"
-        read -p "Do you want to continue anyways? [Y/n] " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_error "Cancelling import"
-            return 1
-        fi
+        return 1
     fi
     return 0
 }
