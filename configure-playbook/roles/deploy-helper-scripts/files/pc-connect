@@ -42,7 +42,7 @@ runhelp() {
     echo "  HOST"
     echo "      Optional. Host node to connect to. Valid values are 1-3"
     echo "  -d|--db"
-    echo "      Connect to the mysql service in the container. SHOULD ONLY BE USED ON *mariadb_galera SERVICES"
+    echo "      Connect to the mariadb service in the container. SHOULD ONLY BE USED ON *mariadb_galera SERVICES"
     echo "  -z|--zk"
     echo "      Connect to the zkshell service in the container. SHOULD ONLY BE USED ON *solr_solr SERVICES"
     echo "  -c|--cmd CMD"

@@ -49,7 +49,7 @@ fi
 # SQL single line query match
 run_sql() {
     FILTER="${2}"
-    if ! docker_sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind -e "$1" | grep "$FILTER"; then
+    if ! docker_sudo docker exec -i "${MARIADB_NAME}" mariadb --skip-ssl -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind -e "$1" | grep "$FILTER"; then
         echo "CRITICAL: Could not make SQL call to $MARIADB_NAME."
         exit 2
     fi
@@ -63,7 +63,7 @@ run_full_sql() {
     while read -r -a ROW_$ROW_CNT; do
         (( ROW_CNT+=1 ))
         declare -g -a ROW_$ROW_CNT
-    done < <( docker_sudo docker exec -i "${MARIADB_NAME}" mysql -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind --silent -e "$QUERY" )
+    done < <( docker_sudo docker exec -i "${MARIADB_NAME}" mariadb --skip-ssl -u"${MARIADB_USER}" -p"${MARIADB_PASS}" vufind --silent -e "$QUERY" )
     if [[ "$ROW_CNT" -eq 0 ]]; then
         echo "CRITICAL: No response from $MARIADB_NAME query >> $QUERY"
         exit 2
