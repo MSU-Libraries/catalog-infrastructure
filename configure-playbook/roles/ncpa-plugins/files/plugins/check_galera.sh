@@ -26,7 +26,8 @@ SERVICE="${DEPLOYMENT}-mariadb_galera"
 
 # Verify service deploy is completed
 UPDATE_STATE=$(docker_sudo docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
-if [[ "$UPDATE_STATE" != "completed" ]]; then
+# State could be null if never updated, or if an update changes nothing
+if [[ "$UPDATE_STATE" != "completed" && "$UPDATE_STATE" != "null" ]]; then
     echo "WARNING: Service $SERVICE update state is '$UPDATE_STATE' (expected 'completed')"
     exit 1
 fi
