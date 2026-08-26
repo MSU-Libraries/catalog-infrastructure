@@ -22,11 +22,19 @@ MARIADB_USER="${2:-root}"
 MARIADB_PASS="${3:-12345}"
 # MARIADB_PASS of 12345 will be overridden by MARIADB_ROOT_PASSWORD_FILE env variable content within the container
 GALERA_NODES=(galera1 galera2 galera3)
+SERVICE="${DEPLOYMENT}-mariadb_galera"
+
+# Verify service deploy is completed
+UPDATE_STATE=$(docker_sudo docker service inspect "${SERVICE}" | jq -r '.[0].UpdateStatus.State')
+if [[ "$UPDATE_STATE" != "completed" ]]; then
+    echo "WARNING: Service $SERVICE update state is '$UPDATE_STATE' (expected 'completed')"
+    exit 1
+fi
 
 # Find local MariaDB container
 MARIADB_NAME=
 while read -r LINE; do
-    if [[ "$LINE" == "${DEPLOYMENT}-mariadb_galera"* ]]; then
+    if [[ "$LINE" == "${SERVICE}"* ]]; then
         MARIADB_NAME="$LINE"
         break;
     fi
