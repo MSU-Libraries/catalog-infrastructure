@@ -14,7 +14,7 @@ default_args() {
     declare -g ARG_VERBOSE=0
     declare -g ARG_DEBUG=0
 
-    declare -g -a CORE_STACKS=("public" "swarm-cleanup" "traefik" "no-access" "cert-sync")
+    declare -g -a CORE_STACKS=("public" "swarm-cleanup" "keymaster" "traefik" "no-access" "cert-sync")
     declare -g -a STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
 }
 default_args
