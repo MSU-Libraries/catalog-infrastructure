@@ -3,20 +3,19 @@
 
 # Set defaults
 default_args() {
-    ENV_SEARCH_DIR="/home/deploy"
+    declare -g ENV_SEARCH_DIR="/home/deploy"
 
-    declare -g -A ARGS
-    ARGS[STACK]=
-    ARGS[ENV]=
-    ARGS[COMPOSE]=
-    ARGS[DETACH]="false"
-    ARGS[PRUNE]=0
-    ARGS[DRYRUN]=0
-    ARGS[VERBOSE]=0
-    ARGS[DEBUG]=0
+    declare -g ARG_STACK=
+    declare -g ARG_ENV=
+    declare -g ARG_COMPOSE=
+    declare -g ARG_DETACH="false"
+    declare -g ARG_PRUNE=0
+    declare -g ARG_DRYRUN=0
+    declare -g ARG_VERBOSE=0
+    declare -g ARG_DEBUG=0
 
-    CORE_STACKS=("public" "swarm-cleanup" "traefik" "no-access" "cert-sync")
-    STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
+    declare -g -a CORE_STACKS=("public" "swarm-cleanup" "traefik" "no-access" "cert-sync")
+    declare -g -a STACKS=("catalog" "internal" "mariadb" "monitoring" "solr")
 }
 default_args
 
@@ -40,7 +39,8 @@ runhelp() {
     echo ""
     echo "ARGS:"
     echo "  DEPLOY_ENV"
-    echo "      Required. Relative path to which environment directory should be used for selecting compose files within /home/deploy."
+    echo "      Required. Relative path to which environment directory should be used for selecting"
+    echo "      compose files within /home/deploy."
     echo "  STACK_CONF"
     echo "      Required. Stack configuration or Docker compose file to deploy within DEPLOY_ENV."
     echo "  -d|--detach"
@@ -61,14 +61,14 @@ message() {
     1>&2 echo "[${LOG_TS}] $*"
 }
 verbose() {
-    [[ ${ARGS[DRYRUN]} -eq 1 ]] && DRYRUN="(dry-run) "
-    [[ ${ARGS[VERBOSE]} -eq 1 ]] && message "${DRYRUN}$*"
+    [[ ${ARG_DRYRUN} -eq 1 ]] && DRYRUN="(dry-run) "
+    [[ ${ARG_VERBOSE} -eq 1 ]] && message "${DRYRUN}$*"
 }
 error() {
     message "ERROR: $*"
 }
 debug() {
-    [[ ${ARGS[DEBUG]} -eq 1 ]] && message "Debug: $*"
+    [[ ${ARG_DEBUG} -eq 1 ]] && message "Debug: $*"
 }
 die() {
     error "$*"
@@ -81,10 +81,12 @@ if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
     exit 0
 fi
 
-# Check if run as root
-if [[ $USER != "deploy" && $EUID -ne 0 ]]; then
-    die "The script must be run with sudo (unless using --help)."
-fi
+run_user_check() {
+    # Check if script is being run by an allowed user
+    if [[ $ARG_DRYRUN -ne 1 && $USER != "deploy" && $EUID -ne 0 ]]; then
+        die "The script must be run as deploy or with sudo (unless --dry-run/--help)."
+    fi
+}
 
 # Parse command arguments
 parse_args() {
@@ -97,36 +99,36 @@ parse_args() {
             exit 0
             ;;
         -d|--detach)
-            ARGS[DETACH]="true"
+            ARG_DETACH="true"
             shift;;
         --prune)
-            ARGS[PRUNE]=1
+            ARG_PRUNE=1
             shift;;
         -n|--dry-run)
-            ARGS[DRYRUN]=1
-            ARGS[VERBOSE]=1
+            ARG_DRYRUN=1
+            ARG_VERBOSE=1
             shift;;
         -v|--verbose)
-            ARGS[VERBOSE]=1
+            ARG_VERBOSE=1
             shift;;
         --debug)
-            ARGS[DEBUG]=1
-            ARGS[VERBOSE]=1
-            [[ -n "${ARGS[STACK]}${ARGS[ENV]}${ARGS[COMPOSE]}" ]] && \
+            ARG_DEBUG=1
+            ARG_VERBOSE=1
+            [[ -n "${ARG_STACK}${ARG_ENV}${ARG_COMPOSE}" ]] && \
                 die "The --debug flag must be set before DEPLOY_ENV or STACK_CONF."
             shift;;
         *)
             case "${POSITION}" in
             0)
-                ARGS[ENV]=$1
-                if [[ ! -d "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" ]]; then
+                ARG_ENV=$1
+                if [[ ! -d "${ENV_SEARCH_DIR}"/"${ARG_ENV}" ]]; then
                     echo "ERROR: environment does not exist: ${ENV_SEARCH_DIR}/$1"
                     exit 1
                 fi
                 POSITION=1
                 shift ;;
             1)
-                # Find a compose file in ENV_SEARCH_DIR/ARGS[ENV] that matches the pattern
+                # Find a compose file in ENV_SEARCH_DIR/ARG_ENV that matches the pattern
                 set_compose "$1"
                 set_stackname
                 POSITION=2
@@ -144,59 +146,59 @@ parse_args() {
 # and will exit if not met
 catch_invalid_args() {
     # Check for missing arguments
-    [[ -z "${ARGS[ENV]}" ]] \
+    [[ -z "${ARG_ENV}" ]] \
         && die "DEPLOY_ENV is a required argument"
-    [[ -z "${ARGS[COMPOSE]}" ]] \
+    [[ -z "${ARG_COMPOSE}" ]] \
         && die "STACK_CONF is a required arugment and must be a valid stack config file name"
 
     # Check for missing derived values
-    [[ -z "${ARGS[STACK]}" ]] \
-        && die "The docker stack could not be determined from the provided STACK_CONF: ${ARGS[COMPOSE]}"
+    [[ -z "${ARG_STACK}" ]] \
+        && die "The docker stack could not be determined from the provided STACK_CONF: ${ARG_COMPOSE}"
 
     # Check for invalid paths
-    [[ ! -f "${ARGS[COMPOSE]}" ]] \
-        && die "Compose file not found at ${ARGS[COMPOSE]}"
+    [[ ! -f "${ARG_COMPOSE}" ]] \
+        && die "Compose file not found at ${ARG_COMPOSE}"
 }
 
 # Find the compose file given the patten (which may be the whole compose file name)
 # $1 (string) pattern to match
 set_compose() {
     debug "set_compose called with args {1}=$1"
-    ARGS[COMPOSE]=""
-    if [[ -f "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}"/"docker-compose.${1}.yml" ]]; then
+    ARG_COMPOSE=""
+    if [[ -f "${ENV_SEARCH_DIR}"/"${ARG_ENV}"/"docker-compose.${1}.yml" ]]; then
         debug "set_compose match on docker-compose.{1}.yml"
-        ARGS[COMPOSE]="${ENV_SEARCH_DIR}/${ARGS[ENV]}/docker-compose.${1}.yml"
+        ARG_COMPOSE="${ENV_SEARCH_DIR}/${ARG_ENV}/docker-compose.${1}.yml"
     fi
 
-    FULL_MATCH="$(find "${ENV_SEARCH_DIR}"/"${ARGS[ENV]}" -type f -name "*${1}*" 2>/dev/null)"
+    FULL_MATCH="$(find "${ENV_SEARCH_DIR}"/"${ARG_ENV}" -type f -name "*${1}*" 2>/dev/null)"
     if [[ $(wc -l <<< "$FULL_MATCH") -eq 1 ]]; then
         debug "set_compose match on *{1}*"
-        ARGS[COMPOSE]="$FULL_MATCH"
+        ARG_COMPOSE="$FULL_MATCH"
     fi
-    debug "set_compose set variable COMPOSE=${ARGS[COMPOSE]}"
+    debug "set_compose set variable COMPOSE=${ARG_COMPOSE}"
 }
 
 # Set the stack name variable based of the set compose file
 set_stackname() {
     debug "set_stackname called"
-    ARGS[STACK]=
+    ARG_STACK=
     # Check if it is a core stack
     for IDX in "${!CORE_STACKS[@]}"; do
-        if [[ ${ARGS[COMPOSE]##*/} == *"${CORE_STACKS[$IDX]}"* ]]; then
+        if [[ ${ARG_COMPOSE##*/} == *"${CORE_STACKS[$IDX]}"* ]]; then
             debug "set_stackname core stack match against: *${CORE_STACKS[$IDX]}*"
-            ARGS[STACK]="${CORE_STACKS[$IDX]}"
+            ARG_STACK="${CORE_STACKS[$IDX]}"
             break
         fi
     done
     # Check if it is an environment stack
     for IDX in "${!STACKS[@]}"; do
-        if [[ ${ARGS[COMPOSE]##*/} == *"${STACKS[$IDX]}"* ]]; then
+        if [[ ${ARG_COMPOSE##*/} == *"${STACKS[$IDX]}"* ]]; then
             debug "set_stackname regular stack match against: *${STACKS[$IDX]}*"
-            ARGS[STACK]="${ARGS[ENV]}-${STACKS[$IDX]}"
+            ARG_STACK="${ARG_ENV}-${STACKS[$IDX]}"
             break
         fi
     done
-    debug "set_stackname set variable STACK=${ARGS[STACK]}"
+    debug "set_stackname set variable STACK=${ARG_STACK}"
 }
 
 run_command() {
@@ -204,20 +206,20 @@ run_command() {
         SUDO_PREFIX=(sudo -Hu deploy)
     fi
     # XXX The EXTRA_ARGS are just strings added to command. Not currently safe for special chars or spaces.
-    EXTRA_ARGS=("--with-registry-auth" "--detach=${ARGS[DETACH]}")
-    if [[ ${ARGS[PRUNE]} -eq 1 ]]; then
+    EXTRA_ARGS=("--with-registry-auth" "--detach=${ARG_DETACH}")
+    if [[ ${ARG_PRUNE} -eq 1 ]]; then
         EXTRA_ARGS+=("--prune")
     fi
-    CMD="docker stack deploy ${EXTRA_ARGS[*]} -c <(source \"${VAR_FILE}\"; envsubst < \"${ARGS[COMPOSE]}\") \"${ARGS[STACK]}\""
+    CMD="docker stack deploy ${EXTRA_ARGS[*]} -c <(source \"${VAR_FILE}\"; envsubst < \"${ARG_COMPOSE}\") \"${ARG_STACK}\""
     verbose "Command:   ${SUDO_PREFIX[*]} bash -c '$CMD'"
-    ([[ ${ARGS[DRYRUN]} -eq 0 ]] && "${SUDO_PREFIX[@]}" bash -c "$CMD") || true
+    ([[ ${ARG_DRYRUN} -eq 0 ]] && "${SUDO_PREFIX[@]}" bash -c "$CMD") || true
 }
 
 # Deploy the Docker stack, exiting unsuccessfully if the deploy fails
 main() {
-    declare -g VAR_FILE="${ENV_SEARCH_DIR}/${ARGS[ENV]}/.env"
-    verbose "Stack:     ${ARGS[STACK]}"
-    verbose "Compose:   ${ARGS[COMPOSE]}"
+    declare -g VAR_FILE="${ENV_SEARCH_DIR}/${ARG_ENV}/.env"
+    verbose "Stack:     ${ARG_STACK}"
+    verbose "Compose:   ${ARG_COMPOSE}"
     verbose "Variables: ${VAR_FILE}"
     
     if ! OUTPUT=$(run_command); then
@@ -232,4 +234,5 @@ main() {
 # Parse and start running
 parse_args "$@"
 catch_invalid_args
+run_user_check
 main
