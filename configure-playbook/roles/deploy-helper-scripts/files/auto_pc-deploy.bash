@@ -20,6 +20,11 @@ _pc-deploy()
     COMPREPLY=()
     CURRENT="${COMP_WORDS[$COMP_CWORD]}"
     DEPLOY_BASE="/home/deploy"
+
+    unset DEPLOY_ENV
+    unset STACK_CONF
+    unset ALL_STACKS
+
     declare DEPLOY_ENV
     declare STACK_CONF
     declare -g -a DEPLOY_ENVS
