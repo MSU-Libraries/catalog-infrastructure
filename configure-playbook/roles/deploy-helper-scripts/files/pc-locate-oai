@@ -33,14 +33,14 @@ runhelp() {
     echo "      Comma delimited list of instance ids; no spaces allowed. Required."
     echo "  STACK_NAME"
     echo "      The stack under which to search for OAI file matches. Default: catprod-prod"
-    echo "  -e|--extract"
-    echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
     echo "  -r|--recent"
     echo "      Match only the most recent file containing each instance id"
-    echo "  -v|--verbose"
+    echo "  -e|--extract        (implies --recent)"
+    echo "      Extract records matching all given INSTANCE_IDS and save them into a new xml file."
+    echo "  -v|--verbose        (-vv implies --debug)"
     echo "      Show verbose output."
-    echo "  --debug"
-    echo "      Show debug output. Implies --verbose"
+    echo "  --debug             (implies --verbose)"
+    echo "      Show debug output."
     echo ""
 }
 
@@ -75,12 +75,40 @@ die() {
     exit 1
 }
 
-
 # Print help message
 if [[ -z "$1" || $1 == "-h" || $1 == "--help" || $1 == "help" ]]; then
     runhelp
     exit 0
 fi
+
+# Given an array of arguments, split apart single char args (but only before a --)
+# Example:
+#   Input:  "-v -vab --more -- -pq --less file.txt"
+#   Output: "-v -v -a -b --more -pq --less file.txt"
+#
+# $@ : Array of args to parse
+#
+# Output: Split args as a string
+split_args() {
+    declare stop_parse=0
+    declare -a newargs
+    while [[ $# -gt 0 ]]; do
+        if [[ $1 == '--' ]]; then
+            stop_parse=1
+        elif [[ $stop_parse -eq 0 && $1 =~ ^-([a-zA-Z0-9]*)$ ]]; then
+            while IFS= read -r -n1 arg; do
+                if [[ -n $arg ]]; then
+                    newargs+=("-${arg}")
+                fi
+            done <<< "${BASH_REMATCH[1]}"
+        else
+            newargs+=("$1")
+        fi
+        shift
+    done
+    printf "%s" "${newargs[*]}"
+}
+
 
 # Parse command arguments
 parse_args() {
@@ -93,12 +121,16 @@ parse_args() {
             exit 0
             ;;
         -v|--verbose)
+            if [[ $ARG_VERBOSE -eq 1 ]]; then
+                ARG_DEBUG=1
+            fi
             ARG_VERBOSE=1
             shift;;
         -r|--recent)
             ARG_RECENT=1
             shift;;
         -e|--extract)
+            ARG_RECENT=1
             ARG_EXTRACT=1
             shift;;
         --debug)
@@ -234,7 +266,8 @@ main() {
     fi
 }
 
-parse_args "$@"
+# shellcheck disable=SC2046
+parse_args $( split_args "$@" )
 catch_invalid_args
 debug "$SCRIPT_NAME starting"
 main
