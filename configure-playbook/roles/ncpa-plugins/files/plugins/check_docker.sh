@@ -391,16 +391,34 @@ else
         "croncache"
     )
 fi
-# Loop over all containers in the stack and check if each expected host is resolvable
-for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
-    for EXPECTED_HOSTNAME in "${EXPECTED_HOSTNAMES[@]}"; do
-        if ! run_getent_hosts "$EXPECTED_HOSTNAME" "$RUNNING"; then
-            echo "WARNING: Could not resolve host $EXPECTED_HOSTNAME from within $RUNNING."
-            exit 1
-        fi
+# Track overall failure status
+FAILED=0
 
+for EXPECTED_HOSTNAME in "${EXPECTED_HOSTNAMES[@]}"; do
+    pids=()
+
+    # Fire off checks in parallel for all containers on the current hostname
+    for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
+        (
+            if ! run_getent_hosts "$EXPECTED_HOSTNAME" "$RUNNING"; then
+                echo "WARNING: Could not resolve host $EXPECTED_HOSTNAME from within $RUNNING."
+                exit 1
+            fi
+        ) &
+        pids+=($!)
     done
 
+    # Wait for all background checks for this hostname to finish
+    for pid in "${pids[@]}"; do
+        if ! wait "$pid"; then
+            FAILED=1
+        fi
+    done
+
+    # If any container failed to resolve this hostname, exit early
+    if [ "$FAILED" -ne 0 ]; then
+        exit 1
+    fi
 done
 
 
