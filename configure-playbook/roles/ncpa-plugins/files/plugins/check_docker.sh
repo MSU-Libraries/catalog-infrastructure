@@ -345,6 +345,65 @@ for SERVICE in "${EXPECTED_SERVICES[@]}"; do
     fi
 done
 
+## Check that the DNS hostnames can be resolved between all services
+
+# Confirm that a hostname is resolvable within a container
+# Args:
+# $1 hostname to check
+# $2 container to check in
+run_getent_hosts() {
+    # shellcheck disable=SC2016
+    docker_sudo docker exec -i --env HOSTCHECK="$1" "${2}" sh -c 'getent hosts "$(eval echo $HOSTCHECK)" > /dev/null'
+}
+EXPECTED_HOSTNAMES=(
+    "solr"
+    "solr1"
+    "solr2"
+    "solr3"
+    "proxysolr"
+    "galera"
+    "galera1"
+    "galera2"
+    "galera2"
+    "captcha"
+    "monitoring"
+    "monitoring1"
+    "monitoring2"
+    "monitoring3"
+    "proxymon-${DEPLOYMENT}"
+    "zk"
+    "zk1"
+    "zk2"
+    "zk3"
+    "legacylinks"
+    "redis"
+    "${DEPLOYMENT}-solr_cron"
+)
+if is_main; then
+    EXPECTED_HOSTNAMES+=(
+        "vufind1"
+        "vufind2"
+        "vufind3"
+        "${DEPLOYMENT}-catalog_cron"
+    )
+else
+    EXPECTED_HOSTNAMES+=(
+        "croncache"
+    )
+fi
+# Loop over all containers in the stack and check if each expected host is resolvable
+for RUNNING in "${RUNNING_CONTAINERS[@]}"; do
+    for EXPECTED_HOSTNAME in "${EXPECTED_HOSTNAMES[@]}"; do
+        if ! run_getent_hosts "$EXPECTED_HOSTNAME" "$RUNNING"; then
+            echo "WARNING: Could not resolve host $EXPECTED_HOSTNAME from within $RUNNING."
+            exit 1
+        fi
+
+    done
+
+done
+
+
 if [[ "${#MESSAGES[@]}" -gt 0 ]]; then
     MSGSTR=" ($( join_array MESSAGES ';' ))"
 fi
