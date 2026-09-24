@@ -55,9 +55,9 @@ services:
           --ping \
           --ping.entrypoint=health-ent
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 1
-      start_period: 20s
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
@@ -74,8 +74,8 @@ services:
         window: 15s
       resources:
         limits:
-          cpus: '1'
-          memory: 300M
+          cpus: '2'
+          memory: 800M
       labels:
         - "traefik.enable=true"
         - "traefik.http.services.traefik-public-traefik.loadbalancer.server.port=9999"
