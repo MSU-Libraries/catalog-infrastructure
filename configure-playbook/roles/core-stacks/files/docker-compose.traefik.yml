@@ -74,8 +74,8 @@ services:
         window: 15s
       resources:
         limits:
-          cpus: '2'
-          memory: 800M
+          cpus: '2.5'
+          memory: 1024M
       labels:
         - "traefik.enable=true"
         - "traefik.http.services.traefik-public-traefik.loadbalancer.server.port=9999"
