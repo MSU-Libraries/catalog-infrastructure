@@ -1,0 +1,15 @@
+[Unit]
+Description=The Ban Hammer keeps IPs from even getting to Docker.
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/pc-ban-hammer --start
+ExecStop=/usr/local/sbin/pc-ban-hammer --stop
+ExecReload=/usr/local/sbin/pc-ban-hammer --reload
+
+[Install]
+WantedBy=multi-user.target

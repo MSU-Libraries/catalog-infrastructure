@@ -1,0 +1,48 @@
+---
+
+- name: Deploy pc-ban-hammer script
+  ansible.builtin.copy:
+    src: pc-ban-hammer
+    dest: /usr/local/sbin/
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Ensure systemd local unit dir exists
+  ansible.builtin.file:
+    path: /usr/local/lib/systemd/system/
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Ensure ban-ipsets dir exists
+  ansible.builtin.copy:
+    path: /usr/local/etc/ban-ipsets/
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Copy botnet.ipset files for ban-hammer
+  ansible.builtin.copy:
+    src: botnets.ipset
+    dest: /usr/local/etc/ban-ipsets/
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Copy ban-hammer systemd service
+  ansible.builtin.copy:
+    src: ban-hammer.service
+    dest: /usr/local/lib/systemd/system/
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Ensure the ban hammer is hammering
+  ansible.builtin.systemd_service:
+    name: ban-hammer
+    daemon_reload: true
+    enabled: true
+    state: started

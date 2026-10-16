@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+#
+# Required deps:
+#   sudo apt install -y ipset
+#
+set -euo pipefail
+
+SCRIPT_NAME=$( basename "$0" )
+# The largest number of IPs allowed in the ipset
+MAX_ELEMENTS=1000000
+ACTION=""
+DEFAULT_IPSET_DIR="/usr/local/etc/ban-ipsets"
+IPSET_FILES=()
+
+usage() {
+    echo "Usage: ${SCRIPT_NAME} --start|--stop|--reload [-m|--maxelem MAX] [-i|--ipset FILE]..."
+    echo ""
+    echo "The Ban Hammer manages operation of banned IP lists. If started, then IPs"
+    echo "in banned ipset lists are DROP'ed from the network when they try to connect."
+    echo "if the BH is stopped, then banned IP lists are permitted to connect."
+    echo "For update ipset lists to be reloaded, the BH must be reloaded."
+    echo "You can manually specify any number of '*.ipset' files to use, but by default"
+    echo "all '*.ipset' files in ${DEFAULT_IPSET_DIR}/ will be used."
+    echo ""
+    echo "Options:"
+    echo "  --start          Create ipsets and insert iptables rules in DOCKER-USER"
+    echo "  --stop           Remove iptables rules from DOCKER-USER and destroy ipsets"
+    echo "  --reload         Atomic swap ipsets and ensure iptables rules exist"
+    echo "  -m, --maxelem    Maximum elements per ipset (default: ${MAX_ELEMENTS})"
+    echo "  -i, --ipset      Path to ipset file (can be specified multiple times)"
+    exit 1
+}
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --start)
+            ACTION="start"
+            shift
+            ;;
+        --stop)
+            ACTION="stop"
+            shift
+            ;;
+        --reload)
+            ACTION="reload"
+            shift
+            ;;
+        -m|--maxelem)
+            if [[ -n "${2:-}" && "$2" =~ ^[0-9]+$ ]]; then
+                MAX_ELEMENTS="$2"
+                shift 2
+            else
+                echo "Error: --maxelem requires a positive integer argument."
+                exit 1
+            fi
+            ;;
+        -i|--ipset)
+            if [[ -n "${2:-}" ]]; then
+                IPSET_FILES+=("$2")
+                shift 2
+            else
+                echo "Error: --ipset requires a file path argument."
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Error: Unexpected argument '$1'"
+            usage
+            ;;
+    esac
+done
+
+if [[ -z "$ACTION" ]]; then
+    echo "Error: One action flag (--start, --stop, or --reload) must be specified."
+    usage
+fi
+
+if [[ $EUID -ne 0 ]]; then
+   echo "Error: This script must be executed with root privileges."
+   exit 1
+fi
+
+# Fallback to default directory if no --ipset arguments were supplied
+if [[ ${#IPSET_FILES[@]} -eq 0 ]]; then
+    mkdir -p "${DEFAULT_IPSET_DIR}"
+    shopt -s nullglob
+    IPSET_FILES=("${DEFAULT_IPSET_DIR}"/*.ipset)
+    shopt -u nullglob
+fi
+
+if [[ ${#IPSET_FILES[@]} -eq 0 && "$ACTION" != "stop" ]]; then
+    echo "Warning: No .ipset files found in ${DEFAULT_IPSET_DIR}/ or specified via --ipset."
+    exit 0
+fi
+
+apply_ipset() {
+    local file="$1"
+    local set_name
+    set_name=$(basename "$file" .ipset)
+    local tmp_set="${set_name}_tmp"
+
+    if [[ ! -f "$file" ]]; then
+        echo "Warning: File '$file' does not exist, skipping."
+        return 0
+    fi
+
+    echo "Processing ipset '$set_name' from '$file'..."
+
+    # Cleanup temporary set on early exit
+    trap 'ipset destroy "$tmp_set" 2>/dev/null || true' EXIT
+
+    # Create and populate temporary set for swap
+    ipset create "$tmp_set" hash:ip maxelem "$MAX_ELEMENTS" -exist
+    ipset flush "$tmp_set"
+
+    {
+        grep -E -v '^(#|[[:space:]]*$)' "$file" | awk -v sname="$tmp_set" '{print "add " sname " " $1}'
+    } | ipset restore
+
+    # Ensure main set exists and swap
+    ipset create "$set_name" hash:ip maxelem "$MAX_ELEMENTS" -exist
+    ipset swap "$tmp_set" "$set_name"
+    ipset destroy "$tmp_set" 2>/dev/null || true
+
+    # Clear the trap
+    trap - EXIT
+
+    # Insert iptables rule into DOCKER-USER chain if not present
+    if ! iptables -C DOCKER-USER -m set --match-set "$set_name" src -j DROP 2>/dev/null; then
+        iptables -I DOCKER-USER -m set --match-set "$set_name" src -j DROP
+        echo "Inserted DROP rule for '$set_name' into DOCKER-USER."
+    else
+        echo "DROP rule for '$set_name' is already present in DOCKER-USER."
+    fi
+}
+
+remove_ipset() {
+    local file="$1"
+    local set_name
+    set_name=$(basename "$file" .ipset)
+
+    echo "Stopping and cleaning up ipset '$set_name'..."
+
+    # Unlink rule from DOCKER-USER chain
+    while iptables -C DOCKER-USER -m set --match-set "$set_name" src -j DROP 2>/dev/null; do
+        iptables -D DOCKER-USER -m set --match-set "$set_name" src -j DROP
+        echo "Removed DROP rule for '$set_name' from DOCKER-USER."
+    done
+
+    # Destroy ipset
+    if ipset list "$set_name" &>/dev/null; then
+        ipset destroy "$set_name"
+        echo "Destroyed ipset '$set_name'."
+    fi
+}
+
+case "$ACTION" in
+    start|reload)
+        for file in "${IPSET_FILES[@]}"; do
+            apply_ipset "$file"
+        done
+        ;;
+    stop)
+        for file in "${IPSET_FILES[@]}"; do
+            remove_ipset "$file"
+        done
+        ;;
+esac
+
+echo "Action '$ACTION' executed successfully."
