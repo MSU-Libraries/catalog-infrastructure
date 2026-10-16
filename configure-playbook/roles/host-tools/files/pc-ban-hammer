@@ -129,12 +129,15 @@ apply_ipset() {
     # Clear the trap
     trap - EXIT
 
-    # Insert iptables rule into DOCKER-USER chain if not present
+    # Insert iptables rules into DOCKER-USER chain if not present
     if ! iptables -C DOCKER-USER -m set --match-set "$set_name" src -j DROP 2>/dev/null; then
         iptables -I DOCKER-USER -m set --match-set "$set_name" src -j DROP
         echo "Inserted DROP rule for '$set_name' into DOCKER-USER."
     else
         echo "DROP rule for '$set_name' is already present in DOCKER-USER."
+    fi
+    if ! iptables -C DOCKER-USER -m set --match-set "$set_name" src -j LOG --log-prefix "[BAN] " 2>/dev/null; then
+        iptables -I DOCKER-USER -m set --match-set "$set_name" src -j LOG --log-prefix "[BAN] "
     fi
 }
 
@@ -149,6 +152,9 @@ remove_ipset() {
     while iptables -C DOCKER-USER -m set --match-set "$set_name" src -j DROP 2>/dev/null; do
         iptables -D DOCKER-USER -m set --match-set "$set_name" src -j DROP
         echo "Removed DROP rule for '$set_name' from DOCKER-USER."
+    done
+    while iptables -C DOCKER-USER -m set --match-set "$set_name" src -j LOG --log-prefix "[BAN] " 2>/dev/null; do
+        iptables -D DOCKER-USER -m set --match-set "$set_name" src -j LOG --log-prefix "[BAN] "
     done
 
     # Destroy ipset

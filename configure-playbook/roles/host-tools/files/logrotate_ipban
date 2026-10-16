@@ -1,0 +1,14 @@
+/var/log/ipban.log
+{
+	rotate 10
+	daily
+	missingok
+	notifempty
+	compress
+	delaycompress
+	sharedscripts
+	postrotate
+		/usr/lib/rsyslog/rsyslog-rotate
+	endscript
+	create 644 syslog adm
+}

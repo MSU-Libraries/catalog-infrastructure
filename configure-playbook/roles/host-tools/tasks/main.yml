@@ -16,6 +16,31 @@
     owner: root
     group: root
 
+- name: Ensure ipban.log file exists
+  ansible.builtin.file:
+    path: /var/log/ipban.log
+    state: file
+    mode: '0644'
+    owner: syslog
+    group: adm
+
+- name: Setup rsyslog ipban config
+  ansible.builtin.copy:
+    src: rsyslog_10_ipban.conf
+    dest: /etc/rsyslog.d/
+    mode: '0644'
+    owner: root
+    group: root
+  notify: restart rsyslog
+
+- name: Setup logrotate ipban config
+  ansible.builtin.copy:
+    src: logrotate_ipban
+    dest: /etc/logrotate.d/
+    mode: '0644'
+    owner: root
+    group: root
+
 - name: Ensure ban-ipsets dir exists
   ansible.builtin.file:
     path: /usr/local/etc/ban-ipsets/
