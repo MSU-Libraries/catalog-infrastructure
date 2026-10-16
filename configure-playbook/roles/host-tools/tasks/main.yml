@@ -17,7 +17,7 @@
     group: root
 
 - name: Ensure ban-ipsets dir exists
-  ansible.builtin.copy:
+  ansible.builtin.file:
     path: /usr/local/etc/ban-ipsets/
     state: directory
     mode: '0755'
