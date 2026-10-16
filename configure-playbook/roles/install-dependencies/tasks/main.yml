@@ -10,6 +10,7 @@
       - xmlstarlet
       - moreutils
       - gettext-base
+      - ipset
     state: present
     update_cache: yes
     lock_timeout: 999999
