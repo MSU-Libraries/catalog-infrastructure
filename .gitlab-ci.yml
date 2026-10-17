@@ -263,6 +263,7 @@ Provision Shared Resources:
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
       when: manual
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $BAN_HAMMER_UPDATE == "1"'
   script:
     - |
       # Move artifact to correct location
