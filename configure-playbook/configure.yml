@@ -47,7 +47,7 @@
     - include_role:
         name: deploy-helper-scripts
     - include_role:
-        name: host-tools
+        name: configure-ban-hammer
     - include_role:
         name: core-stacks
     - include_role:

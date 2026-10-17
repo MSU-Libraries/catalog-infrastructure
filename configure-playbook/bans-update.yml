@@ -1,0 +1,10 @@
+---
+
+- name: Update Ban Hammer ipsets
+  hosts: docker
+  gather_facts: true
+  any_errors_fatal: true
+
+  tasks:
+    - include_role:
+        name: configure-ban-hammer
