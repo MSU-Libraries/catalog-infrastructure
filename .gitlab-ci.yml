@@ -268,7 +268,7 @@ Provision Shared Resources:
     - |
       # Move artifact to correct location
       mv known_hosts ~/.ssh/known_hosts
-      ansible-playbook configure-playbook/bans_update.yml -i configure-playbook/hosts;
+      ansible-playbook configure-playbook/bans-update.yml -i configure-playbook/hosts;
 
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
