@@ -1,5 +1,16 @@
 ---
 
+- name: Check whether logrotate is set to daily runs
+  ansible.builtin.stat:
+    path: /etc/cron.daily/logrotate
+  register: logrotate_is_daily
+
+- name: Migrate logrotate to run hourly
+  ansible.builtin.command:
+    cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    creates: /etc/cron.hourly/logrotate
+  when: logrotate_is_daily.stat.exists
+
 - name: Copy logrotation file
   ansible.builtin.copy:
     src: "{{ role_path }}/files/logrotate.d/pubcat"
