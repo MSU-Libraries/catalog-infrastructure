@@ -8,6 +8,7 @@ set -euo pipefail
 SCRIPT_NAME=$( basename "$0" )
 # The largest number of IPs allowed in the ipset
 MAX_ELEMENTS=5000000
+HASH_SIZE=524288
 ACTION=""
 DEFAULT_IPSET_DIR="/usr/local/etc/ban-ipsets"
 IPSET_FILES=()
@@ -114,7 +115,7 @@ apply_ipset() {
     trap 'ipset destroy "$tmp_set" 2>/dev/null || true' EXIT
 
     # Create and populate temporary set for swap
-    ipset create "$tmp_set" hash:ip maxelem "$MAX_ELEMENTS" -exist
+    ipset create "$tmp_set" hash:ip hashsize "$HASH_SIZE" maxelem "$MAX_ELEMENTS" -exist
     ipset flush "$tmp_set"
 
     {
@@ -122,7 +123,7 @@ apply_ipset() {
     } | ipset restore
 
     # Ensure main set exists and swap
-    ipset create "$set_name" hash:ip maxelem "$MAX_ELEMENTS" -exist
+    ipset create "$set_name" hash:ip hashsize "$HASH_SIZE" maxelem "$MAX_ELEMENTS" -exist
     ipset swap "$tmp_set" "$set_name"
     ipset destroy "$tmp_set" 2>/dev/null || true
 
