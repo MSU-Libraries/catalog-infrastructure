@@ -1,7 +1,7 @@
 /var/log/ipban.log
 {
-	rotate 6
-	daily
+	rotate 12
+	hourly
 	missingok
 	notifempty
 	compress
