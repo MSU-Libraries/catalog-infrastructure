@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_NAME=$( basename "$0" )
 # The largest number of IPs allowed in the ipset
 MAX_ELEMENTS=6000000
-HASH_SIZE=2097152
+HASH_SIZE=4194304
 ACTION=""
 DEFAULT_IPSET_DIR="/usr/local/etc/ban-ipsets"
 IPSET_FILES=()
