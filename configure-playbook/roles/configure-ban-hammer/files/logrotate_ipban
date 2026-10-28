@@ -5,6 +5,7 @@
 	missingok
 	notifempty
 	compress
+	delaycompress
 	sharedscripts
 	postrotate
 		/usr/lib/rsyslog/rsyslog-rotate
