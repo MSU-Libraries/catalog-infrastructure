@@ -50,8 +50,8 @@ GitHub Release:
     - git clone --mirror https://RW_CICD_TOKEN:$RW_CICD_TOKEN@www.gitlab.msu.edu/msu-libraries/catalog/catalog-infrastructure.git
     - cd catalog-infrastructure.git
     # Push the tags and branches
-    - git push -v --tags https://$GITHUB_USER_TOKEN@github.com/MSU-Libraries/catalog-infrastructure.git
-    - git push -v --force  https://$GITHUB_USER_TOKEN@github.com/MSU-Libraries/catalog-infrastructure.git main
+    - git push -v --tags https://x-access-token:$GITHUB_USER_TOKEN@github.com/MSU-Libraries/catalog-infrastructure.git
+    - git push -v --force https://x-access-token:$GITHUB_USER_TOKEN@github.com/MSU-Libraries/catalog-infrastructure.git main
     # Create the release in GitHUb
     - echo "{\"tag_name\":\"${TAG}\", \"target_commitish\":\"${CI_COMMIT_SHA}\"}" > data.json
     - "curl -X POST -H 'Accept: application/vnd.github.v3+json' -u $GITHUB_USER_TOKEN https://api.github.com/repos/MSU-Libraries/catalog-infrastructure/releases -d '@data.json'"
