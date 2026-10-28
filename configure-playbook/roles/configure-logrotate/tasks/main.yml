@@ -1,5 +1,13 @@
 ---
 
+- name: Ensure systemd logrotate.timer.d dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/logrotate.timer.d/
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
 - name: Set logrotate timer to run hourly
   ansible.builtin.copy:
     dest: /etc/systemd/system/logrotate.timer.d/override.conf
@@ -19,4 +27,3 @@
     owner: root
     group: root
     mode: '0644'
-
