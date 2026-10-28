@@ -49,6 +49,13 @@
     owner: root
     group: root
 
+- name: Remove exemptions from botnet.ipset file
+  ansible.builtin.shell:
+    chdir: "{{ role_path }}/files/"
+    cmd: "./filter-exemptions.py botnet.ipset exemptions.txt | sponge botnet.ipset"
+  delegate_to: localhost
+  run_once: true
+
 - name: Copy botnet.ipset files for ban-hammer
   ansible.builtin.copy:
     src: botnets.ipset
@@ -56,19 +63,6 @@
     mode: '0644'
     owner: root
     group: root
-
-- name: Copy ban-hammer exceptions file
-  ansible.builtin.copy:
-    src: exemptions.txt
-    dest: /usr/local/etc/ban-ipsets/
-    mode: '0644'
-    owner: root
-    group: root
-
-- name: Ensure botnet.ipset does not include any exempted IPs
-  ansible.builtin.shell:
-    chdir: /usr/local/etc/ban-ipsets/
-    cmd: grep -Fvx -f exemptions.txt botnets.ipset | sponge botnets.ipset
 
 - name: Copy ban-hammer systemd service
   ansible.builtin.copy:
